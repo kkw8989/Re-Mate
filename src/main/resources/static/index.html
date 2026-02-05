@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Receipt Master | 메인</title>
+    <style>
+        :root { --kakao-color: #FEE500; --google-color: #4285F4; }
+        body { font-family: sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; margin: 0; background-color: #f4f7f6; }
+        .container { background: white; padding: 40px; border-radius: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); text-align: center; max-width: 400px; width: 90%; }
+        .btn { display: block; padding: 12px; margin: 10px 0; border-radius: 8px; text-decoration: none; font-weight: bold; transition: 0.3s; }
+        .btn-google { background: var(--google-color); color: white; }
+        .btn-kakao { background: var(--kakao-color); color: #3c1e1e; }
+        .btn-upload { background: #333; color: white; border: none; cursor: pointer; width: 100%; }
+        .hidden { display: none; }
+        #token-box { background: #eee; padding: 10px; font-size: 0.7rem; word-break: break-all; border-radius: 5px; margin-top: 15px; color: #666; }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h1>🧾 Receipt Master</h1>
+
+    <div id="before-login">
+        <p>소셜 계정으로 간편하게 시작하세요</p>
+        <a href="/oauth2/authorization/google" class="btn btn-google">Google 로그인</a>
+        <a href="/oauth2/authorization/kakao" class="btn btn-kakao">Kakao 로그인</a>
+    </div>
+
+    <div id="after-login" class="hidden">
+        <p>🎉 <strong>기원님</strong>, 로그인을 환영합니다!</p>
+        <button onclick="location.href='/upload.html'" class="btn btn-upload">📸 영수증 업로드하러 가기</button>
+        <div id="token-box"></div>
+        <a href="/" onclick="localStorage.clear()" style="display:block; margin-top:15px; color:#999; font-size:0.8rem;">로그아웃</a>
+    </div>
+</div>
+
+<script>
+    const urlParams = new URLSearchParams(window.location.search);
+    const token = urlParams.get('token');
+
+    if (token) {
+        localStorage.setItem('accessToken', token);
+        document.getElementById('before-login').classList.add('hidden');
+        document.getElementById('after-login').classList.remove('hidden');
+        document.getElementById('token-box').innerText = "내 토큰: " + token;
+
+        // 주소창에서 ?token=... 부분을 싹 지워서 깔끔하게 만듦
+        window.history.replaceState({}, document.title, "/");
+    } else if (localStorage.getItem('accessToken')) {
+        // 이미 로그인 정보가 로컬스토리지에 있는 경우
+        document.getElementById('before-login').classList.add('hidden');
+        document.getElementById('after-login').classList.remove('hidden');
+        document.getElementById('token-box').innerText = "기존 토큰 유지 중";
+    }
+</script>
+</body>
+</html>

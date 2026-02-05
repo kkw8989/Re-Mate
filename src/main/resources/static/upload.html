@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>영수증 AI 분석</title>
+    <style>
+        body { font-family: sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; background-color: #f0f2f5; margin: 0; }
+        .card { background: white; padding: 30px; border-radius: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); text-align: center; width: 90%; max-width: 400px; }
+        .preview { max-width: 100%; margin: 15px 0; border-radius: 8px; display: none; border: 1px solid #ddd; }
+        .result-box { text-align: left; background: #e7f3ff; padding: 15px; border-radius: 8px; margin-top: 15px; font-size: 0.9rem; display: none; }
+        .btn-main { background: #333; color: white; padding: 12px 25px; border: none; border-radius: 8px; cursor: pointer; width: 100%; font-weight: bold; }
+    </style>
+</head>
+<body>
+<div class="card">
+    <h2>📸 영수증 업로드</h2>
+    <input type="file" id="fileInput" accept="image/*" onchange="previewImage(this)">
+    <img id="imagePreview" class="preview">
+    <button onclick="uploadReceipt()" id="uploadBtn" class="btn-main">AI 분석 시작</button>
+
+    <p id="status" style="margin-top:15px; color:#666;"></p>
+
+    <div id="resultBox" class="result-box"></div>
+
+    <button onclick="location.href='/'" style="margin-top:20px; background:none; border:none; color:#999; text-decoration:underline; cursor:pointer;">홈으로 돌아가기</button>
+</div>
+
+<script>
+    function previewImage(input) {
+        const preview = document.getElementById('imagePreview');
+        if (input.files && input.files[0]) {
+            const reader = new FileReader();
+            reader.onload = e => { preview.src = e.target.result; preview.style.display = 'block'; };
+            reader.readAsDataURL(input.files[0]);
+        }
+    }
+
+    async function uploadReceipt() {
+        const file = document.getElementById('fileInput').files[0];
+        const token = localStorage.getItem('accessToken');
+        const status = document.getElementById('status');
+        const resultBox = document.getElementById('resultBox');
+
+        if (!file) return alert("영수증 사진을 선택해주세요!");
+        if (!token) return alert("로그인 세션이 만료되었습니다. 다시 로그인해주세요.");
+
+        status.innerText = "⏳ AI가 영수증을 분석 중입니다...";
+        resultBox.style.display = 'none';
+
+        const formData = new FormData();
+        formData.append('file', file);
+
+        try {
+            const response = await fetch('/api/receipts/upload', {
+                method: 'POST',
+                headers: { 'Authorization': 'Bearer ' + token },
+                body: formData
+            });
+
+            if (!response.ok) throw new Error("분석에 실패했습니다.");
+
+            const result = await response.json();
+            status.innerText = "✅ 분석 성공!";
+
+            // 결과 UI 업데이트
+            resultBox.innerHTML = `
+                    <strong>🏢 상호명:</strong> ${result.storeName}<br>
+                    <strong>📅 날짜:</strong> ${result.tradeDate || '인식 불가'}<br>
+                    <strong>💰 금액:</strong> ${result.totalAmount.toLocaleString()}원
+                `;
+            resultBox.style.display = 'block';
+
+        } catch (error) {
+            status.innerText = "❌ 에러: " + error.message;
+        }
+    }
+</script>
+</body>
+</html>

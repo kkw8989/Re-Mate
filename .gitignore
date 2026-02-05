@@ -1,0 +1,16 @@
+### Java ###
+*.class
+*.jar
+*.war
+*.ear
+
+### Gradle ###
+.gradle/
+build/
+
+### Secrets ###
+src/main/resources/application-secret.properties
+
+### macOS ###
+.DS_Store
+.idea/
