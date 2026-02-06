@@ -1,43 +1,14 @@
-// package com.example.backend.entity;
-//
-// import jakarta.persistence.*;
-// import lombok.*;
-// import java.time.LocalDateTime;
-//
-// @Entity
-// @Getter
-// @Setter
-// @NoArgsConstructor
-// @AllArgsConstructor
-// @Builder
-// public class Receipt {
-//    @Id
-//    @GeneratedValue(strategy = GenerationType.IDENTITY)
-//    private Long id;
-//
-//    private String storeName;
-//    private String tradeDate;
-//    private Integer totalAmount;
-//
-//    @Column(columnDefinition = "TEXT")
-//    private String rawText;
-//
-//    private LocalDateTime createdAt;
-//
-//    @PrePersist
-//    public void prePersist() {
-//        this.createdAt = LocalDateTime.now();
-//    }
-// }
 package com.example.backend.entity;
 
+import com.example.backend.domain.receipt.ReceiptStatus;
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
 import lombok.*;
 
 @Entity
+@Table(name = "receipt")
 @Getter
-@NoArgsConstructor
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor
 @Builder
 public class Receipt {
@@ -46,19 +17,41 @@ public class Receipt {
   @GeneratedValue(strategy = GenerationType.IDENTITY)
   private Long id;
 
+  @Enumerated(EnumType.STRING)
+  @Column(nullable = false)
+  private ReceiptStatus status;
+
   private String storeName;
+
   private String tradeDate;
+
   private int totalAmount;
 
-  // 핵심 수정 부분: 매우 긴 JSON 데이터를 저장하기 위해 타입을 지정합니다.
+  @Column(unique = true)
+  private String idempotencyKey;
+
   @Lob
   @Column(columnDefinition = "LONGTEXT")
   private String rawText;
+
+  @Column(nullable = false)
+  private Long workspaceId;
+
+  @Column(nullable = false)
+  private Long userId;
 
   private LocalDateTime createdAt;
 
   @PrePersist
   public void prePersist() {
     this.createdAt = LocalDateTime.now();
+    if (this.status == null) {
+      this.status = ReceiptStatus.ANALYZING;
+    }
+  }
+
+  public void updateStatus(ReceiptStatus status) {
+    this.status = status;
   }
 }
+

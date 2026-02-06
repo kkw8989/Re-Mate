@@ -11,5 +11,5 @@ import lombok.Setter;
 @NoArgsConstructor
 @AllArgsConstructor
 public class ClovaOcrResponse {
-  private JsonNode raw; // ?묐떟 JSON 洹몃?濡????
+  private JsonNode raw;
 }

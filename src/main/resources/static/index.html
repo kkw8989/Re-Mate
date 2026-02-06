@@ -27,8 +27,8 @@
     </div>
 
     <div id="after-login" class="hidden">
-        <p>🎉 <strong>기원님</strong>, 로그인을 환영합니다!</p>
-        <button onclick="location.href='/upload.html'" class="btn btn-upload">📸 영수증 업로드하러 가기</button>
+        <p>🎉 <strong>기원님</strong>, 분석 준비가 완료되었습니다!</p>
+        <button onclick="location.href='/upload.html'" class="btn btn-upload">📸 영수증 관리 및 업로드</button>
         <div id="token-box"></div>
         <a href="/" onclick="localStorage.clear()" style="display:block; margin-top:15px; color:#999; font-size:0.8rem;">로그아웃</a>
     </div>
@@ -43,14 +43,11 @@
         document.getElementById('before-login').classList.add('hidden');
         document.getElementById('after-login').classList.remove('hidden');
         document.getElementById('token-box').innerText = "내 토큰: " + token;
-
-        // 주소창에서 ?token=... 부분을 싹 지워서 깔끔하게 만듦
         window.history.replaceState({}, document.title, "/");
     } else if (localStorage.getItem('accessToken')) {
-        // 이미 로그인 정보가 로컬스토리지에 있는 경우
         document.getElementById('before-login').classList.add('hidden');
         document.getElementById('after-login').classList.remove('hidden');
-        document.getElementById('token-box').innerText = "기존 토큰 유지 중";
+        document.getElementById('token-box').innerText = "로그인 세션 유지 중";
     }
 </script>
 </body>

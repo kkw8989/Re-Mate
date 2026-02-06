@@ -34,7 +34,7 @@ public class CustomOAuth2UserService implements OAuth2UserService<OAuth2UserRequ
     String name = "";
     String email = "";
     String picture = "";
-    String providerId = ""; // 💡 고유 ID를 담을 변수 추가
+    String providerId = ""; // 고유 ID를 담을 변수 추가
 
     if ("kakao".equals(registrationId)) {
       Map<String, Object> kakaoAccount = (Map<String, Object>) attributes.get("kakao_account");
@@ -43,7 +43,7 @@ public class CustomOAuth2UserService implements OAuth2UserService<OAuth2UserRequ
       name = (String) profile.get("nickname");
       email = (String) kakaoAccount.get("email");
       picture = (String) profile.get("profile_image_url");
-      providerId = attributes.get("id").toString(); // 💡 카카오 고유 번호 추출
+      providerId = attributes.get("id").toString(); // 카카오 고유 번호 추출
 
       if (email == null || email.isEmpty()) {
         email = "kakao_" + providerId + "@noemail.com";
@@ -53,7 +53,7 @@ public class CustomOAuth2UserService implements OAuth2UserService<OAuth2UserRequ
       name = (String) attributes.get("name");
       email = (String) attributes.get("email");
       picture = (String) attributes.get("picture");
-      providerId = (String) attributes.get("sub"); // 💡 구글 고유 번호(sub) 추출
+      providerId = (String) attributes.get("sub"); // 구글 고유 번호(sub) 추출
     }
 
     // 💡 3. 통합 저장 및 업데이트 (인자 5개를 모두 넘겨줍니다!)
@@ -74,7 +74,7 @@ public class CustomOAuth2UserService implements OAuth2UserService<OAuth2UserRequ
                     .email(email)
                     .picture(picture)
                     .provider(provider)
-                    .providerId(providerId) // 💡 이제 빌더에서 providerId가 정상적으로 들어갑니다!
+                    .providerId(providerId) // 이제 빌더에서 providerId가 정상적으로 들어갑니다!
                     .build());
 
     return userRepository.save(user);

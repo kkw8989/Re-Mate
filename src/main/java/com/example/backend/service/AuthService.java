@@ -17,16 +17,16 @@ public class AuthService {
   @Transactional
   public Long join(String email, String rawPassword, String name) {
 
-    // 1. 비밀번호 암호화 (BCrypt)
+
     String encodedPassword = passwordEncoder.encode(rawPassword);
 
-    // 2. 유저 객체 생성 및 저장
+
     User user =
         User.builder()
             .email(email)
             .password(encodedPassword)
             .name(name)
-            .provider("local") // 일반 가입은 local로 구분
+            .provider("local")
             .build();
 
     return userRepository.save(user).getId();

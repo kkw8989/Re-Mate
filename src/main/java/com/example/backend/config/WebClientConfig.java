@@ -10,7 +10,7 @@ public class WebClientConfig {
 
   @Bean
   public WebClient.Builder webClientBuilder() {
-    // 메모리 내 버퍼 크기를 10MB로 확장 (기본값은 256KB)
+
     ExchangeStrategies strategies =
         ExchangeStrategies.builder()
             .codecs(configurer -> configurer.defaultCodecs().maxInMemorySize(10 * 1024 * 1024))

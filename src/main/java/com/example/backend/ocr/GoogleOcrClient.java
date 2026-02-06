@@ -1,4 +1,4 @@
-package com.example.backend.ocr; // 이 경로가 파일 위치와 일치해야 합니다.
+package com.example.backend.ocr;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
