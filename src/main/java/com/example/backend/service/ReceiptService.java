@@ -61,7 +61,7 @@ public class ReceiptService {
         String[] lines = text.split("\n");
         for (String line : lines) {
             String trimmed = line.trim();
-            if (trimmed.length() > 1 && !trimmed.matches(".*(고객용|영수증|대한민국|할인점|신용매출|인수인계).*")) {
+            if (trimmed.length() > 1 && !trimmed.matches(".*(고객용|영수증|매출전표|인수증|신용카드|청구서|Tel|전화|대표|주소).*")) {
                 return trimmed;
             }
         }
@@ -69,19 +69,22 @@ public class ReceiptService {
     }
 
     private int extractTotalAmount(String text) {
-        Pattern pattern = Pattern.compile("(합\\s*계|결제\\s*금액|합계\\s*금액|승인\\s*금액)[\\s\\n:]*([0-9,]{3,})");
+        Pattern pattern = Pattern.compile("(?:합\\s*계|결제\\s*금액|합계\\s*금액|승인\\s*금액|총\\s*합\\s*계|TOTAL|AMOUNT)[\\s\\n:]*([0-9,]{3,})", Pattern.CASE_INSENSITIVE);
         Matcher matcher = pattern.matcher(text);
         int amount = 0;
         while (matcher.find()) {
-            amount = Integer.parseInt(matcher.group(2).replace(",", ""));
+            amount = Integer.parseInt(matcher.group(1).replace(",", ""));
         }
         return amount;
     }
 
     private String extractTradeDate(String text) {
-        Pattern pattern = Pattern.compile("(\\d{4}[\\-/]\\d{2}[\\-/]\\d{2}|\\d{2}[\\-/]\\d{2}[\\-/]\\d{2})");
+        Pattern pattern = Pattern.compile("(\\d{2,4}[\\-/\\. ]\\d{2}[\\-/\\. ]\\d{2})");
         Matcher matcher = pattern.matcher(text);
-        return matcher.find() ? matcher.group(1) : "";
+        if (matcher.find()) {
+            return matcher.group(1).replaceAll("[\\. ]", "-").replace("/", "-");
+        }
+        return "";
     }
 
     private void validateFile(MultipartFile file) {
@@ -97,7 +100,7 @@ public class ReceiptService {
 
     public byte[] generateCsv(List<Receipt> receipts) {
         StringBuilder csv = new StringBuilder();
-        csv.append('\ufeff'); // 엑셀 한글 깨짐 방지
+        csv.append('\ufeff');
         csv.append("번호,상호명,날짜,금액\n");
 
         for (Receipt r : receipts) {
