@@ -1,0 +1,18 @@
+name: "✨ Feature"
+description: "새로운 기능 추가"
+labels: ["Type: Feature :sparkles:"]
+body:
+  - type: textarea
+    attributes:
+      label: ❓ 설명
+      description: 새로운 기능에 대한 설명을 작성해 주세요.
+    validations:
+      required: true
+  - type: textarea
+    attributes:
+      label: ✅ 작업할 내용
+      description: 할 일을 체크박스 형태로 작성해주세요.
+      value: |
+        - [ ] 작업 1
+    validations:
+      required: true
