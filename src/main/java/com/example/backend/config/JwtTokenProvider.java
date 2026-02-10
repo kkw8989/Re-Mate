@@ -13,7 +13,6 @@ public class JwtTokenProvider {
   private final Key key = Keys.secretKeyFor(SignatureAlgorithm.HS256);
   private final long tokenValidityInMilliseconds = 1000L * 60 * 60 * 10;
 
-
   public String createToken(String email) {
     Date now = new Date();
     Date validity = new Date(now.getTime() + tokenValidityInMilliseconds);

@@ -26,8 +26,12 @@ public class CustomOAuth2UserService implements OAuth2UserService<OAuth2UserRequ
     OAuth2User oAuth2User = delegate.loadUser(userRequest);
 
     String registrationId = userRequest.getClientRegistration().getRegistrationId();
-    String userNameAttributeName = userRequest.getClientRegistration().getProviderDetails()
-            .getUserInfoEndpoint().getUserNameAttributeName();
+    String userNameAttributeName =
+        userRequest
+            .getClientRegistration()
+            .getProviderDetails()
+            .getUserInfoEndpoint()
+            .getUserNameAttributeName();
 
     Map<String, Object> attributes = oAuth2User.getAttributes();
 
@@ -60,16 +64,20 @@ public class CustomOAuth2UserService implements OAuth2UserService<OAuth2UserRequ
     saveOrUpdate(name, email, picture, registrationId, providerId);
 
     return new DefaultOAuth2User(
-            Collections.singleton(new SimpleGrantedAuthority("ROLE_USER")),
-            attributes,
-            userNameAttributeName);
+        Collections.singleton(new SimpleGrantedAuthority("ROLE_USER")),
+        attributes,
+        userNameAttributeName);
   }
 
   // 💡 매개변수에 providerId를 추가하여 Entity의 nullable=false 조건을 충족시킵니다.
-  private User saveOrUpdate(String name, String email, String picture, String provider, String providerId) {
-    User user = userRepository.findByEmail(email)
+  private User saveOrUpdate(
+      String name, String email, String picture, String provider, String providerId) {
+    User user =
+        userRepository
+            .findByEmail(email)
             .map(entity -> entity.update(name, picture))
-            .orElse(User.builder()
+            .orElse(
+                User.builder()
                     .name(name)
                     .email(email)
                     .picture(picture)

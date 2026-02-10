@@ -17,17 +17,10 @@ public class AuthService {
   @Transactional
   public Long join(String email, String rawPassword, String name) {
 
-
     String encodedPassword = passwordEncoder.encode(rawPassword);
 
-
     User user =
-        User.builder()
-            .email(email)
-            .password(encodedPassword)
-            .name(name)
-            .provider("local")
-            .build();
+        User.builder().email(email).password(encodedPassword).name(name).provider("local").build();
 
     return userRepository.save(user).getId();
   }
