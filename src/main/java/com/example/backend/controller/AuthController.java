@@ -13,12 +13,10 @@ public class AuthController {
 
   private final AuthService authService;
 
-
   @GetMapping("/status")
   public AuthStatusResponse getAuthStatus() {
     return new AuthStatusResponse(true, "test-user@gmail.com", "DTO를 이용한 검증 성공!");
   }
-
 
   @PostMapping("/signup")
   public Long signup(@RequestBody UserRegisterRequestDto dto) {
