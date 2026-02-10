@@ -23,11 +23,8 @@ public class SecurityConfig {
                 auth.requestMatchers("/", "/index.html", "/static/**", "/api/auth/**")
                     .permitAll()
                     .anyRequest()
-                    .authenticated()
-            )
-        .oauth2Login(
-            oauth2 -> oauth2.successHandler(oAuth2SuccessHandler)
-            );
+                    .authenticated())
+        .oauth2Login(oauth2 -> oauth2.successHandler(oAuth2SuccessHandler));
 
     return http.build();
   }

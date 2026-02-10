@@ -21,21 +21,24 @@ public class User {
   @Column(unique = true)
   private String email;
 
-  @Column
-  private String picture;
+  @Column private String picture;
 
-  @Column
-  private String password;
+  @Column private String password;
 
   @Column(nullable = false)
   private String provider;
-
 
   @Column(nullable = false)
   private String providerId;
 
   @Builder
-  public User(String name, String email, String picture, String password, String provider, String providerId) {
+  public User(
+      String name,
+      String email,
+      String picture,
+      String password,
+      String provider,
+      String providerId) {
     this.name = name;
     this.email = email;
     this.picture = picture;
