@@ -1,6 +1,7 @@
 package com.example.backend.global.error;
 
 import com.example.backend.global.common.ErrorResponse;
+import com.example.backend.global.filter.TraceIdFilter;
 import jakarta.servlet.http.HttpServletRequest;
 import org.slf4j.MDC;
 import org.springframework.http.ResponseEntity;
@@ -15,67 +16,77 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 public class GlobalExceptionHandler {
 
   @ExceptionHandler(BusinessException.class)
-  public ResponseEntity<ErrorResponse> handleBusinessException(
-          BusinessException e, HttpServletRequest request) {
-    String traceId = safeTraceId();
-    ErrorCode errorCode = e.getErrorCode();
-    return ResponseEntity.status(errorCode.status())
-            .body(ErrorResponse.of(errorCode, e.getMessage(), traceId));
+  public ResponseEntity<ErrorResponse> handleBusiness(BusinessException e) {
+    ErrorCode code = e.getErrorCode();
+    String traceId = currentTraceId();
+
+    return ResponseEntity.status(code.status())
+        .header(TraceIdFilter.TRACE_ID_HEADER, traceId)
+        .body(ErrorResponse.of(code, e.getMessage(), traceId));
   }
 
   @ExceptionHandler(MethodArgumentNotValidException.class)
-  public ResponseEntity<ErrorResponse> handleMethodArgumentNotValid(MethodArgumentNotValidException e) {
-    String traceId = safeTraceId();
+  public ResponseEntity<ErrorResponse> handleMethodArgumentNotValid(
+      MethodArgumentNotValidException e) {
+    String traceId = currentTraceId();
     String message =
-            e.getBindingResult().getFieldErrors().stream()
-                    .findFirst()
-                    .map(fe -> fe.getField() + ": " + fe.getDefaultMessage())
-                    .orElse(ErrorCode.VALIDATION_FAILED.defaultMessage());
+        e.getBindingResult().getFieldErrors().stream()
+            .findFirst()
+            .map(fe -> fe.getField() + ": " + fe.getDefaultMessage())
+            .orElse(ErrorCode.VALIDATION_FAILED.defaultMessage());
 
     return ResponseEntity.status(ErrorCode.VALIDATION_FAILED.status())
-            .body(ErrorResponse.of(ErrorCode.VALIDATION_FAILED, message, traceId));
+        .header(TraceIdFilter.TRACE_ID_HEADER, traceId)
+        .body(ErrorResponse.of(ErrorCode.VALIDATION_FAILED, message, traceId));
   }
 
   @ExceptionHandler(BindException.class)
   public ResponseEntity<ErrorResponse> handleBindException(BindException e) {
-    String traceId = safeTraceId();
+    String traceId = currentTraceId();
     String message =
-            e.getBindingResult().getFieldErrors().stream()
-                    .findFirst()
-                    .map(fe -> fe.getField() + ": " + fe.getDefaultMessage())
-                    .orElse(ErrorCode.VALIDATION_FAILED.defaultMessage());
+        e.getBindingResult().getFieldErrors().stream()
+            .findFirst()
+            .map(fe -> fe.getField() + ": " + fe.getDefaultMessage())
+            .orElse(ErrorCode.VALIDATION_FAILED.defaultMessage());
 
     return ResponseEntity.status(ErrorCode.VALIDATION_FAILED.status())
-            .body(ErrorResponse.of(ErrorCode.VALIDATION_FAILED, message, traceId));
+        .header(TraceIdFilter.TRACE_ID_HEADER, traceId)
+        .body(ErrorResponse.of(ErrorCode.VALIDATION_FAILED, message, traceId));
   }
 
   @ExceptionHandler(HttpMessageNotReadableException.class)
   public ResponseEntity<ErrorResponse> handleNotReadable(HttpMessageNotReadableException e) {
-    String traceId = safeTraceId();
+    String traceId = currentTraceId();
+
     return ResponseEntity.status(ErrorCode.INVALID_REQUEST.status())
-            .body(ErrorResponse.of(ErrorCode.INVALID_REQUEST, "요청 본문 형식이 올바르지 않습니다.", traceId));
+        .header(TraceIdFilter.TRACE_ID_HEADER, traceId)
+        .body(ErrorResponse.of(ErrorCode.INVALID_REQUEST, "요청 본문 형식이 올바르지 않습니다.", traceId));
   }
 
   @ExceptionHandler(MissingServletRequestParameterException.class)
-  public ResponseEntity<ErrorResponse> handleMissingParam(MissingServletRequestParameterException e) {
-    String traceId = safeTraceId();
+  public ResponseEntity<ErrorResponse> handleMissingParam(
+      MissingServletRequestParameterException e) {
+    String traceId = currentTraceId();
     String message = "필수 파라미터 누락: " + e.getParameterName();
+
     return ResponseEntity.status(ErrorCode.INVALID_REQUEST.status())
-            .body(ErrorResponse.of(ErrorCode.INVALID_REQUEST, message, traceId));
+        .header(TraceIdFilter.TRACE_ID_HEADER, traceId)
+        .body(ErrorResponse.of(ErrorCode.INVALID_REQUEST, message, traceId));
   }
 
   @ExceptionHandler(Exception.class)
-  public ResponseEntity<ErrorResponse> handleException(Exception e) {
-    String traceId = safeTraceId();
+  public ResponseEntity<ErrorResponse> handleAny(Exception e, HttpServletRequest request) {
+    String traceId = currentTraceId();
+
     return ResponseEntity.status(ErrorCode.INTERNAL_ERROR.status())
-            .body(ErrorResponse.of(ErrorCode.INTERNAL_ERROR, ErrorCode.INTERNAL_ERROR.defaultMessage(), traceId));
+        .header(TraceIdFilter.TRACE_ID_HEADER, traceId)
+        .body(
+            ErrorResponse.of(
+                ErrorCode.INTERNAL_ERROR, ErrorCode.INTERNAL_ERROR.defaultMessage(), traceId));
   }
 
-  private String safeTraceId() {
-    String traceId = MDC.get("traceId");
-    if (traceId == null || traceId.isBlank()) {
-      traceId = "no-trace";
-    }
-    return traceId;
+  private String currentTraceId() {
+    String traceId = MDC.get(TraceIdFilter.MDC_KEY);
+    return (traceId == null || traceId.isBlank()) ? "no-trace" : traceId;
   }
 }
