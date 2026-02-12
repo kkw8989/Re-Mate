@@ -14,3 +14,7 @@ src/main/resources/application-secret.properties
 ### macOS ###
 .DS_Store
 .idea/
+
+# allow gradle wrapper
+!gradle/wrapper/gradle-wrapper.jar
+!gradle/wrapper/gradle-wrapper.properties
