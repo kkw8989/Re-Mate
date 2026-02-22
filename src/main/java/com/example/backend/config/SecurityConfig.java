@@ -18,6 +18,7 @@ public class SecurityConfig {
 
   private final OAuth2SuccessHandler oAuth2SuccessHandler;
   private final JwtAuthenticationFilter jwtAuthenticationFilter;
+  private final DeviceAuthenticationFilter deviceAuthenticationFilter;
 
   @Bean
   public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
@@ -39,6 +40,7 @@ public class SecurityConfig {
                     .authenticated())
         .oauth2Login(oauth2 -> oauth2.successHandler(oAuth2SuccessHandler));
 
+    http.addFilterBefore(deviceAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
     http.addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 
     return http.build();
