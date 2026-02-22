@@ -8,14 +8,14 @@ import org.springframework.stereotype.Component;
 @RequiredArgsConstructor
 public class EnvDeviceKeyValidator implements DeviceKeyValidator {
 
-    private final Environment environment;
+  private final Environment environment;
 
-    @Override
-    public boolean isValid(String deviceKey) {
-        String expected = environment.getProperty("security.device.key");
-        if (expected == null || expected.isBlank()) {
-            return false;
-        }
-        return expected.equals(deviceKey);
+  @Override
+  public boolean isValid(String deviceKey) {
+    String expected = environment.getProperty("security.device.key");
+    if (expected == null || expected.isBlank()) {
+      return false;
     }
+    return expected.equals(deviceKey);
+  }
 }

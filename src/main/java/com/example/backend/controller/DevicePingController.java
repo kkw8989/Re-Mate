@@ -9,8 +9,8 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/api/v1/device")
 public class DevicePingController {
 
-    @GetMapping("/ping")
-    public ApiResponse<String> ping() {
-        return ApiResponse.ok("pong");
-    }
+  @GetMapping("/ping")
+  public ApiResponse<String> ping() {
+    return ApiResponse.ok("pong");
+  }
 }
