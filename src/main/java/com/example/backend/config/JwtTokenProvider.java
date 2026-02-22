@@ -29,12 +29,12 @@ public class JwtTokenProvider {
     Date validity = new Date(now.getTime() + tokenValidityInMilliseconds);
 
     return Jwts.builder()
-            .setSubject(email)
-            .claim("role", role)
-            .setIssuedAt(now)
-            .setExpiration(validity)
-            .signWith(key)
-            .compact();
+        .setSubject(email)
+        .claim("role", role)
+        .setIssuedAt(now)
+        .setExpiration(validity)
+        .signWith(key)
+        .compact();
   }
 
   public String resolveToken(String authorizationHeader) {
@@ -67,7 +67,7 @@ public class JwtTokenProvider {
     String roleName = (role == null || role.isBlank()) ? "ROLE_MEMBER" : "ROLE_" + role;
 
     return new UsernamePasswordAuthenticationToken(
-            email, null, List.of(new SimpleGrantedAuthority(roleName)));
+        email, null, List.of(new SimpleGrantedAuthority(roleName)));
   }
 
   private Jws<Claims> parseClaims(String token) {

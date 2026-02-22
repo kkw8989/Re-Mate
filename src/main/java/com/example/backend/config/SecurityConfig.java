@@ -22,21 +22,22 @@ public class SecurityConfig {
   @Bean
   public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
     http.csrf(csrf -> csrf.disable())
-            .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-            .formLogin(fl -> fl.disable())
-            .httpBasic(hb -> hb.disable())
-            .exceptionHandling(
-                    eh ->
-                            eh.authenticationEntryPoint(
-                                    (request, response, authException) ->
-                                            response.sendError(HttpServletResponse.SC_UNAUTHORIZED)))
-            .authorizeHttpRequests(
-                    auth ->
-                            auth.requestMatchers("/", "/index.html", "/static/**", "/api/auth/**", "/api/v1/health")
-                                    .permitAll()
-                                    .anyRequest()
-                                    .authenticated())
-            .oauth2Login(oauth2 -> oauth2.successHandler(oAuth2SuccessHandler));
+        .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+        .formLogin(fl -> fl.disable())
+        .httpBasic(hb -> hb.disable())
+        .exceptionHandling(
+            eh ->
+                eh.authenticationEntryPoint(
+                    (request, response, authException) ->
+                        response.sendError(HttpServletResponse.SC_UNAUTHORIZED)))
+        .authorizeHttpRequests(
+            auth ->
+                auth.requestMatchers(
+                        "/", "/index.html", "/static/**", "/api/auth/**", "/api/v1/health")
+                    .permitAll()
+                    .anyRequest()
+                    .authenticated())
+        .oauth2Login(oauth2 -> oauth2.successHandler(oAuth2SuccessHandler));
 
     http.addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 
