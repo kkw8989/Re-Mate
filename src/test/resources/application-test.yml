@@ -13,3 +13,5 @@ spring:
 google:
   vision:
     api-key: test-api-key
+  api:
+    key: test-api-key

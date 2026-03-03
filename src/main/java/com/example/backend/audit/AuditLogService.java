@@ -2,6 +2,7 @@ package com.example.backend.audit;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import java.util.List;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -41,5 +42,9 @@ public class AuditLogService {
       return null;
     }
     return objectMapper.writeValueAsString(meta);
+  }
+
+  public List<AuditLog> findAllByReceiptId(Long receiptId) {
+    return auditLogRepository.findAllByReceiptIdOrderByCreatedAtDesc(receiptId);
   }
 }

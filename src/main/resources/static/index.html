@@ -2,17 +2,24 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <title>Receipt Master | 메인</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ReMate | 메인</title>
     <style>
-        :root { --kakao-color: #FEE500; --google-color: #4285F4; --main-color: #4CAF50; }
-        body { font-family: sans-serif; display: flex; align-items: center; justify-content: center; min-height: 100vh; margin: 0; background-color: #f4f7f6; }
-        .container { background: white; padding: 40px; border-radius: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); text-align: center; max-width: 400px; width: 90%; }
-        .btn { display: block; padding: 12px; margin: 10px 0; border-radius: 8px; text-decoration: none; font-weight: bold; transition: 0.3s; border: none; font-size: 0.95rem; cursor: pointer; }
+        :root { --kakao-color: #FEE500; --google-color: #4285F4; --primary-bg: #f4f7f6; --main-color: #1e293b; }
+        body { font-family: 'Pretendard', sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; margin: 0; background-color: var(--primary-bg); }
+        .container { background: white; padding: 40px; border-radius: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.05); text-align: center; max-width: 400px; width: 90%; }
+        .btn { display: block; padding: 14px; margin: 10px 0; border-radius: 12px; text-decoration: none; font-weight: bold; transition: 0.2s; border: none; cursor: pointer; width: 100%; font-size: 1rem; text-align: center; }
         .btn-google { background: var(--google-color); color: white; }
         .btn-kakao { background: var(--kakao-color); color: #3c1e1e; }
-        .btn-signin { background: var(--main-color); color: white; }
+        .btn-main { background: #1e293b; color: white; }
+        .btn-admin { background: #ef4444; color: white; }
+        .btn-sub { background: #64748b; color: white; }
         .btn-signup { border: 1px solid var(--main-color); color: var(--main-color); background: white; }
         .hidden { display: none; }
+        #user-info { margin-bottom: 25px; }
+        .badge { display: inline-block; padding: 4px 12px; border-radius: 20px; font-size: 0.75rem; margin-top: 8px; font-weight: bold; }
+        .badge-admin { background: #fee2e2; color: #ef4444; }
+        .badge-member { background: #f1f5f9; color: #475569; }
         .divider { margin: 20px 0; display: flex; align-items: center; color: #ccc; font-size: 0.8rem; }
         .divider::before, .divider::after { content: ""; flex: 1; height: 1px; background: #eee; margin: 0 10px; }
         #loading-section { color: #666; font-style: italic; }
@@ -20,55 +27,106 @@
 </head>
 <body>
 <div class="container">
-    <h1>🧾 Receipt Master</h1>
+    <h1>🧾 ReMate</h1>
 
+    <!-- 비로그인 상태 -->
     <div id="intro-section">
         <p><strong>영수증 관리의 시작</strong></p>
         <p style="font-size: 0.85rem; color: #888; margin-bottom: 25px;">간편하게 시작하세요.</p>
-
         <a href="/oauth2/authorization/google" class="btn btn-google">Google로 시작하기</a>
         <a href="/oauth2/authorization/kakao" class="btn btn-kakao">Kakao로 시작하기</a>
-
         <div class="divider">또는</div>
-
-        <a href="/signin.html" class="btn btn-signin">이메일로 로그인</a>
+        <a href="/signin.html" class="btn btn-main">이메일로 로그인</a>
         <a href="/signup.html" class="btn btn-signup">새로 가입하기</a>
     </div>
 
+    <!-- 로그인 확인 중 -->
     <div id="loading-section" class="hidden">
         <p>🔍 워크스페이스 확인 중...</p>
-        <p style="font-size: 0.8rem; color: #999; margin-top: 10px;">로그인 상태가 확인되었습니다.</p>
-        <button onclick="logout()" style="margin-top: 20px; border: none; background: none; color: #cc0000; cursor: pointer; text-decoration: underline;">로그아웃 테스트</button>
+        <p style="font-size: 0.8rem; color: #999; margin-top: 10px;">잠시만 기다려 주세요.</p>
+    </div>
+
+    <!-- 로그인 후 -->
+    <div id="after-login" class="hidden">
+        <div id="user-info">
+            <p>👋 <strong id="user-nickname">사용자</strong>님</p>
+            <div id="role-badge" class="badge"></div>
+        </div>
+        <button id="main-nav-btn" class="btn btn-main">📸 영수증 관리</button>
+        <button id="admin-nav-btn" class="btn btn-admin hidden">⚖️ 멤버십 승인 대기</button>
+        <button onclick="location.href='/select-workspace.html'" class="btn btn-sub">⚙️ 워크스페이스 관리</button>
+        <a href="/" onclick="localStorage.clear()" style="display:block; margin-top:20px; color:#94a3b8; font-size:0.85rem; text-decoration: none;">로그아웃</a>
     </div>
 </div>
 
 <script>
-    function logout() {
-        localStorage.clear();
-        location.href = "/";
-    }
-
     window.onload = () => {
-        // 1. URL 주소창에서 토큰 추출 (소셜 로그인용)
         const urlParams = new URLSearchParams(window.location.search);
         const tokenFromUrl = urlParams.get('token');
-
         if (tokenFromUrl) {
             localStorage.setItem('accessToken', tokenFromUrl);
             window.history.replaceState({}, document.title, "/");
         }
 
-        // 2. 토큰 확인
         const token = localStorage.getItem('accessToken');
-
         if (token) {
-            // 3. 로그인 상태면 UI 전환 후 그대로 멈춤
             document.getElementById('intro-section').classList.add('hidden');
             document.getElementById('loading-section').classList.remove('hidden');
-
-            console.log("로그인 성공! 토큰 보관 중:", token);
+            checkAuthStatus(token);
+        } else {
+            document.getElementById('intro-section').classList.remove('hidden');
         }
     };
+
+    async function checkAuthStatus(token) {
+        try {
+            const res = await fetch('/api/v1/auth/status', {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            const data = await res.json();
+
+            if (data.authenticated) {
+                localStorage.setItem('accessToken', token);
+                localStorage.setItem('currentWorkspaceId', data.workspaceId || '');
+                localStorage.setItem('userRole', data.role || '');
+                localStorage.setItem('userName', data.userName || '');
+                localStorage.setItem('currentUserId', data.userId || '');
+
+                document.getElementById('loading-section').classList.add('hidden');
+                document.getElementById('after-login').classList.remove('hidden');
+                document.getElementById('user-nickname').innerText = data.userName;
+
+                const badgeEl = document.getElementById('role-badge');
+                if (data.role === 'ADMIN') {
+                    badgeEl.innerText = '관리자';
+                    badgeEl.className = 'badge badge-admin';
+                } else if (data.role === 'MEMBER') {
+                    badgeEl.innerText = '멤버';
+                    badgeEl.className = 'badge badge-member';
+                    document.getElementById('admin-nav-btn').classList.add('hidden');
+                }
+
+                const mainBtn = document.getElementById('main-nav-btn');
+                if (data.workspaceId) {
+                    mainBtn.onclick = () => location.href = '/upload.html';
+                } else {
+                    mainBtn.onclick = () => {
+                        alert('참여 중인 워크스페이스가 없습니다. 설정 페이지로 이동합니다.');
+                        location.href = '/select-workspace.html';
+                    };
+                }
+            } else {
+                localStorage.clear();
+                document.getElementById('loading-section').classList.add('hidden');
+                document.getElementById('intro-section').classList.remove('hidden');
+            }
+        } catch (e) {
+            console.error("인증 확인 실패:", e);
+            localStorage.clear();
+            document.getElementById('loading-section').classList.add('hidden');
+            document.getElementById('intro-section').classList.remove('hidden');
+        }
+    }
 </script>
 </body>
 </html>

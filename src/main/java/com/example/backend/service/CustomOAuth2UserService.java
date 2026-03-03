@@ -13,6 +13,7 @@ import org.springframework.security.oauth2.core.OAuth2AuthenticationException;
 import org.springframework.security.oauth2.core.user.DefaultOAuth2User;
 import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @RequiredArgsConstructor
 @Service
@@ -21,6 +22,7 @@ public class CustomOAuth2UserService implements OAuth2UserService<OAuth2UserRequ
   private final UserRepository userRepository;
 
   @Override
+  @Transactional
   public OAuth2User loadUser(OAuth2UserRequest userRequest) throws OAuth2AuthenticationException {
     OAuth2UserService<OAuth2UserRequest, OAuth2User> delegate = new DefaultOAuth2UserService();
     OAuth2User oAuth2User = delegate.loadUser(userRequest);
@@ -35,32 +37,32 @@ public class CustomOAuth2UserService implements OAuth2UserService<OAuth2UserRequ
 
     Map<String, Object> attributes = oAuth2User.getAttributes();
 
-    String name = "";
-    String email = "";
-    String picture = "";
-    String providerId = ""; // 고유 ID를 담을 변수 추가
+    String name;
+    String email;
+    String picture;
+    String providerId;
 
     if ("kakao".equals(registrationId)) {
+      @SuppressWarnings("unchecked")
       Map<String, Object> kakaoAccount = (Map<String, Object>) attributes.get("kakao_account");
+      @SuppressWarnings("unchecked")
       Map<String, Object> profile = (Map<String, Object>) kakaoAccount.get("profile");
 
       name = (String) profile.get("nickname");
       email = (String) kakaoAccount.get("email");
       picture = (String) profile.get("profile_image_url");
-      providerId = attributes.get("id").toString(); // 카카오 고유 번호 추출
+      providerId = String.valueOf(attributes.get("id"));
 
       if (email == null || email.isEmpty()) {
         email = "kakao_" + providerId + "@noemail.com";
       }
     } else {
-      // 구글 로직
       name = (String) attributes.get("name");
       email = (String) attributes.get("email");
       picture = (String) attributes.get("picture");
-      providerId = (String) attributes.get("sub"); // 구글 고유 번호(sub) 추출
+      providerId = (String) attributes.get("sub");
     }
 
-    // 💡 3. 통합 저장 및 업데이트 (인자 5개를 모두 넘겨줍니다!)
     saveOrUpdate(name, email, picture, registrationId, providerId);
 
     return new DefaultOAuth2User(
@@ -69,7 +71,6 @@ public class CustomOAuth2UserService implements OAuth2UserService<OAuth2UserRequ
         userNameAttributeName);
   }
 
-  // 💡 매개변수에 providerId를 추가하여 Entity의 nullable=false 조건을 충족시킵니다.
   private User saveOrUpdate(
       String name, String email, String picture, String provider, String providerId) {
     User user =
@@ -82,7 +83,7 @@ public class CustomOAuth2UserService implements OAuth2UserService<OAuth2UserRequ
                     .email(email)
                     .picture(picture)
                     .provider(provider)
-                    .providerId(providerId) // 이제 빌더에서 providerId가 정상적으로 들어갑니다!
+                    .providerId(providerId)
                     .build());
 
     return userRepository.save(user);

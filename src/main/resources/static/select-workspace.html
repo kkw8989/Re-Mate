@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <title>ReMate | 워크스페이스 설정</title>
+  <style>
+    :root { --primary:#3b82f6; --bg:#f8fafc; --card:#ffffff; --text:#1e293b; }
+    body { font-family:'Pretendard',sans-serif; background:var(--bg); margin:0; padding:40px 20px; display:flex; flex-direction:column; align-items:center; color:var(--text); }
+    .card { background:var(--card); padding:32px; border-radius:24px; box-shadow:0 10px 25px rgba(0,0,0,0.05); width:100%; max-width:500px; margin-bottom:24px; }
+    .btn-main { background:#1e293b; color:#fff; padding:14px 28px; border:none; border-radius:12px; cursor:pointer; font-weight:600; width:100%; margin-top:10px; }
+    .btn-create { background:#10b981; color:#fff; padding:14px 28px; border:none; border-radius:12px; cursor:pointer; font-weight:600; width:100%; margin-top:10px; }
+    .btn-sub { background:#3b82f6; color:#fff; padding:8px 16px; border:none; border-radius:8px; cursor:pointer; font-weight:600; font-size:0.8rem; }
+    input { width:100%; padding:12px; border:1px solid #e2e8f0; border-radius:10px; margin-bottom:10px; box-sizing:border-box; }
+    .list-item { display:flex; justify-content:space-between; align-items:center; padding:12px; border-bottom:1px solid #f1f5f9; }
+    /* 관리자 전용 카드: 묵직한 다크 스타일 */
+    .admin-card {
+      background: #1e293b !important; /* 다크 네이비 */
+      color: #ffffff !important;
+      border-left: 6px solid #fbbf24; /* 금색 포인트 라인 */
+      transition: transform 0.2s;
+    }
+
+    .admin-card:hover {
+      transform: translateY(-3px);
+      background: #0f172a !important;
+    }
+
+    .admin-card .badge {
+      background: #fbbf24;
+      color: #1e293b;
+      padding: 4px 10px;
+      border-radius: 8px;
+      font-weight: 800;
+      font-size: 0.75rem;
+    }
+
+    /* 일반 멤버 카드: 깔끔한 화이트 스타일 */
+    .member-card {
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+      transition: all 0.2s;
+    }
+
+    .member-card:hover {
+      border-color: #3b82f6;
+      background: #f0f7ff;
+    }
+
+    .member-card .badge {
+      background: #f1f5f9;
+      color: #64748b;
+      padding: 4px 10px;
+      border-radius: 8px;
+      font-weight: 600;
+      font-size: 0.75rem;
+    }
+  </style>
+</head>
+<body>
+
+<div style="width:100%; max-width:500px; margin-bottom:10px;">
+  <button onclick="location.href='/'" style="background:none; border:none; color:var(--primary); cursor:pointer; font-weight:600;">← 메인으로 돌아가기</button>
+</div>
+
+<div class="card">
+  <h2>🏢 내 워크스페이스</h2>
+  <div id="myWorkspaceList">
+    <p style="text-align:center; color:#94a3b8;">불러오는 중...</p>
+  </div>
+</div>
+
+<div class="card">
+  <h2>✨ 새 워크스페이스 만들기</h2>
+  <p style="font-size:0.9rem; color:#64748b;">새로운 그룹을 생성하고 관리자가 되세요.</p>
+  <input type="text" id="newWorkspaceName" placeholder="워크스페이스 이름 입력 (예: 개발팀)">
+  <button class="btn-create" onclick="createWorkspace()">워크스페이스 생성</button>
+</div>
+
+<div class="card">
+  <h2>🔍 워크스페이스 찾기</h2>
+  <p style="font-size:0.9rem; color:#64748b;">이름으로 검색하고 멤버로 참여 신청을 하세요.</p>
+  <input type="text" id="searchName" placeholder="워크스페이스 이름 입력">
+  <button class="btn-main" onclick="searchWorkspaces()">검색하기</button>
+  <div id="searchResult" style="margin-top:20px;"></div>
+</div>
+
+<div class="card" id="adminOnlyCard" style="display:none;">
+  <h2>👑 관리자 전용: 승인 대기 명단</h2>
+  <input type="number" id="targetWorkspaceId" placeholder="내 워크스페이스 ID 입력">
+  <button class="btn-main" onclick="loadPendingMembers()">명단 확인하기</button>
+  <div id="pendingList" style="margin-top:20px;"></div>
+</div>
+
+<script>
+  window.onload = () => {
+    const userRole = localStorage.getItem('userRole');
+
+
+    if (userRole === 'ADMIN') {
+      document.getElementById('adminOnlyCard').style.display = 'block';
+    }
+    loadMyWorkspaces();
+  };
+
+  const token = localStorage.getItem('accessToken');
+
+  async function loadMyWorkspaces() {
+    try {
+      const res = await fetch('/api/workspaces/my', {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      const workspaces = await res.json();
+
+      const html = workspaces.map(ws => {
+        const isAdmin = (ws.role === 'ADMIN');
+        const cardClass = isAdmin ? 'admin-card' : 'member-card';
+        const badge = isAdmin ? '👑 관리자' : '👤 멤버';
+
+
+        return `
+                <div class="list-item ${cardClass}" onclick="enterWorkspace(${ws.workspaceId}, '${ws.role}')"
+                     style="cursor:pointer; padding:20px; border-radius:15px; margin-bottom:12px; display:flex; justify-content:space-between; align-items:center;">
+                    <div>
+                        <span style="font-weight:700; font-size:1.1rem;">워크스페이스 #${ws.workspaceId}</span>
+                    </div>
+                    <span class="badge">${badge}</span>
+                </div>
+            `;
+      }).join('');
+
+      document.getElementById('myWorkspaceList').innerHTML = html || '<p style="text-align:center; color:#94a3b8;">참여 중인 워크스페이스가 없습니다.</p>';
+    } catch (e) {
+      console.error("목록 로드 실패", e);
+    }
+  }
+
+
+  function enterWorkspace(wsId, role) {
+    localStorage.setItem('currentWorkspaceId', wsId);
+    localStorage.setItem('userRole', role);
+    location.href = '/upload.html';
+  }
+
+  async function createWorkspace() {
+    const name = document.getElementById('newWorkspaceName').value;
+    if (!name) return alert("이름을 입력해주세요.");
+    try {
+      const res = await fetch(`/api/workspaces?name=${encodeURIComponent(name)}`, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (res.ok) {
+        alert("워크스페이스가 생성되었습니다! 메인으로 이동합니다.");
+        location.href = '/';
+      } else { alert("생성 실패"); }
+    } catch (e) { alert("오류 발생"); }
+  }
+
+  async function searchWorkspaces() {
+    const name = document.getElementById('searchName').value;
+    if (!name) return alert("검색어를 입력해주세요.");
+    try {
+      const res = await fetch(`/api/workspaces/search?name=${encodeURIComponent(name)}`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      const data = await res.json();
+      const html = data.map(ws => `
+                <div class="list-item">
+                    <span><strong>${ws.name}</strong> (ID: ${ws.id})</span>
+                    <button class="btn-sub" onclick="requestJoin(${ws.id})">참여 신청</button>
+                </div>
+            `).join('');
+      document.getElementById('searchResult').innerHTML = html || '<p style="text-align:center; color:#94a3b8;">결과 없음</p>';
+    } catch (e) { alert("검색 실패"); }
+  }
+
+  async function requestJoin(wsId) {
+    if (!confirm("참여 신청을 보내시겠습니까?")) return;
+    try {
+      const res = await fetch(`/api/workspaces/${wsId}/join`, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (res.ok) alert("신청 완료!");
+      else alert("이미 신청했거나 참여 중입니다.");
+    } catch (e) { alert("오류 발생"); }
+  }
+
+  async function loadPendingMembers() {
+    const wsId = document.getElementById('targetWorkspaceId').value;
+    if (!wsId) return alert("ID 입력 필요");
+    try {
+      const res = await fetch(`/api/workspaces/${wsId}/pending`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      const data = await res.json();
+      const html = data.map(m => `
+                <div class="list-item">
+                    <span>유저 PK: ${m.userId}</span>
+                    <div>
+                        <button onclick="processMember(${m.id}, 'approve')" style="color:#16a34a; border:none; background:none; cursor:pointer; font-weight:600; margin-right:10px;">수락</button>
+                        <button onclick="processMember(${m.id}, 'reject')" style="color:#dc2626; border:none; background:none; cursor:pointer; font-weight:600;">거절</button>
+                    </div>
+                </div>
+            `).join('');
+      document.getElementById('pendingList').innerHTML = html || '<p style="text-align:center; color:#94a3b8;">대기자 없음</p>';
+    } catch (e) { alert("조회 실패"); }
+  }
+
+  async function processMember(membershipId, action) {
+    try {
+      const res = await fetch(`/api/workspaces/members/${membershipId}/${action}`, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (res.ok) {
+        alert("처리 완료!");
+        loadPendingMembers();
+      } else alert("권한 없음");
+    } catch (e) { alert("오류 발생"); }
+  }
+</script>
+</body>
+</html>

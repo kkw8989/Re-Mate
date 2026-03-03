@@ -1,127 +1,476 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-    <meta charset="UTF-8">
+    <meta charset="UTF-8" />
     <title>Receipt Master | 분석 및 관리</title>
     <style>
-        body { font-family: sans-serif; background-color: #f0f2f5; margin: 0; padding: 20px; display: flex; flex-direction: column; align-items: center; }
-        .card { background: white; padding: 30px; border-radius: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); text-align: center; width: 95%; max-width: 800px; margin-bottom: 20px; }
-        .preview { max-width: 200px; margin: 15px auto; border-radius: 8px; display: none; border: 1px solid #ddd; }
-        .btn-main { background: #333; color: white; padding: 12px 25px; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; }
+        :root { --primary:#3b82f6; --bg:#f8fafc; --card:#ffffff; --text:#1e293b; }
+        body{ font-family:'Pretendard',sans-serif; background:var(--bg); margin:0; padding:40px 20px; display:flex; flex-direction:column; align-items:center; color:var(--text); }
+        .card{ background:var(--card); padding:32px; border-radius:24px; box-shadow:0 10px 25px rgba(0,0,0,0.05); width:100%; max-width:1200px; margin-bottom:24px; }
+        h2,h3{ margin-top:0; font-weight:700; letter-spacing:-0.5px; }
 
-        table { width: 100%; border-collapse: collapse; margin-top: 25px; font-size: 0.9rem; }
-        th, td { border: 1px solid #eee; padding: 12px; text-align: center; }
-        th { background-color: #f8f9fa; color: #555; }
+        .upload-zone{ border:2px dashed #e2e8f0; padding:40px; border-radius:16px; margin-bottom:16px; transition:.3s; cursor:pointer; text-align:center; }
+        .upload-zone:hover{ border-color:var(--primary); background:#f0f7ff; }
 
-        .status-badge { padding: 4px 8px; border-radius: 4px; font-weight: bold; font-size: 0.8rem; }
-        .ANALYZING { background: #fff3cd; color: #856404; }
-        .APPROVED { background: #d4edda; color: #155724; }
-        .REJECTED { background: #f8d7da; color: #721c24; }
+        .thumbs{ display:none; grid-template-columns:repeat(auto-fill, minmax(72px, 1fr)); gap:10px; margin: 10px 0 18px; }
+        .thumb{ width:72px; height:72px; border-radius:12px; object-fit:cover; border:1px solid #e2e8f0; }
 
-        .action-btn { padding: 5px 10px; margin: 2px; border-radius: 4px; border: 1px solid #ddd; cursor: pointer; background: white; }
-        .btn-approve { color: #28a745; border-color: #28a745; }
-        .btn-reject { color: #dc3545; border-color: #dc3545; }
+        .progress-container{ width:100%; background:#e2e8f0; border-radius:100px; height:8px; margin:18px 0 14px; display:none; overflow:hidden; }
+        .progress-bar{ width:0%; height:100%; background:var(--primary); transition: width 0.4s ease; }
+
+        .btn-main{ background:#1e293b; color:#fff; padding:14px 28px; border:none; border-radius:12px; cursor:pointer; font-weight:600; width:100%; font-size:1rem; }
+
+        table{ width:100%; border-collapse:separate; border-spacing:0; margin-top:18px; }
+        th{ background:#f8fafc; padding:16px; font-weight:600; font-size:.85rem; color:#64748b; border-bottom:2px solid #e2e8f0; text-align:center; }
+        td{ padding:16px; text-align:center; border-bottom:1px solid #f1f5f9; font-size:.95rem; vertical-align:middle; }
+        tr:hover{ background:#fbfcfe; }
+
+        .status-badge{ padding:5px 12px; border-radius:8px; font-weight:700; font-size:.72rem; display:inline-block; position: relative; cursor: help; }
+        .ANALYZING, .WAITING, .UPLOADED { background:#fff7ed; color:#c2410c; }
+        .APPROVED { background:#f0fdf4; color:#15803d; }
+        .REJECTED { background:#fef2f2; color:#b91c1c; }
+        .NEED_MANUAL { background:#f1f5f9; color:#475569; }
+
+        .status-badge[data-reason]::after {
+            content: attr(data-reason);
+            position: absolute;
+            bottom: 100%;
+            left: 50%;
+            transform: translateX(-50%) translateY(-8px);
+            background: #1e293b;
+            color: white;
+            padding: 8px 12px;
+            border-radius: 8px;
+            font-size: 0.75rem;
+            white-space: nowrap;
+            max-width: 250px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.2s;
+            z-index: 100;
+            font-weight: 500;
+        }
+
+        .status-badge[data-reason]::before {
+            content: '';
+            position: absolute;
+            bottom: 100%;
+            left: 50%;
+            transform: translateX(-50%) translateY(-2px);
+            border: 6px solid transparent;
+            border-top-color: #1e293b;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.2s;
+            z-index: 100;
+        }
+
+        .status-badge[data-reason]:hover::after,
+        .status-badge[data-reason]:hover::before {
+            opacity: 1;
+        }
+
+        .action-btn{ padding:8px 14px; border-radius:10px; border:1px solid #e2e8f0; cursor:pointer; background:#fff; font-size:.82rem; font-weight:600; margin:0 2px; transition:.2s; }
+        .action-btn:hover:not([disabled]){ background:#f8fafc; border-color:#cbd5e1; }
+        .action-btn[disabled] { opacity: 0.35; cursor: not-allowed; }
+
+        .modal { display:none; position:fixed; z-index:1000; left:0; top:0; width:100%; height:100%; background:rgba(15, 23, 42, 0.4); backdrop-filter: blur(4px); }
+        .modal-content { background:#fff; margin:5% auto; padding:32px; border-radius:24px; width:90%; max-width:620px; box-shadow:0 20px 40px rgba(0,0,0,0.2); max-height: 85vh; overflow-y: auto; }
+
+        .receipt-preview { margin: 16px 0; text-align: center; }
+        .receipt-preview img { max-width: 100%; max-height: 400px; border-radius: 12px; border: 2px solid #e2e8f0; }
+        .receipt-preview-placeholder { padding: 60px 20px; background: #f8fafc; border-radius: 12px; color: #94a3b8; border: 2px dashed #e2e8f0; }
+
+        .history-item { border-bottom:1px solid #f1f5f9; padding:16px 0; font-size:0.9rem; }
+        .history-item:last-child { border-bottom: none; }
+        .history-reason { margin-top:10px; padding:12px; background:#f8fafc; border-radius:10px; border-left:4px solid var(--primary); font-size:0.85rem; color:#475569; line-height:1.5; }
+        .history-empty { text-align: center; padding: 40px 20px; color: #94a3b8; }
+
+        .form-group { margin-bottom: 16px; }
+        .form-group label { display: block; font-size: 0.8rem; color: #64748b; margin-bottom: 6px; font-weight: 600; }
+        .form-group input { width: 100%; padding: 10px; border: 1px solid #e2e8f0; border-radius: 8px; box-sizing: border-box; font-size: 0.95rem; }
+        .form-group input:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1); }
+
+        .mask-badge { background:#f1f5f9; color:#94a3b8; padding:4px 8px; border-radius:6px; font-size:0.8rem; font-weight:500; }
+        body.admin-mode { --primary: #0f172a; }
+        .admin-header { width: 100%; max-width: 1200px; margin-bottom: 20px; display: none; padding: 15px 25px; background: #0f172a; color: white; border-radius: 16px; justify-content: space-between; align-items: center; }
     </style>
 </head>
 <body>
 
-<div class="card">
-    <h2>📸 영수증 업로드</h2>
-    <input type="file" id="fileInput" accept="image/*" onchange="previewImage(this)">
-    <img id="imagePreview" class="preview">
-    <button onclick="uploadReceipt()" class="btn-main">AI 분석 시작</button>
-    <p id="status" style="margin-top:10px; color:#666;"></p>
+<div class="admin-header" id="adminHeader">
+    <span style="font-weight:700; font-size:1.1rem;">👑 관리자 모드</span>
+    <div id="adminStats" style="font-size:0.9rem; opacity:0.9;">워크스페이스 현황 분석 중...</div>
 </div>
 
-<div class="card">
-    <h3>📋 분석된 영수증 내역
-        <button onclick="fetchReceipts()" style="float: right; font-size: 0.8rem;">🔄 새로고침</button>
-        <button onclick="location.href='/api/receipts/export'" style="float: right; font-size: 0.8rem; margin-right: 5px;">📥 CSV 저장</button>
-    </h3>
-    <table>
-        <thead>
-        <tr>
-            <th>ID</th><th>상호명</th><th>날짜</th><th>금액</th><th>상태</th><th>관리</th>
-        </tr>
-        </thead>
-        <tbody id="receiptList">
-        </tbody>
-    </table>
-    <button onclick="location.href='/'" style="margin-top:20px; background:none; border:none; color:#999; text-decoration:underline; cursor:pointer;">홈으로 돌아가기</button>
+<div id="mainContainer" style="display:flex; flex-direction:column; width:100%; align-items:center;">
+
+    <div class="card" id="uploadCard">
+        <h2>📸 영수증 업로드</h2>
+        <div class="upload-zone" id="dropZone">
+            <p style="margin:0; color:#64748b;">파일을 클릭하거나 여기로 드래그하세요</p>
+            <input type="file" id="fileInput" accept="image/*" multiple style="display:none" />
+        </div>
+        <div class="thumbs" id="thumbs"></div>
+        <div class="progress-container" id="progCont"><div class="progress-bar" id="progBar"></div></div>
+        <button id="uploadBtn" class="btn-main">AI 분석 시작하기</button>
+        <p id="status" style="margin-top:15px; font-size:.9rem; color:#64748b; text-align:center;"></p>
+    </div>
+
+    <div class="card" id="listCard">
+        <div style="display:flex; justify-content:space-between; align-items:center;">
+            <h3>📋 분석된 영수증 내역</h3>
+            <div>
+                <button id="refreshBtn" class="action-btn">🔄 새로고침</button>
+                <button onclick="exportCSV()" class="action-btn" style="background:#1e293b; color:white">📥 CSV 저장</button>
+            </div>
+        </div>
+        <table>
+            <thead>
+            <tr><th>ID</th><th style="text-align:left">상호명</th><th>결제일시</th><th>금액</th><th>상태</th><th>관리</th></tr>
+            </thead>
+            <tbody id="receiptList"></tbody>
+        </table>
+    </div>
+
+</div>
+
+<div id="editModal" class="modal">
+    <div class="modal-content">
+        <h3>✏️ 영수증 정보 수정</h3>
+        <input type="hidden" id="editId">
+
+        <div class="receipt-preview" id="receiptPreview">
+            <div class="receipt-preview-placeholder">영수증 이미지를 불러오는 중...</div>
+        </div>
+
+        <div class="form-group">
+            <label>상호명</label>
+            <input type="text" id="editStoreName">
+        </div>
+
+        <div class="form-group">
+            <label>금액 (원)</label>
+            <input type="number" id="editAmount">
+        </div>
+
+        <div class="form-group">
+            <label>결제일시</label>
+            <input type="datetime-local" id="editTradeAt">
+        </div>
+
+        <button id="saveEditBtn" class="btn-main" style="margin-top:8px;">저장하기</button>
+        <button id="closeEditBtn" style="width:100%; background:none; border:none; color:#94a3b8; margin-top:10px; cursor:pointer; font-weight: 600;">닫기</button>
+    </div>
+</div>
+
+<div id="historyModal" class="modal">
+    <div class="modal-content">
+        <h3>📜 변경 이력 및 사유</h3>
+        <div id="historyContent" style="max-height:400px; overflow-y:auto; margin:16px 0;"></div>
+        <button id="closeHistoryBtn" class="btn-main">확인</button>
+    </div>
 </div>
 
 <script>
-    function previewImage(input) {
-        const preview = document.getElementById('imagePreview');
-        if (input.files && input.files[0]) {
-            const reader = new FileReader();
-            reader.onload = e => { preview.src = e.target.result; preview.style.display = 'block'; };
-            reader.readAsDataURL(input.files[0]);
+    let receiptData = [];
+    const el = (id) => document.getElementById(id);
+    const escapeHtml = (s) => String(s ?? '').replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+
+    const token = localStorage.getItem('accessToken');
+    const workspaceId = localStorage.getItem('currentWorkspaceId');
+    const clientSideUserId = localStorage.getItem('currentUserId');
+    const userRole = localStorage.getItem('userRole');
+
+    window.checkIsAdmin = function() {
+        const role = localStorage.getItem('userRole');
+        return role === 'ADMIN';
+    };
+
+    function closeModal(id) { el(id).style.display = 'none'; }
+    function openModal(id) { el(id).style.display = 'block'; }
+
+    function initLayout() {
+        if (window.checkIsAdmin()) {
+            document.body.classList.add('admin-mode');
+            el('adminHeader').style.display = 'flex';
+            el('mainContainer').appendChild(el('uploadCard'));
         }
     }
 
-    // 1. 목록 불러오기
     async function fetchReceipts() {
+        if (!token || !workspaceId) return;
+
+        const isReallyAdmin = window.checkIsAdmin();
+
         try {
-            const response = await fetch('/api/receipts');
-            const list = await response.json();
-            const html = list.map(r => `
-                <tr>
+            const res = await fetch(`/api/receipts?workspaceId=${workspaceId}`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            const json = await res.json();
+            receiptData = json.data;
+
+            if (isReallyAdmin) {
+                fetch(`/api/receipts/stats?workspaceId=${workspaceId}`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                })
+                    .then(res => res.json())
+                    .then(json => {
+                        const stats = json.data;
+                        const total = stats.totalCount || 0;
+                        const pending = stats.pendingCount || 0;
+                        const amount = (Number(stats.totalAmount) || 0).toLocaleString();
+                        el('adminStats').innerHTML =
+                            `전체 <strong>${total}</strong>건 | 승인대기 <strong>${pending}</strong>건 | 누적 금액 <strong>${amount}원</strong>`;
+                    })
+                    .catch(err => console.error("통계 로직 에러:", err));
+            }
+
+            const html = receiptData.map(r => {
+                const isFinal = (r.status === 'APPROVED' || r.status === 'REJECTED');
+
+                const canEdit = !isFinal && (isReallyAdmin || r.userId == clientSideUserId);
+                const canProcess = !isFinal && isReallyAdmin;
+
+
+
+                const tradeAt = r.tradeAt ? r.tradeAt.replace('T', ' ').substring(0, 16) : '-';
+                const nightBadge = r.nightTime ? '<span style="background:#1e293b; color:#fff; padding:2px 6px; border-radius:4px; font-size:0.65rem; margin-left:4px;">🌙 야간</span>' : '';
+                const reasonAttr = (r.status === 'REJECTED' && r.rejectionReason) ? `data-reason="${escapeHtml(r.rejectionReason)}"` : '';
+
+
+                const tagHtml = (r.tags || []).map(tag =>
+                    `<span style="background:#f1f5f9; color:#475569; padding:2px 6px; border-radius:4px; font-size:0.65rem; margin-left:4px; border:1px solid #e2e8f0;">${escapeHtml(tag)}</span>`
+                ).join('');
+
+                const amountDisplay = `<strong>${(r.totalAmount || 0).toLocaleString()}원</strong>`;
+
+                return `<tr>
                     <td>${r.id}</td>
-                    <td><strong>${r.storeName}</strong></td>
-                    <td>${r.tradeDate || '-'}</td>
-                    <td>${r.totalAmount.toLocaleString()}원</td>
-                    <td><span class="status-badge ${r.status}">${r.status}</span></td>
+                    <td style="text-align:left"><strong>${escapeHtml(r.storeName)}</strong></td>
+                    <td>${escapeHtml(tradeAt)}</td>
+                    <td>${amountDisplay}</td>
                     <td>
-                        <button class="action-btn btn-approve" onclick="updateStatus(${r.id}, 'APPROVED')">승인</button>
-                        <button class="action-btn btn-reject" onclick="updateStatus(${r.id}, 'REJECTED')">반려</button>
+                        <span class="status-badge ${r.status}" ${reasonAttr}>${r.status}</span>${nightBadge}
+                        ${tagHtml ? `<div style="margin-top:4px;">${tagHtml}</div>` : ''}
                     </td>
-                </tr>
-            `).join('');
-            document.getElementById('receiptList').innerHTML = html || '<tr><td colspan="6">데이터가 없습니다.</td></tr>';
-        } catch (e) { console.error("목록 로드 실패", e); }
+                    <td>
+                      <button class="action-btn" ${canEdit ? '' : 'disabled'} data-action="edit" data-id="${r.id}">✏️ 수정</button>
+                      <button class="action-btn" data-action="history" data-id="${r.id}">📜 이력</button>
+                      <button class="action-btn" ${canProcess ? '' : 'disabled'} data-action="approve" data-id="${r.id}" style="color:#16a34a;">승인</button>
+                      <button class="action-btn" ${canProcess ? '' : 'disabled'} data-action="reject" data-id="${r.id}" style="color:#dc2626;">반려</button>
+
+                    </td>
+                </tr>`;
+            }).join('');
+            el('receiptList').innerHTML = html || '<tr><td colspan="6">데이터가 없습니다.</td></tr>';
+        } catch (e) { console.error("목록 불러오기 실패:", e); }
     }
 
-    // 2. 업로드 및 분석
-    async function uploadReceipt() {
-        const file = document.getElementById('fileInput').files[0];
-        const token = localStorage.getItem('accessToken');
-        const statusText = document.getElementById('status');
+    async function uploadReceipts() {
+        const files = el('fileInput').files;
+        if (files.length === 0) return alert("파일을 선택해주세요.");
+        if (!workspaceId) return alert('워크스페이스 정보 누락');
 
-        if (!file) return alert("영수증 사진을 선택해주세요!");
-
-        statusText.innerText = "⏳ AI 분석 중...";
         const formData = new FormData();
-        formData.append('file', file);
-        formData.append('workspaceId', 1);
-        formData.append('userId', 1);
+        Array.from(files).forEach(f => formData.append('files', f));
+        formData.append('workspaceId', workspaceId);
+
+        el('progCont').style.display = 'block';
+        el('progBar').style.width = '30%';
+        el('uploadBtn').disabled = true;
 
         try {
-            const response = await fetch('/api/receipts/upload', {
+            el('progBar').style.width = '60%';
+            const res = await fetch(`/api/receipts/upload/multiple?workspaceId=${workspaceId}`, {
                 method: 'POST',
-                headers: {
-                    'X-IDEMPOTENCY-KEY': 'key-' + Date.now()
-                    // 'Authorization': 'Bearer ' + token // 필요 시 주석 해제
-                },
+                headers: { 'Authorization': `Bearer ${token}` },
                 body: formData
             });
-
-            if (response.ok) {
-                statusText.innerText = "✅ 분석 성공!";
-                fetchReceipts(); // 목록 갱신
+            el('progBar').style.width = '100%';
+            if (res.ok) {
+                alert("분석 완료!");
+                el('fileInput').value = '';
+                el('thumbs').innerHTML = '';
+                el('thumbs').style.display = 'none';
+                fetchReceipts();
             } else {
-                statusText.innerText = "❌ 분석 실패";
+                const errorText = await res.text();
+                alert(`업로드 실패: ${res.status}\n${errorText}`);
             }
-        } catch (error) { statusText.innerText = "❌ 에러 발생"; }
+        } catch (e) {
+            alert("오류: " + e.message);
+        } finally {
+            setTimeout(() => {
+                el('progCont').style.display = 'none';
+                el('progBar').style.width = '0%';
+            }, 500);
+            el('uploadBtn').disabled = false;
+        }
     }
 
-    // 3. 상태 변경
+    function exportCSV() {
+        const params = new URLSearchParams({ workspaceId });
+        window.location.href = `/api/receipts/export?${params}`;
+    }
     async function updateStatus(id, status) {
-        await fetch(`/api/receipts/${id}/status?status=${status}`, { method: 'PATCH' });
-        fetchReceipts();
+        let reason = "관리자 요청";
+        if (status === 'REJECTED') {
+            const input = prompt("반려 사유를 입력하세요:");
+            if (input === null) return;
+
+
+            const trimmedReason = input.trim();
+            if (!trimmedReason) {
+                alert("반려 사유는 공백일 수 없습니다. 정확한 사유를 입력해주세요.");
+                return;
+            }
+            reason = trimmedReason;
+        }
+        try {
+            const params = new URLSearchParams({ workspaceId, status, reason });
+            const res = await fetch(`/api/receipts/${id}/status?${params}`, {
+                method: 'PATCH',
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (res.ok) fetchReceipts();
+        } catch (e) { alert('처리 권한이 없습니다.'); }
+    }
+    // async function updateStatus(id, status) {
+    //     let reason = "관리자 요청"; // 기본값
+    //
+    //     if (status === 'REJECTED') {
+    //         const input = prompt("반려 사유를 입력하세요:");
+    //
+    //         // 1. [테스트용] 프론트엔드 방어막 주석 처리 유지
+    //         // if (input === null) return;
+    //         // const trimmedReason = input.trim();
+    //         // if (!trimmedReason) { ... return; }
+    //
+    //         // 2. [핵심] 기본값 "관리자 요청"을 사용자가 입력한 값(스페이스바 등)으로 덮어씁니다.
+    //         reason = input;
+    //     }
+    //
+    //     try {
+    //         // reason이 "  "(스페이스바)인 상태로 백엔드에 날아갑니다.
+    //         const params = new URLSearchParams({ workspaceId, status, reason });
+    //         const res = await fetch(`/api/receipts/${id}/status?${params}`, {
+    //             method: 'PATCH',
+    //             headers: { 'Authorization': `Bearer ${token}` }
+    //         });
+    //
+    //         // 3. 백엔드가 에러를 던졌을 때(res.ok가 아닐 때) 메시지 확인
+    //         if (!res.ok) {
+    //             const errorData = await res.json();
+    //             console.log("백엔드 응답 데이터:", errorData);
+    //
+    //             // 이 알림창이 뜨면 백엔드 검증 로직이 승리한 겁니다!
+    //             alert(`백엔드 검증 성공! 메시지: ${errorData.message}`);
+    //             return;
+    //         }
+    //
+    //         if (res.ok) fetchReceipts();
+    //     } catch (e) {
+    //         alert('처리 권한이 없습니다.');
+    //     }
+    // }
+
+    async function submitEdit() {
+        const id = el('editId').value;
+        const tradeAtValue = el('editTradeAt').value ? el('editTradeAt').value.replace('T', ' ') + ':00' : null;
+        const body = {
+            storeName: el('editStoreName').value,
+            totalAmount: Number(el('editAmount').value),
+            tradeAt: tradeAtValue
+        };
+        try {
+            const params = new URLSearchParams({ workspaceId });
+            const res = await fetch(`/api/receipts/${id}?${params}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                body: JSON.stringify(body)
+            });
+            if (res.ok) { closeModal('editModal'); fetchReceipts(); }
+        } catch (e) { alert('수정 실패'); }
     }
 
-    window.onload = fetchReceipts;
+    async function showHistory(id) {
+        const token = localStorage.getItem('accessToken');
+        try {
+            const res = await fetch(`/api/receipts/${id}/history`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            const json = await res.json();
+            const logs = json.data;
+
+            el('historyContent').innerHTML = logs.length ? logs.map(l => {
+
+                const meta = JSON.parse(l.metaJson || '{}');
+                const time = l.createdAt ? l.createdAt.replace('T', ' ').substring(0, 16) : '-';
+
+
+                const statusFlow = (meta.oldStatus && meta.newStatus)
+                    ? `<strong>${meta.oldStatus} ➜ ${meta.newStatus}</strong>`
+                    : `<strong>액션: ${l.action}</strong>`;
+
+                return `
+                <div class="history-item" style="border-bottom: 1px solid #eee; padding: 10px 0;">
+                    <div style="font-size: 0.8rem; color: #64748b;">${time} | 실행자: ${l.actorId}</div>
+                    ${statusFlow}
+                    <p style="margin: 4px 0 0; color: #475569;">${meta.reason || ''}</p>
+                </div>`;
+            }).join('') : '<div class="history-empty">이력 없음</div>';
+
+            openModal('historyModal');
+        } catch (e) {
+            console.error(e);
+            alert('조회 실패');
+        }
+    }
+
+
+    el('receiptList').addEventListener('click', (e) => {
+        const btn = e.target.closest('button');
+        if (!btn || btn.disabled) return;
+        const { action, id } = btn.dataset;
+        if (action === 'edit') openEditModalById(id);
+        if (action === 'history') showHistory(id);
+        if (action === 'approve') updateStatus(id, 'APPROVED');
+        if (action === 'reject') updateStatus(id, 'REJECTED');
+    });
+
+    function openEditModalById(id) {
+        const r = receiptData.find(x => x.id == id);
+        if (!r) return;
+        el('editId').value = r.id;
+        el('editStoreName').value = r.storeName || '';
+        el('editAmount').value = r.totalAmount || 0;
+        if (r.tradeAt) {
+            el('editTradeAt').value = r.tradeAt.substring(0, 16);
+        } else {
+            el('editTradeAt').value = '';
+        }
+        el('receiptPreview').innerHTML = r.filePath ? `<img src="/images/${r.filePath}">` : '이미지 없음';
+        openModal('editModal');
+    }
+
+    el('dropZone').addEventListener('click', () => el('fileInput').click());
+    el('fileInput').addEventListener('change', (e) => {
+        el('thumbs').innerHTML = Array.from(e.target.files).map(f => `<img src="${URL.createObjectURL(f)}" class="thumb">`).join('');
+        el('thumbs').style.display = 'grid';
+    });
+
+    el('closeEditBtn').onclick = () => closeModal('editModal');
+    el('closeHistoryBtn').onclick = () => closeModal('historyModal');
+    el('saveEditBtn').onclick = submitEdit;
+    el('uploadBtn').onclick = uploadReceipts;
+    el('refreshBtn').onclick = fetchReceipts;
+    window.onload = () => {
+        initLayout();
+        fetchReceipts();
+    };
 </script>
 </body>
 </html>

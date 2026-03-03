@@ -18,7 +18,11 @@ public enum ErrorCode {
 
   // Resource
   NOT_FOUND(HttpStatus.NOT_FOUND, "리소스를 찾을 수 없습니다."),
-  CONFLICT(HttpStatus.CONFLICT, "요청이 충돌했습니다.");
+  CONFLICT(HttpStatus.CONFLICT, "요청이 충돌했습니다."),
+
+  // Receipt
+  AUDIT_ALREADY_DECIDED(HttpStatus.BAD_REQUEST, "이미 승인 또는 반려된 영수증은 수정할 수 없습니다."),
+  REJECT_REASON_REQUIRED(HttpStatus.BAD_REQUEST, "영수증 반려 시 사유 입력은 필수입니다.");
 
   private final HttpStatus status;
   private final String defaultMessage;

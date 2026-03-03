@@ -6,15 +6,14 @@ import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import java.io.IOException;
+import java.time.LocalDateTime;
+import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
-
-import java.io.IOException;
-import java.time.LocalDateTime;
-import java.util.UUID;
 
 @Component
 @RequiredArgsConstructor
@@ -23,25 +22,26 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
   private final JwtTokenProvider jwtTokenProvider;
 
   @Override
-  protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
-          throws ServletException, IOException {
+  protected void doFilterInternal(
+      HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
+      throws ServletException, IOException {
 
     String authHeader = request.getHeader("Authorization");
     String token = jwtTokenProvider.resolveToken(authHeader);
 
     if (token != null) {
       try {
-        // 토큰 검증 성공 시 SecurityContext에 인증 정보 저장
+
         if (jwtTokenProvider.validateToken(token)) {
           Authentication auth = jwtTokenProvider.getAuthentication(token);
           SecurityContextHolder.getContext().setAuthentication(auth);
         }
       } catch (ExpiredJwtException e) {
-        // 팀원 규격: UNAUTHORIZED 사용
+
         sendErrorResponse(response, ErrorCode.UNAUTHORIZED, "토큰이 만료되었습니다. 다시 로그인해주세요.");
         return;
       } catch (Exception e) {
-        // 기타 모든 인증 예외 처리
+
         sendErrorResponse(response, ErrorCode.UNAUTHORIZED, "유효하지 않은 인증 토큰입니다.");
         return;
       }
@@ -50,21 +50,16 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     filterChain.doFilter(request, response);
   }
 
-  /**
-   * 팀원의 ApiResponse 규격 + ErrorCode 상수를 활용한 에러 응답
-   */
-  private void sendErrorResponse(HttpServletResponse response, ErrorCode errorCode, String message) throws IOException {
-    response.setStatus(errorCode.status().value()); // 팀원의 status() 메서드 활용
+  /** 팀원의 ApiResponse 규격 + ErrorCode 상수를 활용한 에러 응답 */
+  private void sendErrorResponse(HttpServletResponse response, ErrorCode errorCode, String message)
+      throws IOException {
+    response.setStatus(errorCode.status().value());
     response.setContentType("application/json;charset=UTF-8");
 
-    // 팀원 명세 규격에 맞춘 JSON (success: false, error: {code, message}, meta: {timestamp, traceId})
-    String json = String.format(
+    String json =
+        String.format(
             "{\"success\": false, \"error\": {\"code\": \"%s\", \"message\": \"%s\"}, \"meta\": {\"timestamp\": \"%s\", \"traceId\": \"%s\"}}",
-            errorCode.name(),
-            message,
-            LocalDateTime.now(),
-            UUID.randomUUID().toString()
-    );
+            errorCode.name(), message, LocalDateTime.now(), UUID.randomUUID().toString());
 
     response.getWriter().write(json);
   }
