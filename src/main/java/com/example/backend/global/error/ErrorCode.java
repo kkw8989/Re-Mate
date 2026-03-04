@@ -22,7 +22,13 @@ public enum ErrorCode {
 
   // Receipt
   AUDIT_ALREADY_DECIDED(HttpStatus.BAD_REQUEST, "이미 승인 또는 반려된 영수증은 수정할 수 없습니다."),
-  REJECT_REASON_REQUIRED(HttpStatus.BAD_REQUEST, "영수증 반려 시 사유 입력은 필수입니다.");
+  REJECT_REASON_REQUIRED(HttpStatus.BAD_REQUEST, "영수증 반려 시 사유 입력은 필수입니다."),
+
+  // File
+  FILE_TYPE_NOT_ALLOWED(HttpStatus.BAD_REQUEST, "허용되지 않은 파일 형식입니다."),
+  FILE_TOO_LARGE(HttpStatus.PAYLOAD_TOO_LARGE, "파일 용량이 너무 큽니다."),
+  FILE_UPLOAD_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "파일 업로드에 실패했습니다."),
+  FILE_NOT_FOUND(HttpStatus.NOT_FOUND, "파일을 찾을 수 없습니다.");
 
   private final HttpStatus status;
   private final String defaultMessage;
