@@ -31,7 +31,7 @@ public class AuthService {
         .findByEmail(dto.getEmail())
         .ifPresent(
             user -> {
-              throw new BusinessException(ErrorCode.CONFLICT, "이미 사용 중인 이메일입니다.");
+              throw new BusinessException(ErrorCode.AUTH_EMAIL_ALREADY_EXISTS);
             });
 
     User user =
@@ -52,11 +52,10 @@ public class AuthService {
     User user =
         userRepository
             .findByEmail(email)
-            .orElseThrow(
-                () -> new BusinessException(ErrorCode.UNAUTHORIZED, "이메일 또는 비밀번호가 일치하지 않습니다."));
+            .orElseThrow(() -> new BusinessException(ErrorCode.AUTH_INVALID_CREDENTIAL));
 
     if (!passwordEncoder.matches(password, user.getPassword())) {
-      throw new BusinessException(ErrorCode.UNAUTHORIZED, "이메일 또는 비밀번호가 일치하지 않습니다.");
+      throw new BusinessException(ErrorCode.AUTH_INVALID_CREDENTIAL);
     }
 
     String token = jwtTokenProvider.createToken(user.getEmail());
