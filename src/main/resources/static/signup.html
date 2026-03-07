@@ -32,7 +32,6 @@
 </div>
 
 <script>
-    // 이미 로그인된 경우 메인으로 이동
     if (localStorage.getItem('accessToken')) {
         location.href = "/";
     }
@@ -44,15 +43,12 @@
         const confirm = document.getElementById('confirm').value;
         const btn = document.getElementById('signup-btn');
 
-        // 기본 유효성 검사
-        if (!email || !name || !password) return alert("모든 항목을 입력해주세요.");
         if (password !== confirm) return alert("비밀번호가 일치하지 않습니다.");
 
         try {
             btn.disabled = true;
             btn.innerText = "가입 중...";
 
-            // 🚀 백엔드 v1 경로 반영
             const response = await fetch('/api/v1/auth/signup', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -62,30 +58,27 @@
             const result = await response.json();
 
             if (response.ok) {
-                // 가입 성공 시 처리
                 alert("회원가입에 성공했습니다! 로그인 페이지로 이동합니다.");
                 location.href = "/signin.html";
             } else {
-                // 백엔드 에러 규격 { success, error: { code, message } } 처리
-                const errorMsg = result.error ? result.error.message : (result.message || "가입 실패");
                 const errorCode = result.error ? result.error.code : (result.code || "");
+                const errorMsg = result.error ? result.error.message : (result.message || "가입 실패");
 
                 if (errorCode === 'AUTH_EMAIL_ALREADY_EXISTS') {
                     alert("이미 사용 중인 이메일입니다.");
                 } else {
-                    alert("가입 실패: " + errorMsg);
+                    alert(errorMsg);
                 }
             }
         } catch (error) {
             console.error("Error details:", error);
-            alert("서버와 통신할 수 없습니다. 서버가 실행 중인지 확인하세요.");
+            alert("서버와 통신할 수 없습니다.");
         } finally {
             btn.disabled = false;
             btn.innerText = "가입하기";
         }
     }
 
-    // 엔터키 입력 시 가입 진행
     document.addEventListener('keypress', (e) => {
         if (e.key === 'Enter') doSignup();
     });
