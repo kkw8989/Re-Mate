@@ -6,6 +6,7 @@ import com.example.backend.dto.LoginResponse;
 import com.example.backend.dto.UserRegisterRequestDto;
 import com.example.backend.global.common.ApiResponse;
 import com.example.backend.service.AuthService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
@@ -20,13 +21,13 @@ public class AuthController {
   private final AuthService authService;
 
   @PostMapping("/signup")
-  public ApiResponse<LoginResponse> signup(@RequestBody UserRegisterRequestDto dto) {
+  public ApiResponse<LoginResponse> signup(@Valid @RequestBody UserRegisterRequestDto dto) {
     LoginResponse response = authService.signup(dto);
     return ApiResponse.ok(response);
   }
 
   @PostMapping("/signin")
-  public ApiResponse<LoginResponse> signin(@RequestBody LoginRequest dto) {
+  public ApiResponse<LoginResponse> signin(@Valid @RequestBody LoginRequest dto) {
     LoginResponse response = authService.login(dto.getEmail(), dto.getPassword());
     return ApiResponse.ok(response);
   }

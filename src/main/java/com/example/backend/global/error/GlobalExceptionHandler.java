@@ -13,30 +13,20 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
-  @ExceptionHandler(RuntimeException.class)
-  public ResponseEntity<ErrorResponse> handleRuntime(RuntimeException e) {
-    String traceId = currentTraceId();
-
-    ErrorCode code = ErrorCode.INTERNAL_ERROR;
-    String message = e.getMessage();
-
-    if ("AUTH_EMAIL_ALREADY_EXISTS".equals(message)) {
-      code = ErrorCode.CONFLICT;
-      message = "이미 사용 중인 이메일입니다.";
-    } else if ("AUTH_INVALID_CREDENTIAL".equals(message)) {
-      code = ErrorCode.UNAUTHORIZED;
-      message = "이메일 또는 비밀번호가 일치하지 않습니다.";
-    }
-
-    return ResponseEntity.status(code.status())
-        .header(TraceIdFilter.TRACE_ID_HEADER, traceId)
-        .body(ErrorResponse.of(code, message, traceId));
-  }
-
   @ExceptionHandler(BusinessException.class)
   public ResponseEntity<ErrorResponse> handleBusiness(BusinessException e) {
     ErrorCode code = e.getErrorCode();
     String traceId = currentTraceId();
+
+    return ResponseEntity.status(code.status())
+        .header(TraceIdFilter.TRACE_ID_HEADER, traceId)
+        .body(ErrorResponse.of(code, e.getMessage(), traceId));
+  }
+
+  @ExceptionHandler(RuntimeException.class)
+  public ResponseEntity<ErrorResponse> handleRuntime(RuntimeException e) {
+    String traceId = currentTraceId();
+    ErrorCode code = ErrorCode.INTERNAL_ERROR;
 
     return ResponseEntity.status(code.status())
         .header(TraceIdFilter.TRACE_ID_HEADER, traceId)
@@ -52,7 +42,7 @@ public class GlobalExceptionHandler {
       message =
           be.getBindingResult().getFieldErrors().stream()
               .findFirst()
-              .map(fe -> fe.getField() + ": " + fe.getDefaultMessage())
+              .map(fe -> fe.getDefaultMessage())
               .orElse(message);
     }
 
