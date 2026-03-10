@@ -10,9 +10,6 @@ WORKDIR /app
 
 COPY --from=build /app/build/libs/*.jar app.jar
 
-ENV SPRING_PROFILES_ACTIVE=dev
-ENV PORT=10000
-
 EXPOSE 10000
 
-ENTRYPOINT ["sh", "-c", "java -Dserver.port=${PORT} -jar /app/app.jar"]
+ENTRYPOINT ["sh", "-c", "java -Dserver.address=0.0.0.0 -jar /app/app.jar"]
