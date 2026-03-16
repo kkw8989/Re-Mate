@@ -91,7 +91,7 @@
             const card = document.createElement('div');
             card.className = 'ws-card';
             card.innerHTML = `
-                    <div onclick="enterWorkspace(${ws.workspaceId})" style="flex-grow:1;">
+                    <div onclick="enterWorkspace(${ws.workspaceId}, '${ws.role}')" style="flex-grow:1;">
                         <div style="font-weight:700; font-size:1.1rem;">${ws.role === 'ADMIN' ? '👑' : '👤'} ${ws.workspaceName}</div>
                         <div style="font-size:0.85rem; color:#94a3b8; margin-top:8px;">클릭하여 입장</div>
                     </div>
@@ -126,7 +126,11 @@
         if ((await res.json()).success) { loadMyWorkspaces(); loadInvitations(); }
     }
 
-    function enterWorkspace(id) { localStorage.setItem('currentWorkspaceId', id); location.href = '/upload.html'; }
+    function enterWorkspace(id, role) {
+        localStorage.setItem('currentWorkspaceId', id);
+        localStorage.setItem('userRole', role);
+        location.href = '/upload.html';
+    }
 </script>
 </body>
 </html>
