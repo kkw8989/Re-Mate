@@ -5,6 +5,7 @@ import com.example.backend.audit.AuditLogService;
 import com.example.backend.domain.receipt.ReceiptStatus;
 import com.example.backend.domain.receipt.SystemErrorCode;
 import com.example.backend.dto.ReceiptSummaryDto;
+import com.example.backend.dto.UploadReceiptResponse;
 import com.example.backend.entity.Receipt;
 import com.example.backend.global.error.BusinessException;
 import com.example.backend.global.error.ErrorCode;
@@ -24,6 +25,7 @@ import java.util.HexFormat;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
@@ -71,52 +73,50 @@ public class ReceiptService {
   }
 
   @Transactional
-  public Receipt uploadAndProcess(String idempotencyKey, MultipartFile file, Long workspaceId) {
+  public UploadReceiptResponse uploadAndProcess(
+      String idempotencyKey, MultipartFile file, Long workspaceId) {
 
     final Long userId = getCurrentUserId();
-
     validateFile(file);
     try {
       byte[] fileBytes = file.getBytes();
       byte[] hashBytes = MessageDigest.getInstance("MD5").digest(fileBytes);
       String fileHash = HexFormat.of().formatHex(hashBytes);
 
-      return receiptRepository
-          .findByFileHash(fileHash)
-          .orElseGet(
-              () ->
-                  receiptRepository
-                      .findByIdempotencyKey(idempotencyKey)
-                      .orElseGet(
-                          () -> {
-                            String savedFileName = null;
-                            Receipt receipt = null;
-                            try {
-                              savedFileName = saveFileToLocal(file);
-                              receipt =
-                                  receiptRepository.save(
-                                      Receipt.builder()
-                                          .idempotencyKey(idempotencyKey)
-                                          .fileHash(fileHash)
-                                          .workspaceId(workspaceId)
-                                          .userId(userId)
-                                          .status(ReceiptStatus.ANALYZING)
-                                          .filePath(savedFileName)
-                                          .build());
-                              log.info(
-                                  "=== [검증 1] DB 선저장 완료: ID={}, Status={}",
-                                  receipt.getId(),
-                                  receipt.getStatus());
-                              JsonNode ocrJson = googleOcrClient.recognize(fileBytes);
-                              log.info("=== [검증 2] OCR 분석 시작 (ID: {})", receipt.getId());
-                              return processOcrResult(receipt, ocrJson);
-                            } catch (Exception e) {
-                              log.error("OCR 분석 에러", e);
-                              if (receipt != null) return markAsFailed(receipt, e);
-                              return saveFailedReceipt(
-                                  idempotencyKey, fileHash, workspaceId, savedFileName, e);
-                            }
-                          }));
+      Optional<Receipt> existingByHash = receiptRepository.findByFileHash(fileHash);
+      if (existingByHash.isPresent()) {
+        return new UploadReceiptResponse(existingByHash.get(), true);
+      }
+
+      Optional<Receipt> existingByKey = receiptRepository.findByIdempotencyKey(idempotencyKey);
+      if (existingByKey.isPresent()) {
+        return new UploadReceiptResponse(existingByKey.get(), true);
+      }
+
+      String savedFileName = null;
+      Receipt receipt = null;
+      try {
+        savedFileName = saveFileToLocal(file);
+        receipt =
+            receiptRepository.save(
+                Receipt.builder()
+                    .idempotencyKey(idempotencyKey)
+                    .fileHash(fileHash)
+                    .workspaceId(workspaceId)
+                    .userId(userId)
+                    .status(ReceiptStatus.ANALYZING)
+                    .filePath(savedFileName)
+                    .build());
+        log.info("=== [검증 1] DB 선저장 완료: ID={}, Status={}", receipt.getId(), receipt.getStatus());
+        JsonNode ocrJson = googleOcrClient.recognize(fileBytes);
+        log.info("=== [검증 2] OCR 분석 시작 (ID: {})", receipt.getId());
+        return new UploadReceiptResponse(processOcrResult(receipt, ocrJson), false);
+      } catch (Exception e) {
+        log.error("OCR 분석 에러", e);
+        if (receipt != null) return new UploadReceiptResponse(markAsFailed(receipt, e), false);
+        return new UploadReceiptResponse(
+            saveFailedReceipt(idempotencyKey, fileHash, workspaceId, savedFileName, e), false);
+      }
     } catch (Exception e) {
       throw new RuntimeException("FILE_PROCESSING_FAILED", e);
     }
@@ -295,7 +295,8 @@ public class ReceiptService {
                   r.getStatus(),
                   ownerName,
                   r.getTags(),
-                  r.getRejectionReason());
+                  r.getRejectionReason(),
+                  r.getUserId());
             })
         .collect(Collectors.toList());
   }
@@ -366,7 +367,7 @@ public class ReceiptService {
   }
 
   @Transactional
-  public List<Receipt> uploadMultiple(List<MultipartFile> files, Long workspaceId) {
+  public List<UploadReceiptResponse> uploadMultiple(List<MultipartFile> files, Long workspaceId) {
     return files.stream()
         .map(
             file -> {

@@ -9,4 +9,5 @@ public record LoginResponse(
     @Schema(description = "사용자 이메일", example = "user@example.com") String email,
     @Schema(description = "사용자 이름", example = "둘리") String name,
     @Schema(description = "소속 워크스페이스 개수", example = "2") int workspaceCount,
-    @Schema(description = "마지막 워크스페이스 ID", example = "1") Long lastWorkspaceId) {}
+    @Schema(description = "마지막 워크스페이스 ID", example = "1") Long lastWorkspaceId,
+    @Schema(description = "사용자 ID", example = "1") Long userId) {}
