@@ -45,12 +45,4 @@ public class AuthController {
 
     return ResponseEntity.ok(authService.getAuthStatusByPrincipal(authentication.getName()));
   }
-
-  @GetMapping("/me")
-  public ApiResponse<Object> getMyInfo() {
-    var data = new java.util.HashMap<String, Object>();
-    data.put("email", "test@example.com");
-    data.put("name", "인증테스터");
-    return ApiResponse.ok(data);
-  }
 }

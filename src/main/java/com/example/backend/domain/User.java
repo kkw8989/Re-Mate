@@ -52,4 +52,12 @@ public class User {
     this.picture = picture;
     return this;
   }
+
+  public void updatePassword(String password) {
+    this.password = password;
+  }
+
+  public void updatePicture(String picture) {
+    this.picture = picture;
+  }
 }
