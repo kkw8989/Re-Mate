@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>ReMate | 프로필 설정</title>
+    <style>
+        :root { --bg: #f8fafc; --sidebar: #ffffff; --text-main: #1e293b; --text-sub: #64748b; --primary: #1e40af; --border: #e2e8f0; }
+        body { font-family: 'Pretendard', sans-serif; background: var(--bg); color: var(--text-main); margin: 0; display: flex; height: 100vh; overflow: hidden; }
+        .sidebar { width: 240px; background: var(--sidebar); border-right: 1px solid var(--border); padding: 24px; display: flex; flex-direction: column; }
+        .logo { font-size: 1.25rem; font-weight: 800; color: var(--primary); margin-bottom: 40px; }
+        .nav-item { padding: 12px; margin-bottom: 8px; border-radius: 8px; cursor: pointer; color: var(--text-sub); font-size: 0.9rem; transition: 0.2s; }
+        .nav-item.active { background: #eff6ff; color: var(--primary); font-weight: 600; }
+        .main-content { flex: 1; overflow-y: auto; padding: 40px; }
+        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 32px; }
+        .back-link { cursor: pointer; color: var(--text-sub); text-decoration: none; font-size: 0.9rem; display: flex; align-items: center; gap: 4px; margin-bottom: 20px; }
+        .card { background: white; border-radius: 16px; border: 1px solid var(--border); padding: 32px; margin-bottom: 24px; max-width: 600px; }
+        .card-title { font-size: 1.1rem; font-weight: 700; margin-bottom: 24px; }
+        .profile-flex { display: flex; gap: 32px; align-items: flex-start; }
+        .avatar-upload { width: 120px; height: 120px; background: #f1f5f9; border-radius: 12px; display: flex; align-items: center; justify-content: center; cursor: pointer; border: 1px solid var(--border); font-size: 1.5rem; color: #94a3b8; overflow: hidden; position: relative; }
+        .avatar-upload img { width: 100%; height: 100%; object-fit: cover; }
+        .form-area { flex: 1; }
+        .input-group { margin-bottom: 16px; }
+        .input-group label { display: block; font-size: 0.85rem; font-weight: 600; color: var(--text-sub); margin-bottom: 8px; }
+        .input-group input { width: 100%; padding: 12px; border: 1px solid var(--border); border-radius: 8px; font-size: 0.95rem; box-sizing: border-box; }
+        .input-group input[readonly] { background: #f8fafc; color: #94a3b8; cursor: not-allowed; }
+        .btn-action { width: 100%; padding: 12px; border-radius: 8px; border: none; font-weight: 600; cursor: pointer; transition: 0.2s; font-size: 0.95rem; }
+        .btn-primary { background: var(--primary); color: white; }
+        .btn-primary:hover { opacity: 0.9; }
+        .btn-primary:disabled { background: #cbd5e1; cursor: wait; }
+    </style>
+</head>
+<body>
+<div class="sidebar">
+    <div class="logo">Re:Mate</div>
+    <div class="nav-item">워크스페이스</div>
+    <div class="nav-item active">계정 설정</div>
+</div>
+<div class="main-content">
+    <div class="back-link" onclick="location.href='workspace-list.html'">❮ 돌아가기</div>
+    <div class="header">
+        <h1 style="font-size: 1.5rem;">마이페이지</h1>
+    </div>
+    <div class="card">
+        <div class="card-title">프로필</div>
+        <div class="profile-flex">
+            <div class="avatar-upload" id="avatarView" onclick="document.getElementById('profileFileInput').click()">
+                <span id="avatarPlus">＋</span>
+                <img id="avatarImg" src="" style="display:none;">
+            </div>
+            <input type="file" id="profileFileInput" style="display:none;" accept="image/*" onchange="uploadProfileImage(this)">
+            <div class="form-area">
+                <div class="input-group">
+                    <label>이메일</label>
+                    <input type="text" id="email" readonly>
+                </div>
+                <div class="input-group">
+                    <label>이름</label>
+                    <input type="text" id="name" placeholder="표시명을 입력하세요">
+                </div>
+                <button class="btn-action btn-primary" id="btnUpdateProfile" onclick="updateProfile()">저장</button>
+            </div>
+        </div>
+    </div>
+    <div class="card">
+        <div class="card-title">비밀번호 변경</div>
+        <div class="input-group">
+            <label>현재 비밀번호</label>
+            <input type="password" id="currPwd" placeholder="현재 비밀번호 입력">
+        </div>
+        <div class="input-group">
+            <label>새 비밀번호</label>
+            <input type="password" id="newPwd" placeholder="새 비밀번호 입력">
+        </div>
+        <div class="input-group">
+            <label>새 비밀번호 확인</label>
+            <input type="password" id="confirmPwd" placeholder="새 비밀번호 확인">
+        </div>
+        <button class="btn-action btn-primary" id="btnUpdatePwd" onclick="updatePassword()">변경</button>
+    </div>
+</div>
+
+<script>
+    const token = localStorage.getItem('accessToken');
+
+    window.onload = async () => {
+        if (!token) {
+            location.href = '/signin.html';
+            return;
+        }
+        try {
+            const res = await fetch('/api/v1/users/me', {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            const result = await res.json();
+            if(result.success) {
+                document.getElementById('email').value = result.data.email;
+                document.getElementById('name').value = result.data.name;
+
+                let pictureData = result.data.picture;
+                if (pictureData) {
+                    if (pictureData.includes('/')) {
+                        pictureData = pictureData.split('/').pop();
+                    }
+                    await updateAvatarView(pictureData);
+                }
+            }
+        } catch (e) {
+            console.error("데이터 로드 실패", e);
+        }
+    };
+
+    async function updateAvatarView(fileId) {
+        const plus = document.getElementById('avatarPlus');
+        const img = document.getElementById('avatarImg');
+        if (!fileId) return;
+
+        try {
+            const res = await fetch(`/api/v1/files/${fileId}`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (!res.ok) throw new Error();
+            const blob = await res.blob();
+            const objectUrl = URL.createObjectURL(blob);
+            img.src = objectUrl;
+            img.style.display = 'block';
+            plus.style.display = 'none';
+        } catch (e) {
+            console.error("이미지 로드 실패", e);
+        }
+    }
+
+    async function uploadProfileImage(input) {
+        if (!input.files || !input.files[0]) return;
+        const file = input.files[0];
+        const formData = new FormData();
+        formData.append('file', file);
+        formData.append('type', 'PROFILE');
+
+        const avatarView = document.getElementById('avatarView');
+        avatarView.style.opacity = '0.5';
+
+        try {
+            const fileRes = await fetch('/api/v1/files', {
+                method: 'POST',
+                headers: { 'Authorization': `Bearer ${token}` },
+                body: formData
+            });
+            const fileResult = await fileRes.json();
+            if (!fileResult.success) {
+                alert(fileResult.error ? fileResult.error.message : "업로드 실패");
+                return;
+            }
+
+            const newFileId = fileResult.data.fileId;
+            const profileRes = await fetch('/api/v1/users/me/profile-image', {
+                method: 'PATCH',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ fileId: newFileId })
+            });
+            const profileResult = await profileRes.json();
+
+            if (profileResult.success) {
+                alert("프로필 이미지가 변경되었습니다.");
+                await updateAvatarView(newFileId);
+            } else {
+                alert("프로필 연결 실패");
+            }
+        } catch (e) {
+            alert("통신 오류");
+        } finally {
+            avatarView.style.opacity = '1';
+            input.value = '';
+        }
+    }
+
+    async function updateProfile() {
+        const name = document.getElementById('name').value;
+        const btn = document.getElementById('btnUpdateProfile');
+        btn.disabled = true;
+        try {
+            const res = await fetch('/api/v1/users/me', {
+                method: 'PATCH',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ name })
+            });
+            const result = await res.json();
+            if (result.success) alert("수정되었습니다.");
+        } catch (e) {
+            alert("오류 발생");
+        } finally {
+            btn.disabled = false;
+        }
+    }
+
+    async function updatePassword() {
+        const data = {
+            currentPassword: document.getElementById('currPwd').value,
+            newPassword: document.getElementById('newPwd').value,
+            confirmPassword: document.getElementById('confirmPwd').value
+        };
+        const btn = document.getElementById('btnUpdatePwd');
+        btn.disabled = true;
+        try {
+            const res = await fetch('/api/v1/users/me/password', {
+                method: 'PATCH',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(data)
+            });
+            const result = await res.json();
+            if(result.success) {
+                alert("변경되었습니다. 다시 로그인해주세요.");
+                localStorage.removeItem('accessToken');
+                location.href = '/signin.html';
+            }
+        } catch (e) {
+            alert("오류 발생");
+        } finally {
+            btn.disabled = false;
+        }
+    }
+</script>
+</body>
+</html>
