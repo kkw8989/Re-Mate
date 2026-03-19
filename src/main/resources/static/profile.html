@@ -147,7 +147,7 @@
             });
             const fileResult = await fileRes.json();
             if (!fileResult.success) {
-                alert(fileResult.error ? fileResult.error.message : "업로드 실패");
+                alert(fileResult.error?.message || "업로드 실패");
                 return;
             }
 
@@ -162,14 +162,14 @@
             });
             const profileResult = await profileRes.json();
 
-            if (profileResult.success) {
+            if (profileRes.ok && profileResult.success) {
                 alert("프로필 이미지가 변경되었습니다.");
                 await updateAvatarView(newFileId);
             } else {
-                alert("프로필 연결 실패");
+                alert(profileResult.error?.message || "프로필 연결 실패");
             }
         } catch (e) {
-            alert("통신 오류");
+            alert("통신 오류가 발생했습니다.");
         } finally {
             avatarView.style.opacity = '1';
             input.value = '';
@@ -190,9 +190,13 @@
                 body: JSON.stringify({ name })
             });
             const result = await res.json();
-            if (result.success) alert("수정되었습니다.");
+            if (res.ok && result.success) {
+                alert("수정되었습니다.");
+            } else {
+                alert(result.error?.message || "수정에 실패했습니다.");
+            }
         } catch (e) {
-            alert("오류 발생");
+            alert("오류가 발생했습니다.");
         } finally {
             btn.disabled = false;
         }
@@ -204,6 +208,12 @@
             newPassword: document.getElementById('newPwd').value,
             confirmPassword: document.getElementById('confirmPwd').value
         };
+
+        if (data.newPassword !== data.confirmPassword) {
+            alert("새 비밀번호가 일치하지 않습니다.");
+            return;
+        }
+
         const btn = document.getElementById('btnUpdatePwd');
         btn.disabled = true;
         try {
@@ -216,13 +226,15 @@
                 body: JSON.stringify(data)
             });
             const result = await res.json();
-            if(result.success) {
+            if(res.ok && result.success) {
                 alert("변경되었습니다. 다시 로그인해주세요.");
                 localStorage.removeItem('accessToken');
                 location.href = '/signin.html';
+            } else {
+                alert(result.error?.message || "비밀번호 변경 실패");
             }
         } catch (e) {
-            alert("오류 발생");
+            alert("통신 중 오류가 발생했습니다.");
         } finally {
             btn.disabled = false;
         }
