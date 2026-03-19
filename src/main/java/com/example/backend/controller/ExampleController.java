@@ -2,10 +2,12 @@ package com.example.backend.controller;
 
 import com.example.backend.global.common.ApiResponse;
 import com.example.backend.global.error.ErrorCode;
+import io.swagger.v3.oas.annotations.Hidden;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
+@Hidden
 public class ExampleController {
 
   @GetMapping("/api/v1/examples/success")

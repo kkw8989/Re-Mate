@@ -16,11 +16,11 @@ jobs:
               { name: "Priority: High 🔥", description: '우선순위 높음', color: "F9D0C4" },
               { name: "Priority: Medium :bookmark:", description: '우선순위 보통', color: "FEF2C0" },
               { name: "Priority: Low 🐢", description: '우선순위 낮음', color: "C2E0C6" },
-              { name: "Type: Feature :sparkles:", description: '신규 기능', color: "AB5D19" },
-              { name: "Type: Merge :truck:", description: '머지', color: "4A7A8F" },
               { name: "Type: Bug :bug:", description: '버그', color: "d73a4a" },
               { name: "Type: Doc :memo:", description: '문서 추가 / 수정', color: "0075ca" },
-              { name: "Type: Improve UX :arrow_up:", description: 'UX 개선', color: "2CE151" },
+              { name: "Type: Improve UX :arrow_up:", description: 'UX
+              { name: "Type: Feature :sparkles:", description: '신규 기능', color: "AB5D19" },
+              { name: "Type: Merge :truck:", description: '머지', color: "4A7A8F" }, 개선', color: "2CE151" },
               { name: "Type: Refactor :recycle:", description: '리팩토링', color: "027B6B" },
             ];  
 

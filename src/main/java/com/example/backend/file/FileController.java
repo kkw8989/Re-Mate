@@ -1,6 +1,10 @@
 package com.example.backend.file;
 
 import com.example.backend.global.common.ApiResponse;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import java.io.IOException;
 import java.nio.file.Files;
 import org.springframework.core.io.UrlResource;
@@ -11,6 +15,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 @RestController
 @RequestMapping("/api/v1/files")
+@Tag(name = "File", description = "프로필 이미지/영수증 파일 업로드 및 다운로드를 관리합니다.")
 public class FileController {
 
   private final FileAssetService service;
@@ -19,12 +24,26 @@ public class FileController {
     this.service = service;
   }
 
+  @Operation(
+      summary = "파일 업로드",
+      description =
+          """
+                  파일을 업로드합니다.
+
+                  - `type=PROFILE`이면 workspaceId 없이 업로드 가능합니다.
+                  - `type=RECEIPT`이면 workspaceId가 필요합니다.
+                  - multipart/form-data 요청입니다.
+                  """)
   @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
   public ApiResponse<UploadResponse> upload(
-      @RequestPart("file") MultipartFile file,
-      @RequestParam("type") FileAssetType type,
-      @RequestParam(value = "workspaceId", required = false) Long workspaceId,
-      Authentication authentication) {
+      @Parameter(description = "업로드할 파일", required = true) @RequestPart("file") MultipartFile file,
+      @Parameter(description = "파일 타입(PROFILE 또는 RECEIPT)", required = true, example = "PROFILE")
+          @RequestParam("type")
+          FileAssetType type,
+      @Parameter(description = "워크스페이스 ID(RECEIPT일 때 필요)", example = "1")
+          @RequestParam(value = "workspaceId", required = false)
+          Long workspaceId,
+      @Parameter(hidden = true) Authentication authentication) {
 
     boolean isDevice = hasAuthority(authentication, "ROLE_DEVICE");
     String authName = authentication.getName();
@@ -33,8 +52,11 @@ public class FileController {
     return ApiResponse.ok(new UploadResponse(fileId));
   }
 
+  @Operation(summary = "파일 다운로드/조회", description = "파일 ID 기준으로 이미지/파일을 조회합니다.")
   @GetMapping("/{fileId}")
-  public ResponseEntity<?> download(@PathVariable Long fileId, Authentication authentication)
+  public ResponseEntity<?> download(
+      @Parameter(description = "파일 ID", example = "1") @PathVariable Long fileId,
+      @Parameter(hidden = true) Authentication authentication)
       throws IOException {
     boolean isAdmin = hasAuthority(authentication, "ROLE_ADMIN");
     boolean isDevice = hasAuthority(authentication, "ROLE_DEVICE");
@@ -59,5 +81,6 @@ public class FileController {
         .anyMatch(a -> authority.equals(a.getAuthority()));
   }
 
-  public record UploadResponse(Long fileId) {}
+  @Schema(name = "FileUploadResponse", description = "파일 업로드 응답")
+  public record UploadResponse(@Schema(description = "저장된 파일 ID", example = "1") Long fileId) {}
 }
