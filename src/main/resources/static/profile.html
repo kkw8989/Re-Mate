@@ -81,6 +81,7 @@
 
 <script>
     const token = localStorage.getItem('accessToken');
+    let selectedFile = null;
 
     window.onload = async () => {
         if (!token) {
@@ -95,7 +96,6 @@
             if(result.success) {
                 document.getElementById('email').value = result.data.email;
                 document.getElementById('name').value = result.data.name;
-
                 let pictureData = result.data.picture;
                 if (pictureData) {
                     if (pictureData.includes('/')) {
@@ -113,7 +113,6 @@
         const plus = document.getElementById('avatarPlus');
         const img = document.getElementById('avatarImg');
         if (!fileId) return;
-
         try {
             const res = await fetch(`/api/v1/files/${fileId}`, {
                 headers: { 'Authorization': `Bearer ${token}` }
@@ -129,58 +128,50 @@
         }
     }
 
-    async function uploadProfileImage(input) {
+    function uploadProfileImage(input) {
         if (!input.files || !input.files[0]) return;
-        const file = input.files[0];
-        const formData = new FormData();
-        formData.append('file', file);
-        formData.append('type', 'PROFILE');
-
-        const avatarView = document.getElementById('avatarView');
-        avatarView.style.opacity = '0.5';
-
-        try {
-            const fileRes = await fetch('/api/v1/files', {
-                method: 'POST',
-                headers: { 'Authorization': `Bearer ${token}` },
-                body: formData
-            });
-            const fileResult = await fileRes.json();
-            if (!fileResult.success) {
-                alert(fileResult.error?.message || "업로드 실패");
-                return;
-            }
-
-            const newFileId = fileResult.data.fileId;
-            const profileRes = await fetch('/api/v1/users/me/profile-image', {
-                method: 'PATCH',
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({ fileId: newFileId })
-            });
-            const profileResult = await profileRes.json();
-
-            if (profileRes.ok && profileResult.success) {
-                alert("프로필 이미지가 변경되었습니다.");
-                await updateAvatarView(newFileId);
-            } else {
-                alert(profileResult.error?.message || "프로필 연결 실패");
-            }
-        } catch (e) {
-            alert("통신 오류가 발생했습니다.");
-        } finally {
-            avatarView.style.opacity = '1';
-            input.value = '';
-        }
+        selectedFile = input.files[0];
+        const plus = document.getElementById('avatarPlus');
+        const img = document.getElementById('avatarImg');
+        const objectUrl = URL.createObjectURL(selectedFile);
+        img.src = objectUrl;
+        img.style.display = 'block';
+        plus.style.display = 'none';
+        input.value = '';
     }
 
     async function updateProfile() {
         const name = document.getElementById('name').value;
         const btn = document.getElementById('btnUpdateProfile');
+        const avatarView = document.getElementById('avatarView');
         btn.disabled = true;
+        avatarView.style.opacity = '0.5';
         try {
+            if (selectedFile) {
+                const formData = new FormData();
+                formData.append('file', selectedFile);
+                formData.append('type', 'PROFILE');
+                const fileRes = await fetch('/api/v1/files', {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${token}` },
+                    body: formData
+                });
+                const fileResult = await fileRes.json();
+                if (!fileResult.success) {
+                    alert("이미지 업로드 실패");
+                    return;
+                }
+                const newFileId = fileResult.data.fileId;
+                await fetch('/api/v1/users/me/profile-image', {
+                    method: 'PATCH',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ fileId: newFileId })
+                });
+                selectedFile = null;
+            }
             const res = await fetch('/api/v1/users/me', {
                 method: 'PATCH',
                 headers: {
@@ -193,12 +184,13 @@
             if (res.ok && result.success) {
                 alert("수정되었습니다.");
             } else {
-                alert(result.error?.message || "수정에 실패했습니다.");
+                alert(result.error?.message || "수정 실패");
             }
         } catch (e) {
-            alert("오류가 발생했습니다.");
+            alert("오류 발생");
         } finally {
             btn.disabled = false;
+            avatarView.style.opacity = '1';
         }
     }
 
@@ -208,12 +200,10 @@
             newPassword: document.getElementById('newPwd').value,
             confirmPassword: document.getElementById('confirmPwd').value
         };
-
         if (data.newPassword !== data.confirmPassword) {
             alert("새 비밀번호가 일치하지 않습니다.");
             return;
         }
-
         const btn = document.getElementById('btnUpdatePwd');
         btn.disabled = true;
         try {
@@ -234,7 +224,7 @@
                 alert(result.error?.message || "비밀번호 변경 실패");
             }
         } catch (e) {
-            alert("통신 중 오류가 발생했습니다.");
+            alert("통신 오류");
         } finally {
             btn.disabled = false;
         }
