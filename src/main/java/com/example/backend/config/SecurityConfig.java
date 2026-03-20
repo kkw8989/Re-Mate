@@ -42,7 +42,8 @@ public class SecurityConfig {
                         "/signup.html",
                         "/upload.html",
                         "/select-workspace.html",
-                        "/workspace-list.html")
+                        "/workspace-list.html",
+                        "/profile.html")
                     .permitAll()
                     .requestMatchers("/static/**", "/favicon.ico", "/error", "/css/**", "/js/**")
                     .permitAll()
