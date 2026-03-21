@@ -32,7 +32,12 @@ public class GeminiService {
     headers.setContentType(MediaType.APPLICATION_JSON);
 
     String prompt =
-        "너는 영수증 분석 전문가야. 아래 텍스트에서 'storeName', 'totalAmount(숫자만)', 'tradeAt(YYYY-MM-DD HH:mm:ss)'를 추출해서 JSON 형식으로만 응답해줘. 텍스트: "
+        "너는 영수증 분석 전문가야. 아래 텍스트에서 "
+            + "'storeName', 'totalAmount(숫자만)', 'tradeAt(YYYY-MM-DD HH:mm:ss)', "
+            + "'tax(세액 숫자만, 없으면 0)', "
+            + "'confidence(추출 신뢰도 0.0~1.0)', "
+            + "'items(상품 목록, 각 항목은 name/quantity/price 포함, 없으면 빈 배열)' "
+            + "를 추출해서 JSON 형식으로만 응답해줘. 텍스트: "
             + rawText;
 
     Map<String, Object> body =
@@ -56,6 +61,7 @@ public class GeminiService {
                 .asText();
 
         aiJsonText = aiJsonText.replaceAll("(?s)```json\\s*|\\s*```", "").trim();
+        log.info("=== Gemini 응답: {}", aiJsonText);
         return objectMapper.readTree(aiJsonText);
       }
     } catch (Exception e) {
