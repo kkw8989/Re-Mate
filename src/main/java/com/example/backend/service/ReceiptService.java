@@ -86,7 +86,8 @@ public class ReceiptService {
       byte[] hashBytes = MessageDigest.getInstance("MD5").digest(fileBytes);
       String fileHash = HexFormat.of().formatHex(hashBytes);
 
-      Optional<Receipt> existingByHash = receiptRepository.findByFileHash(fileHash);
+      Optional<Receipt> existingByHash =
+          receiptRepository.findByFileHashAndWorkspaceId(fileHash, workspaceId);
       if (existingByHash.isPresent()) {
         return new UploadReceiptResponse(existingByHash.get(), true);
       }

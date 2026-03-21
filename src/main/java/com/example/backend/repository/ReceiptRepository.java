@@ -15,6 +15,8 @@ public interface ReceiptRepository extends JpaRepository<Receipt, Long> {
 
   Optional<Receipt> findByFileHash(String fileHash);
 
+  Optional<Receipt> findByFileHashAndWorkspaceId(String fileHash, Long workspaceId);
+
   List<Receipt> findAllByUserId(Long userId);
 
   Optional<Receipt> findByIdAndUserId(Long id, Long userId);
