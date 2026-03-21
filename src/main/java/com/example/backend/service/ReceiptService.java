@@ -422,4 +422,18 @@ public class ReceiptService {
   public java.util.Map<String, Object> getAdminStats(Long workspaceId) {
     return receiptRepository.getWorkspaceStats(workspaceId);
   }
+
+  @Transactional
+  public void deleteReceipt(Long id, Long workspaceId) {
+    Receipt receipt = getReceiptSecurely(id, workspaceId);
+    receiptItemRepository.deleteAll(receiptItemRepository.findAllByReceiptId(id));
+    receiptRepository.delete(receipt);
+  }
+
+  @Transactional
+  public Receipt confirmReceipt(Long id, Long workspaceId) {
+    Receipt receipt = getReceiptSecurely(id, workspaceId);
+    receipt.confirm();
+    return receipt;
+  }
 }
