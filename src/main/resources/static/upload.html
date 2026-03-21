@@ -2,271 +2,311 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8" />
-    <title>Receipt Master | 분석 및 관리</title>
+    <title>Re:Mate</title>
     <style>
-        :root { --primary:#3b82f6; --bg:#f8fafc; --card:#ffffff; --text:#1e293b; }
-        body{ font-family:'Pretendard',sans-serif; background:var(--bg); margin:0; padding:40px 20px; display:flex; flex-direction:column; align-items:center; color:var(--text); }
-        .card{ background:var(--card); padding:32px; border-radius:24px; box-shadow:0 10px 25px rgba(0,0,0,0.05); width:100%; max-width:1200px; margin-bottom:24px; }
-        h2,h3{ margin-top:0; font-weight:700; letter-spacing:-0.5px; }
+        :root { --primary:#3b82f6; --bg:#f8fafc; --card:#ffffff; --text:#1e293b; --sidebar:220px; }
+        * { box-sizing: border-box; }
+        body { font-family:'Pretendard',sans-serif; background:var(--bg); margin:0; color:var(--text); display:flex; min-height:100vh; }
 
-        .upload-zone{ border:2px dashed #e2e8f0; padding:40px; border-radius:16px; margin-bottom:16px; transition:.3s; cursor:pointer; text-align:center; }
-        .upload-zone:hover{ border-color:var(--primary); background:#f0f7ff; }
+        /* 사이드바 */
+        .sidebar { width:var(--sidebar); background:#fff; border-right:1px solid #e2e8f0; padding:24px 0; display:flex; flex-direction:column; position:fixed; height:100vh; overflow-y:auto; }
+        .sidebar-logo { padding:0 20px 20px; font-weight:800; font-size:1.2rem; color:#1e293b; border-bottom:1px solid #f1f5f9; margin-bottom:12px; }
+        .sidebar-section { font-size:0.72rem; color:#94a3b8; font-weight:600; padding:8px 20px; letter-spacing:0.05em; }
+        .workspace-item { padding:10px 20px; cursor:pointer; font-size:0.9rem; font-weight:500; color:#475569; display:flex; align-items:center; gap:8px; border-radius:0; transition:.2s; }
+        .workspace-item:hover { background:#f8fafc; color:#1e293b; }
+        .workspace-item.active { background:#eff6ff; color:#2563eb; font-weight:700; }
+        .workspace-dot { width:8px; height:8px; border-radius:50%; background:#94a3b8; flex-shrink:0; }
+        .workspace-item.active .workspace-dot { background:#2563eb; }
 
-        .thumbs{ display:none; grid-template-columns:repeat(auto-fill, minmax(72px, 1fr)); gap:10px; margin: 10px 0 18px; }
-        .thumb{ width:72px; height:72px; border-radius:12px; object-fit:cover; border:1px solid #e2e8f0; }
+        /* 메인 */
+        .main { margin-left:var(--sidebar); flex:1; display:flex; flex-direction:column; }
 
-        .progress-container{ width:100%; background:#e2e8f0; border-radius:100px; height:8px; margin:18px 0 14px; display:none; overflow:hidden; }
-        .progress-bar{ width:0%; height:100%; background:var(--primary); transition: width 0.4s ease; }
+        /* 헤더 */
+        .header { background:#fff; border-bottom:1px solid #e2e8f0; padding:16px 32px; display:flex; justify-content:space-between; align-items:center; position:sticky; top:0; z-index:10; }
+        .header-title { font-size:1.1rem; font-weight:700; display:flex; align-items:center; gap:8px; }
+        .header-right { display:flex; align-items:center; gap:12px; }
+        .header-btn { padding:8px 16px; border-radius:10px; border:1px solid #e2e8f0; background:#fff; cursor:pointer; font-size:0.85rem; font-weight:600; }
+        .header-user { display:flex; align-items:center; gap:8px; font-size:0.9rem; font-weight:600; }
 
-        .btn-main{ background:#1e293b; color:#fff; padding:14px 28px; border:none; border-radius:12px; cursor:pointer; font-weight:600; width:100%; font-size:1rem; }
+        /* 콘텐츠 */
+        .content { padding:32px; }
 
-        table{ width:100%; border-collapse:separate; border-spacing:0; margin-top:18px; }
-        th{ background:#f8fafc; padding:16px; font-weight:600; font-size:.85rem; color:#64748b; border-bottom:2px solid #e2e8f0; text-align:center; }
-        td{ padding:16px; text-align:center; border-bottom:1px solid #f1f5f9; font-size:.95rem; vertical-align:middle; }
-        tr:hover{ background:#fbfcfe; }
+        /* 통계 카드 */
+        .stats-grid { display:grid; grid-template-columns:repeat(4, 1fr); gap:16px; margin-bottom:28px; }
+        .stat-card { background:#fff; padding:20px 24px; border-radius:16px; box-shadow:0 2px 8px rgba(0,0,0,0.04); }
+        .stat-label { font-size:0.8rem; color:#64748b; font-weight:600; margin-bottom:8px; }
+        .stat-value { font-size:1.8rem; font-weight:800; color:#1e293b; }
 
-        .status-badge{ padding:5px 12px; border-radius:8px; font-weight:700; font-size:.72rem; display:inline-block; position: relative; cursor: help; }
-        .ANALYZING, .WAITING, .UPLOADED { background:#fff7ed; color:#c2410c; }
+        /* 목록 카드 */
+        .list-card { background:#fff; border-radius:20px; box-shadow:0 2px 8px rgba(0,0,0,0.04); padding:24px; }
+        .list-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; }
+        .list-title { font-size:1rem; font-weight:700; }
+        .list-actions { display:flex; gap:8px; }
+        .btn-download { padding:9px 18px; border-radius:10px; border:1px solid #e2e8f0; background:#fff; cursor:pointer; font-size:0.85rem; font-weight:600; }
+        .btn-upload { padding:9px 18px; border-radius:10px; border:none; background:#1e293b; color:#fff; cursor:pointer; font-size:0.85rem; font-weight:600; }
+
+        /* 필터 */
+        .filter-row { display:flex; gap:10px; margin-bottom:20px; }
+        .search-box { flex:1; position:relative; }
+        .search-box input { width:100%; padding:9px 12px 9px 36px; border:1px solid #e2e8f0; border-radius:10px; font-size:0.88rem; outline:none; }
+        .search-box input:focus { border-color:var(--primary); }
+        .search-icon { position:absolute; left:10px; top:50%; transform:translateY(-50%); color:#94a3b8; font-size:0.9rem; }
+        .filter-select { padding:9px 12px; border:1px solid #e2e8f0; border-radius:10px; font-size:0.88rem; background:#fff; cursor:pointer; outline:none; color:#475569; font-weight:500; }
+        .filter-select:focus { border-color:var(--primary); }
+
+        /* 테이블 */
+        table { width:100%; border-collapse:collapse; }
+        th { padding:12px 16px; font-size:0.8rem; font-weight:600; color:#94a3b8; border-bottom:1px solid #f1f5f9; text-align:left; }
+        td { padding:14px 16px; font-size:0.88rem; border-bottom:1px solid #f8fafc; vertical-align:middle; }
+        tr:hover td { background:#f8fafc; cursor:pointer; }
+        .status-badge { padding:4px 10px; border-radius:6px; font-weight:700; font-size:.72rem; display:inline-flex; align-items:center; gap:4px; }
+        .dot { width:6px; height:6px; border-radius:50%; }
+        .WAITING, .ANALYZING, .NEED_MANUAL { background:#fff7ed; color:#c2410c; }
+        .WAITING .dot, .ANALYZING .dot, .NEED_MANUAL .dot { background:#c2410c; }
         .APPROVED { background:#f0fdf4; color:#15803d; }
+        .APPROVED .dot { background:#15803d; }
         .REJECTED { background:#fef2f2; color:#b91c1c; }
-        .NEED_MANUAL { background:#f1f5f9; color:#475569; }
+        .REJECTED .dot { background:#b91c1c; }
+        .FAILED_SYSTEM { background:#fef2f2; color:#b91c1c; }
 
-        .status-badge[data-reason]::after {
-            content: attr(data-reason);
-            position: absolute;
-            bottom: 100%;
-            left: 50%;
-            transform: translateX(-50%) translateY(-8px);
-            background: #1e293b;
-            color: white;
-            padding: 8px 12px;
-            border-radius: 8px;
-            font-size: 0.75rem;
-            white-space: nowrap;
-            max-width: 250px;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            opacity: 0;
-            pointer-events: none;
-            transition: opacity 0.2s;
-            z-index: 100;
-            font-weight: 500;
-        }
-
-        .status-badge[data-reason]::before {
-            content: '';
-            position: absolute;
-            bottom: 100%;
-            left: 50%;
-            transform: translateX(-50%) translateY(-2px);
-            border: 6px solid transparent;
-            border-top-color: #1e293b;
-            opacity: 0;
-            pointer-events: none;
-            transition: opacity 0.2s;
-            z-index: 100;
-        }
-
-        .status-badge[data-reason]:hover::after,
-        .status-badge[data-reason]:hover::before {
-            opacity: 1;
-        }
-
-        .action-btn{ padding:8px 14px; border-radius:10px; border:1px solid #e2e8f0; cursor:pointer; background:#fff; font-size:.82rem; font-weight:600; margin:0 2px; transition:.2s; }
-        .action-btn:hover:not([disabled]){ background:#f8fafc; border-color:#cbd5e1; }
-        .action-btn[disabled] { opacity: 0.35; cursor: not-allowed; }
-
-        .modal { display:none; position:fixed; z-index:1000; left:0; top:0; width:100%; height:100%; background:rgba(15, 23, 42, 0.4); backdrop-filter: blur(4px); }
-        .modal-content { background:#fff; margin:5% auto; padding:32px; border-radius:24px; width:90%; max-width:620px; box-shadow:0 20px 40px rgba(0,0,0,0.2); max-height: 85vh; overflow-y: auto; }
-
-        .receipt-preview { margin: 16px 0; text-align: center; }
-        .receipt-preview img { max-width: 100%; max-height: 400px; border-radius: 12px; border: 2px solid #e2e8f0; }
-        .receipt-preview-placeholder { padding: 60px 20px; background: #f8fafc; border-radius: 12px; color: #94a3b8; border: 2px dashed #e2e8f0; }
-
-        .history-item { border-bottom:1px solid #f1f5f9; padding:16px 0; font-size:0.9rem; }
-        .history-item:last-child { border-bottom: none; }
-        .history-reason { margin-top:10px; padding:12px; background:#f8fafc; border-radius:10px; border-left:4px solid var(--primary); font-size:0.85rem; color:#475569; line-height:1.5; }
-        .history-empty { text-align: center; padding: 40px 20px; color: #94a3b8; }
-
-        .form-group { margin-bottom: 16px; }
-        .form-group label { display: block; font-size: 0.8rem; color: #64748b; margin-bottom: 6px; font-weight: 600; }
-        .form-group input { width: 100%; padding: 10px; border: 1px solid #e2e8f0; border-radius: 8px; box-sizing: border-box; font-size: 0.95rem; }
-        .form-group input:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1); }
-
-        .mask-badge { background:#f1f5f9; color:#94a3b8; padding:4px 8px; border-radius:6px; font-size:0.8rem; font-weight:500; }
-        body.admin-mode { --primary: #0f172a; }
-        .admin-header { width: 100%; max-width: 1200px; margin-bottom: 20px; display: none; padding: 15px 25px; background: #0f172a; color: white; border-radius: 16px; justify-content: space-between; align-items: center; }
+        /* 업로드 모달 */
+        .modal { display:none; position:fixed; z-index:1000; left:0; top:0; width:100%; height:100%; background:rgba(15,23,42,0.4); backdrop-filter:blur(4px); }
+        .modal-content { background:#fff; margin:5% auto; padding:32px; border-radius:24px; width:90%; max-width:560px; box-shadow:0 20px 40px rgba(0,0,0,0.15); }
+        .modal-title { font-size:1.1rem; font-weight:700; margin-bottom:20px; }
+        .upload-zone { border:2px dashed #e2e8f0; padding:40px; border-radius:16px; text-align:center; cursor:pointer; transition:.2s; }
+        .upload-zone:hover { border-color:var(--primary); background:#f0f7ff; }
+        .thumbs { display:none; grid-template-columns:repeat(auto-fill, minmax(72px,1fr)); gap:10px; margin:12px 0; }
+        .thumb { width:72px; height:72px; border-radius:10px; object-fit:cover; border:1px solid #e2e8f0; }
+        .progress-container { width:100%; background:#e2e8f0; border-radius:100px; height:6px; margin:16px 0; display:none; overflow:hidden; }
+        .progress-bar { width:0%; height:100%; background:var(--primary); transition:width 0.4s ease; }
+        .modal-btns { display:flex; gap:10px; margin-top:16px; }
+        .modal-btns button { flex:1; padding:12px; border-radius:10px; border:none; cursor:pointer; font-weight:600; font-size:0.95rem; }
+        .btn-cancel { background:#f1f5f9; color:#475569; }
+        .btn-confirm { background:#1e293b; color:#fff; }
     </style>
 </head>
 <body>
 
-<div class="admin-header" id="adminHeader">
-    <span style="font-weight:700; font-size:1.1rem;">👑 관리자 모드</span>
-    <div id="adminStats" style="font-size:0.9rem; opacity:0.9;">워크스페이스 현황 분석 중...</div>
+<!-- 사이드바 -->
+<div class="sidebar">
+    <div class="sidebar-logo" onclick="location.href='/workspace-list.html'" style="cursor:pointer;">✅ Re:Mate</div>
+    <div class="sidebar-section">Workspaces</div>
+    <div id="workspaceList"></div>
 </div>
 
-<div id="mainContainer" style="display:flex; flex-direction:column; width:100%; align-items:center;">
+<!-- 메인 -->
+<div class="main">
+    <!-- 헤더 -->
+    <div class="header">
+        <div class="header-title" id="headerTitle">워크스페이스</div>
+        <div class="header-right">
+            <div id="adminBtns" style="display:none;">
+                <button class="header-btn">⚙️ 관리</button>
+                <button class="header-btn">👥 초대하기</button>
+            </div>
+            <div class="header-user">👤 <span id="headerUserName">-</span></div>
+        </div>
+    </div>
 
-    <div class="card" id="uploadCard">
-        <h2>📸 영수증 업로드</h2>
+    <!-- 콘텐츠 -->
+    <div class="content">
+        <!-- 통계 -->
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-label">총 영수증</div>
+                <div class="stat-value" id="statTotal">0<span style="font-size:1rem;color:#94a3b8;margin-left:4px;">건</span></div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">승인 대기</div>
+                <div class="stat-value" id="statPending">0<span style="font-size:1rem;color:#94a3b8;margin-left:4px;">건</span></div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">승인 완료</div>
+                <div class="stat-value" id="statApproved">0<span style="font-size:1rem;color:#94a3b8;margin-left:4px;">건</span></div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">반려</div>
+                <div class="stat-value" id="statRejected">0<span style="font-size:1rem;color:#94a3b8;margin-left:4px;">건</span></div>
+            </div>
+        </div>
+
+        <!-- 목록 -->
+        <div class="list-card">
+            <div class="list-header">
+                <div class="list-title">영수증 목록</div>
+                <div class="list-actions">
+                    <button class="btn-download" id="downloadBtn" style="display:none;" onclick="exportCSV()">다운로드</button>
+                    <button class="btn-upload" onclick="openModal('uploadModal')">업로드</button>
+                </div>
+            </div>
+            <div class="filter-row">
+                <div class="search-box">
+                    <span class="search-icon">🔍</span>
+                    <input type="text" id="searchInput" placeholder="가맹점 검색" oninput="filterReceipts()">
+                </div>
+                <select class="filter-select" id="filterUser" onchange="filterReceipts()">
+                    <option value="">게시자 ▾</option>
+                </select>
+                <select class="filter-select" id="filterStatus" onchange="filterReceipts()">
+                    <option value="">상태 ▾</option>
+                    <option value="WAITING">대기</option>
+                    <option value="APPROVED">승인</option>
+                    <option value="REJECTED">반려</option>
+                </select>
+                <select class="filter-select" id="filterSort" onchange="filterReceipts()">
+                    <option value="newest">최신순 ▾</option>
+                    <option value="oldest">오래된순</option>
+                </select>
+            </div>
+            <table>
+                <thead>
+                <tr>
+                    <th>게시자</th>
+                    <th>가맹점</th>
+                    <th>금액</th>
+                    <th>상태</th>
+                    <th>게시일</th>
+                </tr>
+                </thead>
+                <tbody id="receiptList"></tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- 업로드 모달 -->
+<div id="uploadModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-title">📸 영수증 업로드</div>
         <div class="upload-zone" id="dropZone">
             <p style="margin:0; color:#64748b;">파일을 클릭하거나 여기로 드래그하세요</p>
             <input type="file" id="fileInput" accept="image/*" multiple style="display:none" />
         </div>
         <div class="thumbs" id="thumbs"></div>
         <div class="progress-container" id="progCont"><div class="progress-bar" id="progBar"></div></div>
-        <button id="uploadBtn" class="btn-main">AI 분석 시작하기</button>
-        <p id="status" style="margin-top:15px; font-size:.9rem; color:#64748b; text-align:center;"></p>
-    </div>
-
-    <div class="card" id="listCard">
-        <div style="display:flex; justify-content:space-between; align-items:center;">
-            <h3>📋 분석된 영수증 내역</h3>
-            <div>
-                <button id="refreshBtn" class="action-btn">🔄 새로고침</button>
-                <button onclick="exportCSV()" class="action-btn" style="background:#1e293b; color:white">📥 CSV 저장</button>
-            </div>
+        <div class="modal-btns">
+            <button class="btn-cancel" onclick="closeModal('uploadModal')">취소</button>
+            <button class="btn-confirm" id="uploadBtn">AI 분석 시작하기</button>
         </div>
-        <table>
-            <thead>
-            <tr><th>ID</th><th style="text-align:left">상호명</th><th>결제일시</th><th>금액</th><th>상태</th><th>관리</th></tr>
-            </thead>
-            <tbody id="receiptList"></tbody>
-        </table>
-    </div>
-
-</div>
-
-<div id="editModal" class="modal">
-    <div class="modal-content">
-        <h3>✏️ 영수증 정보 수정</h3>
-        <input type="hidden" id="editId">
-
-        <div class="receipt-preview" id="receiptPreview">
-            <div class="receipt-preview-placeholder">영수증 이미지를 불러오는 중...</div>
-        </div>
-
-        <div class="form-group">
-            <label>상호명</label>
-            <input type="text" id="editStoreName">
-        </div>
-
-        <div class="form-group">
-            <label>금액 (원)</label>
-            <input type="number" id="editAmount">
-        </div>
-
-        <div class="form-group">
-            <label>결제일시</label>
-            <input type="datetime-local" id="editTradeAt">
-        </div>
-
-        <button id="saveEditBtn" class="btn-main" style="margin-top:8px;">저장하기</button>
-        <button id="closeEditBtn" style="width:100%; background:none; border:none; color:#94a3b8; margin-top:10px; cursor:pointer; font-weight: 600;">닫기</button>
-    </div>
-</div>
-
-<div id="historyModal" class="modal">
-    <div class="modal-content">
-        <h3>📜 변경 이력 및 사유</h3>
-        <div id="historyContent" style="max-height:400px; overflow-y:auto; margin:16px 0;"></div>
-        <button id="closeHistoryBtn" class="btn-main">확인</button>
     </div>
 </div>
 
 <script>
     let receiptData = [];
-    const el = (id) => document.getElementById(id);
-    const escapeHtml = (s) => String(s ?? '').replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+    let allReceipts = [];
+    const el = id => document.getElementById(id);
+    const escapeHtml = s => String(s ?? '').replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
 
     const token = localStorage.getItem('accessToken');
     const workspaceId = localStorage.getItem('currentWorkspaceId');
-    const clientSideUserId = localStorage.getItem('currentUserId');
-    const userRole = localStorage.getItem('userRole');
+    const userName = localStorage.getItem('userName');
 
-    window.checkIsAdmin = function() {
-        const role = localStorage.getItem('userRole');
-        return role === 'ADMIN';
-    };
-
+    function checkIsAdmin() { return localStorage.getItem('userRole') === 'ADMIN'; }
     function closeModal(id) { el(id).style.display = 'none'; }
     function openModal(id) { el(id).style.display = 'block'; }
 
     function initLayout() {
-        if (window.checkIsAdmin()) {
-            document.body.classList.add('admin-mode');
-            el('adminHeader').style.display = 'flex';
-            el('mainContainer').appendChild(el('uploadCard'));
+        el('headerUserName').textContent = userName || '-';
+        if (checkIsAdmin()) {
+            el('adminBtns').style.display = 'flex';
+            el('downloadBtn').style.display = 'inline-block';
         }
+        loadWorkspaces();
+    }
+
+    async function loadWorkspaces() {
+        try {
+            const res = await fetch('/api/v1/workspaces/my', {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            const json = await res.json();
+            const workspaces = json.data || [];
+            el('workspaceList').innerHTML = workspaces.map(w =>
+                `<div class="workspace-item ${w.workspaceId == workspaceId ? 'active' : ''}" onclick="switchWorkspace(${w.workspaceId}, '${escapeHtml(w.workspaceName)}', '${w.role}')">
+                    <div class="workspace-dot"></div>
+                    ${escapeHtml(w.workspaceName)}
+                </div>`
+            ).join('');
+
+            const current = workspaces.find(w => w.workspaceId == workspaceId);
+            if (current) el('headerTitle').textContent = current.workspaceName;
+        } catch (e) { console.error('워크스페이스 목록 실패', e); }
+    }
+
+    function switchWorkspace(id, name, role) {
+        localStorage.setItem('currentWorkspaceId', id);
+        localStorage.setItem('userRole', role);
+        location.reload();
+    }
+
+    async function fetchStats() {
+        try {
+            const res = await fetch(`/api/v1/receipts/stats?workspaceId=${workspaceId}`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            const json = await res.json();
+            const s = json.data;
+            el('statTotal').innerHTML = `${s.totalCount || 0}<span style="font-size:1rem;color:#94a3b8;margin-left:4px;">건</span>`;
+            el('statPending').innerHTML = `${s.pendingCount || 0}<span style="font-size:1rem;color:#94a3b8;margin-left:4px;">건</span>`;
+            el('statApproved').innerHTML = `${s.approvedCount || 0}<span style="font-size:1rem;color:#94a3b8;margin-left:4px;">건</span>`;
+            el('statRejected').innerHTML = `${s.rejectedCount || 0}<span style="font-size:1rem;color:#94a3b8;margin-left:4px;">건</span>`;
+        } catch (e) { console.error('통계 실패', e); }
     }
 
     async function fetchReceipts() {
         if (!token || !workspaceId) return;
-
-        const isReallyAdmin = window.checkIsAdmin();
-
         try {
-            const res = await fetch(`/api/v1/receipts?workspaceId=${workspaceId}`,  {
+            const res = await fetch(`/api/v1/receipts?workspaceId=${workspaceId}`, {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
             const json = await res.json();
-            receiptData = json.data;
+            allReceipts = json.data || [];
 
-            if (isReallyAdmin) {
-                fetch(`/api/v1/receipts/stats?workspaceId=${workspaceId}`, {
-                    headers: { 'Authorization': `Bearer ${token}` }
-                })
-                    .then(res => res.json())
-                    .then(json => {
-                        const stats = json.data;
-                        const total = stats.totalCount || 0;
-                        const pending = stats.pendingCount || 0;
-                        const amount = (Number(stats.totalAmount) || 0).toLocaleString();
-                        el('adminStats').innerHTML =
-                            `전체 <strong>${total}</strong>건 | 승인대기 <strong>${pending}</strong>건 | 누적 금액 <strong>${amount}원</strong>`;
-                    })
-                    .catch(err => console.error("통계 로직 에러:", err));
-            }
+            const users = [...new Set(allReceipts.map(r => r.userName).filter(Boolean))];
+            const filterUser = el('filterUser');
+            filterUser.innerHTML = `<option value="">게시자 ▾</option>` +
+                users.map(u => `<option value="${escapeHtml(u)}">${escapeHtml(u)}</option>`).join('');
 
-            const html = receiptData.map(r => {
-                const isFinal = (r.status === 'APPROVED' || r.status === 'REJECTED');
+            filterReceipts();
+        } catch (e) { console.error('목록 실패', e); }
+    }
 
-                const canEdit = !isFinal && (isReallyAdmin || r.userId == clientSideUserId);
-                const canProcess = !isFinal && isReallyAdmin;
+    function filterReceipts() {
+        const search = el('searchInput').value.toLowerCase();
+        const userFilter = el('filterUser').value;
+        const statusFilter = el('filterStatus').value;
+        const sort = el('filterSort').value;
 
+        let filtered = allReceipts.filter(r => {
+            const matchSearch = !search || (r.storeName || '').toLowerCase().includes(search);
+            const matchUser = !userFilter || r.userName === userFilter;
+            const matchStatus = !statusFilter || r.status === statusFilter;
+            return matchSearch && matchUser && matchStatus;
+        });
 
+        if (sort === 'oldest') {
+            filtered.sort((a, b) => new Date(a.tradeAt) - new Date(b.tradeAt));
+        } else {
+            filtered.sort((a, b) => new Date(b.tradeAt) - new Date(a.tradeAt));
+        }
 
-                const tradeAt = r.tradeAt ? r.tradeAt.replace('T', ' ').substring(0, 16) : '-';
-                const nightBadge = r.nightTime ? '<span style="background:#1e293b; color:#fff; padding:2px 6px; border-radius:4px; font-size:0.65rem; margin-left:4px;">🌙 야간</span>' : '';
-                const reasonAttr = (r.status === 'REJECTED' && r.rejectionReason) ? `data-reason="${escapeHtml(r.rejectionReason)}"` : '';
+        receiptData = filtered;
+        renderReceipts();
+    }
 
-
-                const tagHtml = (r.tags || []).map(tag =>
-                    `<span style="background:#f1f5f9; color:#475569; padding:2px 6px; border-radius:4px; font-size:0.65rem; margin-left:4px; border:1px solid #e2e8f0;">${escapeHtml(tag)}</span>`
-                ).join('');
-
-                const amountDisplay = `<strong>${(r.totalAmount || 0).toLocaleString()}원</strong>`;
-
-                return `<tr>
-                    <td>${r.id}</td>
-                    <td style="text-align:left"><strong>${escapeHtml(r.storeName)}</strong></td>
-                    <td>${escapeHtml(tradeAt)}</td>
-                    <td>${amountDisplay}</td>
-                    <td>
-                        <span class="status-badge ${r.status}" ${reasonAttr}>${r.status}</span>${nightBadge}
-                        ${tagHtml ? `<div style="margin-top:4px;">${tagHtml}</div>` : ''}
-                    </td>
-                    <td>
-                      <button class="action-btn" ${canEdit ? '' : 'disabled'} data-action="edit" data-id="${r.id}">✏️ 수정</button>
-                      <button class="action-btn" data-action="history" data-id="${r.id}">📜 이력</button>
-                      <button class="action-btn" ${canProcess ? '' : 'disabled'} data-action="approve" data-id="${r.id}" style="color:#16a34a;">승인</button>
-                      <button class="action-btn" ${canProcess ? '' : 'disabled'} data-action="reject" data-id="${r.id}" style="color:#dc2626;">반려</button>
-
-                    </td>
-                </tr>`;
-            }).join('');
-            el('receiptList').innerHTML = html || '<tr><td colspan="6">데이터가 없습니다.</td></tr>';
-        } catch (e) { console.error("목록 불러오기 실패:", e); }
+    function renderReceipts() {
+        const statusLabel = { WAITING: '대기', ANALYZING: '대기', NEED_MANUAL: '대기', APPROVED: '승인', REJECTED: '반려', FAILED_SYSTEM: '오류' };
+        const html = receiptData.map(r => {
+            const tradeAt = r.tradeAt ? r.tradeAt.replace('T', ' ').substring(0, 10) : '-';
+            return `<tr onclick="location.href='/receipt-detail.html?id=${r.id}&workspaceId=${workspaceId}'">
+                <td>${escapeHtml(r.userName || '-')}</td>
+                <td><strong>${escapeHtml(r.storeName || '-')}</strong></td>
+                <td>₩${(r.totalAmount || 0).toLocaleString()}</td>
+                <td><span class="status-badge ${r.status}"><span class="dot"></span>${statusLabel[r.status] || r.status}</span></td>
+                <td style="color:#64748b;">${tradeAt}</td>
+            </tr>`;
+        }).join('');
+        el('receiptList').innerHTML = html || '<tr><td colspan="5" style="text-align:center;padding:40px;color:#94a3b8;">데이터가 없습니다.</td></tr>';
     }
 
     async function uploadReceipts() {
@@ -276,7 +316,6 @@
 
         const formData = new FormData();
         Array.from(files).forEach(f => formData.append('files', f));
-        formData.append('workspaceId', workspaceId);
 
         el('progCont').style.display = 'block';
         el('progBar').style.width = '30%';
@@ -292,189 +331,54 @@
             el('progBar').style.width = '100%';
             if (res.ok) {
                 const json = await res.json();
-                const hasDuplicate = json.data && json.data.some(r => r.duplicate);
-                if (hasDuplicate) {
+                const results = json.data || [];
+                const duplicates = results.filter(r => r.duplicate);
+                const newReceipts = results.filter(r => !r.duplicate);
+
+                if (duplicates.length > 0) {
                     alert("이미 등록된 영수증이 포함되어 있습니다.");
-                } else {
-                    alert("분석 완료!");
                 }
-                el('fileInput').value = '';
-                el('thumbs').innerHTML = '';
-                el('thumbs').style.display = 'none';
-                fetchReceipts();
+
+                if (newReceipts.length === 1) {
+                    // 새 영수증 1개 → 바로 상세 페이지로 이동 (미리보기)
+                    const receipt = newReceipts[0].receipt;
+                    location.href = `/receipt-detail.html?id=${receipt.id}&workspaceId=${workspaceId}&preview=true`;
+                } else if (newReceipts.length > 1) {
+                    // 여러 개 → 목록으로 이동
+                    alert(`${newReceipts.length}개 분석 완료! 각 영수증을 확인해주세요.`);
+                    closeModal('uploadModal');
+                    fetchReceipts();
+                    fetchStats();
+                } else {
+                    closeModal('uploadModal');
+                    fetchReceipts();
+                    fetchStats();
+                }
             } else {
-                const errorText = await res.text();
-                alert(`업로드 실패: ${res.status}\n${errorText}`);
+                alert(`업로드 실패: ${res.status}`);
             }
         } catch (e) {
             alert("오류: " + e.message);
         } finally {
-            setTimeout(() => {
-                el('progCont').style.display = 'none';
-                el('progBar').style.width = '0%';
-            }, 500);
+            setTimeout(() => { el('progCont').style.display = 'none'; el('progBar').style.width = '0%'; }, 500);
             el('uploadBtn').disabled = false;
         }
     }
 
     function exportCSV() {
-        const params = new URLSearchParams({ workspaceId });
-        window.location.href = `/api/v1/receipts/export?${params}`;
-    }
-    async function updateStatus(id, status) {
-        let reason = "관리자 요청";
-        if (status === 'REJECTED') {
-            const input = prompt("반려 사유를 입력하세요:");
-            if (input === null) return;
-
-
-            const trimmedReason = input.trim();
-            if (!trimmedReason) {
-                alert("반려 사유는 공백일 수 없습니다. 정확한 사유를 입력해주세요.");
-                return;
-            }
-            reason = trimmedReason;
-        }
-        try {
-            const params = new URLSearchParams({ workspaceId, status, reason });
-            const res = await fetch(`/api/v1/receipts/${id}/status?${params}`, {
-                method: 'PATCH',
-                headers: { 'Authorization': `Bearer ${token}` }
-            });
-            if (res.ok) fetchReceipts();
-        } catch (e) { alert('처리 권한이 없습니다.'); }
-    }
-    // async function updateStatus(id, status) {
-    //     let reason = "관리자 요청"; // 기본값
-    //
-    //     if (status === 'REJECTED') {
-    //         const input = prompt("반려 사유를 입력하세요:");
-    //
-    //         // 1. [테스트용] 프론트엔드 방어막 주석 처리 유지
-    //         // if (input === null) return;
-    //         // const trimmedReason = input.trim();
-    //         // if (!trimmedReason) { ... return; }
-    //
-    //         // 2. [핵심] 기본값 "관리자 요청"을 사용자가 입력한 값(스페이스바 등)으로 덮어씁니다.
-    //         reason = input;
-    //     }
-    //
-    //     try {
-    //         // reason이 "  "(스페이스바)인 상태로 백엔드에 날아갑니다.
-    //         const params = new URLSearchParams({ workspaceId, status, reason });
-    //         const res = await fetch(`/api/receipts/${id}/status?${params}`, {
-    //             method: 'PATCH',
-    //             headers: { 'Authorization': `Bearer ${token}` }
-    //         });
-    //
-    //         // 3. 백엔드가 에러를 던졌을 때(res.ok가 아닐 때) 메시지 확인
-    //         if (!res.ok) {
-    //             const errorData = await res.json();
-    //             console.log("백엔드 응답 데이터:", errorData);
-    //
-    //             // 이 알림창이 뜨면 백엔드 검증 로직이 승리한 겁니다!
-    //             alert(`백엔드 검증 성공! 메시지: ${errorData.message}`);
-    //             return;
-    //         }
-    //
-    //         if (res.ok) fetchReceipts();
-    //     } catch (e) {
-    //         alert('처리 권한이 없습니다.');
-    //     }
-    // }
-
-    async function submitEdit() {
-        const id = el('editId').value;
-        const tradeAtValue = el('editTradeAt').value ? el('editTradeAt').value.replace('T', ' ') + ':00' : null;
-        const body = {
-            storeName: el('editStoreName').value,
-            totalAmount: Number(el('editAmount').value),
-            tradeAt: tradeAtValue
-        };
-        try {
-            const params = new URLSearchParams({ workspaceId });
-            const res = await fetch(`/api/v1/receipts/${id}?${params}`, {
-                method: 'PUT',
-                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-                body: JSON.stringify(body)
-            });
-            if (res.ok) { closeModal('editModal'); fetchReceipts(); }
-        } catch (e) { alert('수정 실패'); }
-    }
-
-    async function showHistory(id) {
-        const token = localStorage.getItem('accessToken');
-        try {
-            const res = await fetch(`/api/v1/receipts/${id}/history`, {
-                headers: { 'Authorization': `Bearer ${token}` }
-            });
-            const json = await res.json();
-            const logs = json.data;
-
-            el('historyContent').innerHTML = logs.length ? logs.map(l => {
-
-                const meta = JSON.parse(l.metaJson || '{}');
-                const time = l.createdAt ? l.createdAt.replace('T', ' ').substring(0, 16) : '-';
-
-
-                const statusFlow = (meta.oldStatus && meta.newStatus)
-                    ? `<strong>${meta.oldStatus} ➜ ${meta.newStatus}</strong>`
-                    : `<strong>액션: ${l.action}</strong>`;
-
-                return `
-                <div class="history-item" style="border-bottom: 1px solid #eee; padding: 10px 0;">
-                    <div style="font-size: 0.8rem; color: #64748b;">${time} | 실행자: ${l.actorId}</div>
-                    ${statusFlow}
-                    <p style="margin: 4px 0 0; color: #475569;">${meta.reason || ''}</p>
-                </div>`;
-            }).join('') : '<div class="history-empty">이력 없음</div>';
-
-            openModal('historyModal');
-        } catch (e) {
-            console.error(e);
-            alert('조회 실패');
-        }
-    }
-
-
-    el('receiptList').addEventListener('click', (e) => {
-        const btn = e.target.closest('button');
-        if (!btn || btn.disabled) return;
-        const { action, id } = btn.dataset;
-        if (action === 'edit') openEditModalById(id);
-        if (action === 'history') showHistory(id);
-        if (action === 'approve') updateStatus(id, 'APPROVED');
-        if (action === 'reject') updateStatus(id, 'REJECTED');
-    });
-
-    function openEditModalById(id) {
-        const r = receiptData.find(x => x.id == id);
-        if (!r) return;
-        el('editId').value = r.id;
-        el('editStoreName').value = r.storeName || '';
-        el('editAmount').value = r.totalAmount || 0;
-        if (r.tradeAt) {
-            el('editTradeAt').value = r.tradeAt.substring(0, 16);
-        } else {
-            el('editTradeAt').value = '';
-        }
-        el('receiptPreview').innerHTML = r.filePath ? `<img src="/images/${r.filePath}">` : '이미지 없음';
-        openModal('editModal');
+        window.location.href = `/api/v1/receipts/export?workspaceId=${workspaceId}`;
     }
 
     el('dropZone').addEventListener('click', () => el('fileInput').click());
-    el('fileInput').addEventListener('change', (e) => {
+    el('fileInput').addEventListener('change', e => {
         el('thumbs').innerHTML = Array.from(e.target.files).map(f => `<img src="${URL.createObjectURL(f)}" class="thumb">`).join('');
         el('thumbs').style.display = 'grid';
     });
-
-    el('closeEditBtn').onclick = () => closeModal('editModal');
-    el('closeHistoryBtn').onclick = () => closeModal('historyModal');
-    el('saveEditBtn').onclick = submitEdit;
     el('uploadBtn').onclick = uploadReceipts;
-    el('refreshBtn').onclick = fetchReceipts;
+
     window.onload = () => {
         initLayout();
+        fetchStats();
         fetchReceipts();
     };
 </script>

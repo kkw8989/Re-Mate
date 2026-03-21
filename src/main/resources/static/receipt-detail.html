@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <title>영수증 상세</title>
+  <style>
+    :root { --primary:#3b82f6; --bg:#f8fafc; --card:#ffffff; --text:#1e293b; }
+    body { font-family:'Pretendard',sans-serif; background:var(--bg); margin:0; padding:40px 20px; display:flex; flex-direction:column; align-items:center; color:var(--text); }
+    .back-btn { align-self:flex-start; margin-bottom:24px; background:none; border:none; font-size:1rem; cursor:pointer; color:#64748b; font-weight:600; }
+    .back-btn:hover { color:var(--text); }
+    .container { display:flex; gap:24px; width:100%; max-width:1000px; }
+    .image-card { background:var(--card); padding:24px; border-radius:24px; box-shadow:0 10px 25px rgba(0,0,0,0.05); flex:1; display:flex; align-items:center; justify-content:center; min-height:400px; }
+    .image-card img { max-width:100%; max-height:500px; border-radius:12px; }
+    .image-placeholder { color:#94a3b8; font-size:0.9rem; }
+    .info-card { background:var(--card); padding:28px; border-radius:24px; box-shadow:0 10px 25px rgba(0,0,0,0.05); width:320px; }
+    .info-row { margin-bottom:18px; }
+    .info-label { font-size:0.78rem; color:#64748b; font-weight:600; margin-bottom:4px; }
+    .info-value { font-size:0.98rem; font-weight:500; }
+    .status-badge { padding:5px 12px; border-radius:8px; font-weight:700; font-size:.75rem; display:inline-block; }
+    .WAITING, .ANALYZING { background:#fff7ed; color:#c2410c; }
+    .APPROVED { background:#f0fdf4; color:#15803d; }
+    .REJECTED { background:#fef2f2; color:#b91c1c; }
+    .NEED_MANUAL { background:#f1f5f9; color:#475569; }
+    .FAILED_SYSTEM { background:#fef2f2; color:#b91c1c; }
+    .action-btns { display:flex; gap:8px; margin-top:8px; }
+    .btn { padding:8px 20px; border-radius:10px; border:none; cursor:pointer; font-weight:600; font-size:0.9rem; }
+    .btn-approve { background:#16a34a; color:white; }
+    .btn-reject { background:#dc2626; color:white; }
+    .items-card { background:var(--card); padding:24px; border-radius:24px; box-shadow:0 10px 25px rgba(0,0,0,0.05); width:100%; max-width:1000px; margin-top:24px; }
+    .items-card h3 { margin-top:0; font-size:1rem; font-weight:700; }
+    table { width:100%; border-collapse:collapse; }
+    th { background:#f8fafc; padding:12px 16px; font-weight:600; font-size:.82rem; color:#64748b; border-bottom:2px solid #e2e8f0; text-align:left; }
+    td { padding:12px 16px; border-bottom:1px solid #f1f5f9; font-size:.92rem; }
+    .modal { display:none; position:fixed; z-index:1000; left:0; top:0; width:100%; height:100%; background:rgba(15,23,42,0.4); backdrop-filter:blur(4px); }
+    .modal-content { background:#fff; margin:15% auto; padding:32px; border-radius:24px; width:90%; max-width:400px; box-shadow:0 20px 40px rgba(0,0,0,0.2); text-align:center; }
+    .modal-content h3 { margin-top:0; }
+    .modal-btns { display:flex; gap:12px; margin-top:20px; }
+    .modal-btns button { flex:1; padding:12px; border-radius:10px; border:none; cursor:pointer; font-weight:600; font-size:0.95rem; }
+    .btn-cancel-modal { background:#f1f5f9; color:#475569; }
+    .modal-input { width:100%; padding:10px; border:1px solid #e2e8f0; border-radius:8px; box-sizing:border-box; margin-top:12px; font-size:0.95rem; }
+    .modal-input:focus { outline:none; border-color:var(--primary); }
+  </style>
+</head>
+<body>
+
+<button class="back-btn" onclick="history.back()">← 돌아가기</button>
+
+<div class="container">
+  <div class="image-card" id="imageCard">
+    <div class="image-placeholder">이미지 로딩 중...</div>
+  </div>
+  <div class="info-card" id="infoCard">
+    <div class="info-row">
+      <div class="info-label">게시자</div>
+      <div class="info-value" id="userName">-</div>
+    </div>
+    <div class="info-row">
+      <div class="info-label">결제일</div>
+      <div class="info-value" id="tradeAt">-</div>
+    </div>
+    <div class="info-row">
+      <div class="info-label">가맹점</div>
+      <div class="info-value" id="storeName">-</div>
+    </div>
+    <div class="info-row">
+      <div class="info-label">결제금액</div>
+      <div class="info-value" id="totalAmount">-</div>
+    </div>
+    <div class="info-row">
+      <div class="info-label">세액</div>
+      <div class="info-value" id="tax">-</div>
+    </div>
+    <div class="info-row">
+      <div class="info-label">상태</div>
+      <div id="statusArea">-</div>
+    </div>
+    <div class="info-row" id="rejectionRow" style="display:none;">
+      <div class="info-label">반려 사유</div>
+      <div class="info-value" id="rejectionReason" style="color:#b91c1c;">-</div>
+    </div>
+    <div id="actionArea"></div>
+  </div>
+</div>
+
+<div class="items-card" id="itemsCard" style="display:none;">
+  <h3>🧾 상품 목록</h3>
+  <table>
+    <thead>
+    <tr><th>상품명</th><th>수량</th><th>금액</th></tr>
+    </thead>
+    <tbody id="itemsList"></tbody>
+  </table>
+</div>
+
+<div id="approveModal" class="modal">
+  <div class="modal-content">
+    <h3>영수증을 승인하시겠습니까?</h3>
+    <div class="modal-btns">
+      <button class="btn-cancel-modal" onclick="closeModal('approveModal')">취소</button>
+      <button style="background:#16a34a; color:white;" onclick="doApprove()">승인</button>
+    </div>
+  </div>
+</div>
+
+<div id="rejectModal" class="modal">
+  <div class="modal-content">
+    <h3>영수증을 반려하시겠습니까?</h3>
+    <input type="text" class="modal-input" id="rejectReason" placeholder="반려 사유를 입력해 주세요">
+    <div class="modal-btns">
+      <button class="btn-cancel-modal" onclick="closeModal('rejectModal')">취소</button>
+      <button style="background:#dc2626; color:white;" onclick="doReject()">반려</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  const token = localStorage.getItem('accessToken');
+  const params = new URLSearchParams(location.search);
+  const receiptId = params.get('id');
+  const workspaceId = params.get('workspaceId') || localStorage.getItem('currentWorkspaceId');
+  const escapeHtml = s => String(s ?? '').replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+
+  function checkIsAdmin() {
+    return localStorage.getItem('userRole') === 'ADMIN';
+  }
+
+  function closeModal(id) { document.getElementById(id).style.display = 'none'; }
+  function openModal(id) { document.getElementById(id).style.display = 'block'; }
+
+  async function loadReceipt() {
+    if (!token || !workspaceId || !receiptId) return;
+    try {
+      const res = await fetch(`/api/v1/receipts/${receiptId}?workspaceId=${workspaceId}`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      const json = await res.json();
+      const r = json.data;
+      renderReceipt(r);
+    } catch (e) {
+      console.error('영수증 조회 실패', e);
+    }
+  }
+
+  function renderReceipt(r) {
+    document.getElementById('userName').textContent = r.userName || '-';
+    document.getElementById('tax').textContent = r.tax ? `₩${r.tax.toLocaleString()}` : '-';
+
+    const statusArea = document.getElementById('statusArea');
+    statusArea.innerHTML = `<span class="status-badge ${r.status}">${r.status}</span>`;
+
+    if (r.status === 'REJECTED' && r.rejectionReason) {
+      document.getElementById('rejectionRow').style.display = 'block';
+      document.getElementById('rejectionReason').textContent = r.rejectionReason;
+    }
+
+    document.getElementById('imageCard').innerHTML = r.filePath
+            ? `<img src="/images/${r.filePath}" alt="영수증 이미지">`
+            : '<div class="image-placeholder">이미지 없음</div>';
+
+    const isFinal = r.status === 'APPROVED' || r.status === 'REJECTED';
+    const isPreview = params.get('preview') === 'true';
+
+    if (isPreview && r.status !== 'APPROVED' && r.status !== 'REJECTED') {
+      document.getElementById('storeName').innerHTML = `<input type="text" id="editStoreName" value="${escapeHtml(r.storeName || '')}" style="width:100%;padding:8px;border:1px solid #e2e8f0;border-radius:8px;font-size:0.95rem;">`;
+      document.getElementById('totalAmount').innerHTML = `<input type="number" id="editAmount" value="${r.totalAmount || 0}" style="width:100%;padding:8px;border:1px solid #e2e8f0;border-radius:8px;font-size:0.95rem;">`;
+      document.getElementById('tradeAt').innerHTML = `<input type="datetime-local" id="editTradeAt" value="${r.tradeAt ? r.tradeAt.substring(0,16) : ''}" style="width:100%;padding:8px;border:1px solid #e2e8f0;border-radius:8px;font-size:0.95rem;">`;
+      document.getElementById('actionArea').innerHTML = `
+      <div class="action-btns" style="margin-top:16px;">
+        <button class="btn" style="background:#3b82f6;color:white;flex:1;" onclick="doConfirm()">💾 저장</button>
+        <button class="btn" style="background:#f1f5f9;color:#475569;flex:1;" onclick="doDelete()">🗑️ 취소</button>
+      </div>`;
+    } else {
+      document.getElementById('storeName').textContent = r.storeName || '-';
+      document.getElementById('totalAmount').textContent = `₩${(r.totalAmount || 0).toLocaleString()}`;
+      document.getElementById('tradeAt').textContent = r.tradeAt ? r.tradeAt.replace('T', ' ').substring(0, 16) : '-';
+      if (!isFinal && checkIsAdmin()) {
+        document.getElementById('actionArea').innerHTML = `
+        <div class="action-btns">
+          <button class="btn btn-approve" onclick="openModal('approveModal')">승인</button>
+          <button class="btn btn-reject" onclick="openModal('rejectModal')">반려</button>
+        </div>`;
+      }
+    }
+
+    if (r.items && r.items.length > 0) {
+      document.getElementById('itemsCard').style.display = 'block';
+      document.getElementById('itemsList').innerHTML = r.items.map(item =>
+              `<tr><td>${item.name}</td><td>${item.quantity}</td><td>₩${(item.price || 0).toLocaleString()}</td></tr>`
+      ).join('');
+    }
+  }
+  async function doApprove() {
+    try {
+      const p = new URLSearchParams({ workspaceId, status: 'APPROVED', reason: '관리자 승인' });
+      const res = await fetch(`/api/v1/receipts/${receiptId}/status?${p}`, {
+        method: 'PATCH',
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (res.ok) {
+        closeModal('approveModal');
+        document.getElementById('actionArea').innerHTML = '';
+        document.getElementById('statusArea').innerHTML = `<span class="status-badge APPROVED">APPROVED</span>`;
+      }
+    } catch (e) { alert('승인 실패'); }
+  }
+
+  async function doReject() {
+    const reason = document.getElementById('rejectReason').value.trim();
+    if (!reason) { alert('반려 사유를 입력해주세요.'); return; }
+    try {
+      const p = new URLSearchParams({ workspaceId, status: 'REJECTED', reason });
+      const res = await fetch(`/api/v1/receipts/${receiptId}/status?${p}`, {
+        method: 'PATCH',
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (res.ok) {
+        closeModal('rejectModal');
+        document.getElementById('actionArea').innerHTML = '';
+        document.getElementById('statusArea').innerHTML = `<span class="status-badge REJECTED">REJECTED</span>`;
+        document.getElementById('rejectionRow').style.display = 'block';
+        document.getElementById('rejectionReason').textContent = reason;
+      }
+    } catch (e) { alert('반려 실패'); }
+  }
+
+  async function doConfirm() {
+    try {
+      // 수정된 값 먼저 저장
+      const storeNameEl = document.getElementById('editStoreName');
+      const amountEl = document.getElementById('editAmount');
+      const tradeAtEl = document.getElementById('editTradeAt');
+
+      if (storeNameEl || amountEl || tradeAtEl) {
+        const body = {
+          storeName: storeNameEl ? storeNameEl.value : null,
+          totalAmount: amountEl ? Number(amountEl.value) : null,
+          tradeAt: tradeAtEl && tradeAtEl.value ? tradeAtEl.value.replace('T', ' ') + ':00' : null
+        };
+        const editParams = new URLSearchParams({ workspaceId });
+        await fetch(`/api/v1/receipts/${receiptId}?${editParams}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+          body: JSON.stringify(body)
+        });
+      }
+
+      // WAITING으로 전이
+      const p = new URLSearchParams({ workspaceId });
+      const res = await fetch(`/api/v1/receipts/${receiptId}/confirm?${p}`, {
+        method: 'PATCH',
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (res.ok) {
+        alert("저장 완료! 관리자 감사 대기 상태로 변경되었습니다.");
+        location.href = '/upload.html';
+      }
+    } catch (e) { alert('저장 실패'); }
+  }
+
+  async function doDelete() {
+    if (!confirm("업로드를 취소하시겠습니까?")) return;
+    try {
+      const p = new URLSearchParams({ workspaceId });
+      const res = await fetch(`/api/v1/receipts/${receiptId}?${p}`, {
+        method: 'DELETE',
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (res.ok) {
+        alert("업로드가 취소되었습니다.");
+        location.href = '/upload.html';
+      }
+    } catch (e) { alert('취소 실패'); }
+  }
+
+  window.onload = loadReceipt;
+</script>
+</body>
+</html>

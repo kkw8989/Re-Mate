@@ -31,6 +31,8 @@ public interface ReceiptRepository extends JpaRepository<Receipt, Long> {
       "SELECT "
           + "count(r) as totalCount, "
           + "sum(case when r.status = 'WAITING' or r.status = 'NEED_MANUAL' then 1 else 0 end) as pendingCount, "
+          + "sum(case when r.status = 'APPROVED' then 1 else 0 end) as approvedCount, "
+          + "sum(case when r.status = 'REJECTED' then 1 else 0 end) as rejectedCount, "
           + "sum(r.totalAmount) as totalAmount "
           + "FROM Receipt r WHERE r.workspaceId = :workspaceId")
   java.util.Map<String, Object> getWorkspaceStats(@Param("workspaceId") Long workspaceId);

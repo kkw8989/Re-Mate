@@ -3,6 +3,7 @@ package com.example.backend.controller;
 import com.example.backend.audit.AuditLog;
 import com.example.backend.audit.AuditLogService;
 import com.example.backend.domain.receipt.ReceiptStatus;
+import com.example.backend.dto.ReceiptDetailDto;
 import com.example.backend.dto.ReceiptSummaryDto;
 import com.example.backend.dto.ReceiptUpdateRequest;
 import com.example.backend.dto.UploadReceiptResponse;
@@ -40,6 +41,14 @@ public class ReceiptController {
   public ResponseEntity<ApiResponse<List<ReceiptSummaryDto>>> getAllReceipts(
       @Parameter(description = "워크스페이스 ID", example = "1") @RequestParam Long workspaceId) {
     return ResponseEntity.ok(ApiResponse.ok(receiptService.getWorkspaceReceipts(workspaceId)));
+  }
+
+  @Operation(summary = "영수증 단건 조회", description = "영수증 ID로 단건 상세 조회합니다.")
+  @GetMapping("/{id}")
+  public ResponseEntity<ApiResponse<ReceiptDetailDto>> getReceipt(
+      @Parameter(description = "영수증 ID", example = "1") @PathVariable Long id,
+      @Parameter(description = "워크스페이스 ID", example = "1") @RequestParam Long workspaceId) {
+    return ResponseEntity.ok(ApiResponse.ok(receiptService.getReceiptDetail(id, workspaceId)));
   }
 
   @Operation(summary = "영수증 CSV 다운로드", description = "워크스페이스 영수증 목록을 CSV 파일로 다운로드합니다.")
