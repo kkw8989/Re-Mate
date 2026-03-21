@@ -135,7 +135,16 @@ public class ReceiptService {
     JsonNode aiResult = geminiService.getParsedReceipt(fullText);
 
     String storeName = aiResult.path("storeName").asText("알 수 없는 상호");
-    int totalAmount = aiResult.path("totalAmount").asInt(0);
+    int totalAmount = 0;
+    JsonNode totalNode = aiResult.path("totalAmount");
+    if (!totalNode.isMissingNode()) {
+      String totalStr = totalNode.asText("0").replaceAll("[,원\\s]", "").replaceAll("\\.", "");
+      try {
+        totalAmount = Integer.parseInt(totalStr);
+      } catch (NumberFormatException e) {
+        totalAmount = totalNode.asInt(0);
+      }
+    }
     String tradeAtStr = aiResult.path("tradeAt").asText();
     int tax = aiResult.path("tax").asInt(0);
     double confidence = aiResult.path("confidence").asDouble(0.0);
@@ -192,24 +201,12 @@ public class ReceiptService {
   }
 
   public Receipt getReceiptSecurely(Long id, Long workspaceId) {
-
-    Receipt receipt =
-        receiptRepository
-            .findByIdAndWorkspaceId(id, workspaceId)
-            .orElseThrow(
-                () ->
-                    new com.example.backend.global.error.BusinessException(
-                        com.example.backend.global.error.ErrorCode.NOT_FOUND));
-
-    Long currentUserId = getCurrentUserId();
-    boolean adminStatus = isAdmin();
-
-    if (!adminStatus && !receipt.getUserId().equals(currentUserId)) {
-      log.warn("권한 없는 접근 시도 차단 (404 위장): Receipt={}, User={}", id, currentUserId);
-      throw new com.example.backend.global.error.BusinessException(
-          com.example.backend.global.error.ErrorCode.NOT_FOUND);
-    }
-    return receipt;
+    return receiptRepository
+        .findByIdAndWorkspaceId(id, workspaceId)
+        .orElseThrow(
+            () ->
+                new com.example.backend.global.error.BusinessException(
+                    com.example.backend.global.error.ErrorCode.NOT_FOUND));
   }
 
   @Transactional
