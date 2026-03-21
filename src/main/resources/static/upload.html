@@ -291,7 +291,13 @@
             });
             el('progBar').style.width = '100%';
             if (res.ok) {
-                alert("분석 완료!");
+                const json = await res.json();
+                const hasDuplicate = json.data && json.data.some(r => r.duplicate);
+                if (hasDuplicate) {
+                    alert("이미 등록된 영수증이 포함되어 있습니다.");
+                } else {
+                    alert("분석 완료!");
+                }
                 el('fileInput').value = '';
                 el('thumbs').innerHTML = '';
                 el('thumbs').style.display = 'none';

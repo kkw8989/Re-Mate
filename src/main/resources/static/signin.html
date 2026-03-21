@@ -50,10 +50,12 @@
                 const token = result.accessToken || (result.data && result.data.accessToken);
                 const userEmail = result.email || (result.data && result.data.email);
                 const userName = result.name || (result.data && result.data.name);
+                const userId = result.userId || (result.data && result.data.userId);
 
                 localStorage.setItem('accessToken', token);
                 localStorage.setItem('userEmail', userEmail);
                 localStorage.setItem('userName', userName);
+                localStorage.setItem('currentUserId', userId);
 
                 alert(userName + "님, 환영합니다!");
                 location.href = "/";

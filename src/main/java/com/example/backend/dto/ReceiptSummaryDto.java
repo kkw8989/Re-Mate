@@ -37,4 +37,6 @@ public class ReceiptSummaryDto {
 
   @Schema(description = "반려 사유", example = "영수증 정보가 불명확합니다.")
   private String rejectionReason;
+
+  private Long userId;
 }

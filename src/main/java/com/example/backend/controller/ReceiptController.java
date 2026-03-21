@@ -5,6 +5,7 @@ import com.example.backend.audit.AuditLogService;
 import com.example.backend.domain.receipt.ReceiptStatus;
 import com.example.backend.dto.ReceiptSummaryDto;
 import com.example.backend.dto.ReceiptUpdateRequest;
+import com.example.backend.dto.UploadReceiptResponse;
 import com.example.backend.entity.Receipt;
 import com.example.backend.global.common.ApiResponse;
 import com.example.backend.service.ReceiptService;
@@ -69,7 +70,7 @@ public class ReceiptController {
                   - workspaceId는 query parameter입니다.
                   """)
   @PostMapping(value = "/upload", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-  public ResponseEntity<ApiResponse<Receipt>> upload(
+  public ResponseEntity<ApiResponse<UploadReceiptResponse>> upload(
       @Parameter(description = "멱등 처리용 키(없으면 서버에서 자동 생성)")
           @RequestHeader(value = "X-IDEMPOTENCY-KEY", required = false)
           String idempotencyKey,
@@ -87,8 +88,8 @@ public class ReceiptController {
             ? "auto-" + UUID.randomUUID()
             : idempotencyKey;
 
-    Receipt receipt = receiptService.uploadAndProcess(key, file, workspaceId);
-    return ResponseEntity.ok(ApiResponse.ok(receipt));
+    UploadReceiptResponse response = receiptService.uploadAndProcess(key, file, workspaceId);
+    return ResponseEntity.ok(ApiResponse.ok(response));
   }
 
   @Operation(
@@ -160,7 +161,7 @@ public class ReceiptController {
                   - request body 있음(files).
                   """)
   @PostMapping(value = "/upload/multiple", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-  public ResponseEntity<ApiResponse<List<Receipt>>> uploadMultiple(
+  public ResponseEntity<ApiResponse<List<UploadReceiptResponse>>> uploadMultiple(
       @Parameter(description = "업로드할 영수증 파일 목록", required = true) @RequestPart("files")
           List<MultipartFile> files,
       @Parameter(description = "워크스페이스 ID", example = "1") @RequestParam("workspaceId")
