@@ -55,6 +55,7 @@ public class Receipt {
   private Long userId;
 
   private String rejectionReason;
+  private LocalDateTime approvedAt;
 
   @ElementCollection(fetch = FetchType.LAZY)
   @CollectionTable(name = "receipt_tags", joinColumns = @JoinColumn(name = "receipt_id"))
@@ -105,7 +106,7 @@ public class Receipt {
   public void updateStatus(ReceiptStatus status, String reason, Long actorUserId) {
 
     if (!this.status.canTransitionTo(status)) {
-      throw ErrorCode.INVALID_REQUEST.toException("상태 변경이 불가능한 단계입니다.");
+      throw ErrorCode.INVALID_STATE_TRANSITION.toException();
     }
 
     if (status == ReceiptStatus.REJECTED && (reason == null || reason.isBlank())) {
@@ -113,14 +114,18 @@ public class Receipt {
     }
 
     this.status = status;
+    if (status == ReceiptStatus.APPROVED) {
+      this.approvedAt = LocalDateTime.now();
+    }
     if (status == ReceiptStatus.REJECTED) {
       this.rejectionReason = reason;
     }
   }
 
   public void updateInfo(Integer totalAmount, String storeName, LocalDateTime tradeAt) {
-    if (this.status == ReceiptStatus.APPROVED) {
-      throw new IllegalStateException("이미 승인된 영수증은 수정할 수 없습니다.");
+    if (this.status != ReceiptStatus.ANALYZING && this.status != ReceiptStatus.NEED_MANUAL) {
+      throw ErrorCode.INVALID_STATE_TRANSITION.toException(
+          "수정은 ANALYZING 또는 NEED_MANUAL 상태에서만 가능합니다.");
     }
 
     if (totalAmount != null) {
@@ -134,19 +139,5 @@ public class Receipt {
       this.nightTime = (tradeAt.getHour() >= 23 || tradeAt.getHour() < 6);
     }
     this.systemErrorCode = null;
-  }
-
-  public void resubmit() {
-
-    if (this.status != ReceiptStatus.REJECTED) {
-      throw new IllegalStateException("반려된 영수증만 재제출이 가능합니다.");
-    }
-
-    if (!this.status.canTransitionTo(ReceiptStatus.WAITING)) {
-      throw new IllegalStateException("INVALID_STATE_TRANSITION");
-    }
-
-    this.status = ReceiptStatus.WAITING;
-    this.rejectionReason = null;
   }
 }

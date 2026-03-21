@@ -18,7 +18,7 @@ public enum ReceiptStatus {
           ANALYZING, List.of(WAITING, NEED_MANUAL, FAILED_SYSTEM),
           WAITING, List.of(APPROVED, REJECTED, EXPIRED),
           NEED_MANUAL, List.of(WAITING, APPROVED, REJECTED),
-          REJECTED, List.of(WAITING),
+          REJECTED, List.of(),
           FAILED_SYSTEM, List.of(ANALYZING),
           APPROVED, List.of());
 
