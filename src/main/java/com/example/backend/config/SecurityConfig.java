@@ -43,9 +43,12 @@ public class SecurityConfig {
                         "/upload.html",
                         "/select-workspace.html",
                         "/workspace-list.html",
-                        "/profile.html")
+                        "/profile.html",
+                        "/receipt-detail.html")
                     .permitAll()
                     .requestMatchers("/static/**", "/favicon.ico", "/error", "/css/**", "/js/**")
+                    .permitAll()
+                    .requestMatchers("/images/**")
                     .permitAll()
                     .requestMatchers("/api/auth/**", "/api/v1/auth/**", "/api/v1/health")
                     .permitAll()

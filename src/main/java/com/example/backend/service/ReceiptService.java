@@ -4,6 +4,7 @@ import com.example.backend.audit.AuditAction;
 import com.example.backend.audit.AuditLogService;
 import com.example.backend.domain.receipt.ReceiptStatus;
 import com.example.backend.domain.receipt.SystemErrorCode;
+import com.example.backend.dto.ReceiptDetailDto;
 import com.example.backend.dto.ReceiptSummaryDto;
 import com.example.backend.dto.UploadReceiptResponse;
 import com.example.backend.entity.Receipt;
@@ -141,7 +142,7 @@ public class ReceiptService {
 
     ReceiptStatus nextStatus =
         (aiResult.has("storeName") && !storeName.equals("알 수 없는 상호"))
-            ? ReceiptStatus.WAITING
+            ? ReceiptStatus.ANALYZING
             : ReceiptStatus.NEED_MANUAL;
 
     LocalDateTime tradeAt;
@@ -436,5 +437,29 @@ public class ReceiptService {
     Receipt receipt = getReceiptSecurely(id, workspaceId);
     receipt.confirm();
     return receipt;
+  }
+
+  @Transactional(readOnly = true)
+  public ReceiptDetailDto getReceiptDetail(Long id, Long workspaceId) {
+    Receipt receipt = getReceiptSecurely(id, workspaceId);
+    String ownerName =
+        userRepository.findById(receipt.getUserId()).map(u -> u.getName()).orElse("알 수 없음");
+    List<ReceiptItem> items = receiptItemRepository.findAllByReceiptId(id);
+
+    return new ReceiptDetailDto(
+        receipt.getId(),
+        receipt.getStoreName(),
+        receipt.getTotalAmount(),
+        receipt.getTax(),
+        receipt.getTradeAt(),
+        receipt.getApprovedAt(),
+        receipt.getStatus(),
+        receipt.getRejectionReason(),
+        ownerName,
+        receipt.getUserId(),
+        receipt.getFilePath(),
+        receipt.getTags(),
+        items,
+        receipt.isNightTime());
   }
 }
