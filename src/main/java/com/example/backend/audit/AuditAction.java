@@ -6,7 +6,6 @@ public enum AuditAction {
   CLAIM,
   APPROVE,
   REJECT,
-  RESUBMIT,
   DOWNLOAD,
   SELF_APPROVE,
   LOGIN,

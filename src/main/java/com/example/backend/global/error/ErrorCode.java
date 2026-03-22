@@ -23,6 +23,7 @@ public enum ErrorCode {
   AUDIT_ALREADY_DECIDED(HttpStatus.BAD_REQUEST, "이미 승인 또는 반려된 영수증은 수정할 수 없습니다."),
   REJECT_REASON_REQUIRED(HttpStatus.BAD_REQUEST, "영수증 반려 시 사유 입력은 필수입니다."),
   RECEIPT_DUPLICATE(HttpStatus.CONFLICT, "이미 등록된 영수증입니다."),
+  INVALID_STATE_TRANSITION(HttpStatus.CONFLICT, "허용되지 않는 상태 전이입니다."),
 
   FILE_TYPE_NOT_ALLOWED(HttpStatus.BAD_REQUEST, "허용되지 않은 파일 형식입니다."),
   FILE_TOO_LARGE(HttpStatus.PAYLOAD_TOO_LARGE, "파일 용량이 너무 큽니다."),

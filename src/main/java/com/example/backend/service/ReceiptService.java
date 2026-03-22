@@ -252,12 +252,6 @@ public class ReceiptService {
 
     Receipt receipt = getReceiptSecurely(id, workspaceId);
 
-    if (receipt.getStatus() == ReceiptStatus.APPROVED
-        || receipt.getStatus() == ReceiptStatus.REJECTED) {
-      throw new com.example.backend.global.error.BusinessException(
-          com.example.backend.global.error.ErrorCode.AUDIT_ALREADY_DECIDED);
-    }
-
     ReceiptStatus oldStatus = receipt.getStatus();
 
     receipt.updateInfo(totalAmount, storeName, tradeAt);
