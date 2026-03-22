@@ -26,7 +26,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 @Slf4j
 @RestController
-@RequestMapping("/api/receipts")
+@RequestMapping("/api/v1/receipts")
 @RequiredArgsConstructor
 @CrossOrigin(origins = "*")
 @Tag(name = "Receipt", description = "영수증 조회, 업로드, 수정, 상태 변경, 이력, 통계를 관리합니다.")
@@ -185,5 +185,22 @@ public class ReceiptController {
   public ResponseEntity<ApiResponse<Map<String, Object>>> getStats(
       @Parameter(description = "워크스페이스 ID", example = "1") @RequestParam Long workspaceId) {
     return ResponseEntity.ok(ApiResponse.ok(receiptService.getAdminStats(workspaceId)));
+  }
+
+  @Operation(summary = "영수증 삭제", description = "업로드 취소 시 영수증을 삭제합니다.")
+  @DeleteMapping("/{id}")
+  public ResponseEntity<ApiResponse<Void>> deleteReceipt(
+      @Parameter(description = "영수증 ID", example = "1") @PathVariable Long id,
+      @Parameter(description = "워크스페이스 ID", example = "1") @RequestParam Long workspaceId) {
+    receiptService.deleteReceipt(id, workspaceId);
+    return ResponseEntity.ok(ApiResponse.ok(null));
+  }
+
+  @Operation(summary = "영수증 저장 확정", description = "미리보기 후 저장 버튼 클릭 시 WAITING으로 전이합니다.")
+  @PatchMapping("/{id}/confirm")
+  public ResponseEntity<ApiResponse<Receipt>> confirmReceipt(
+      @Parameter(description = "영수증 ID", example = "1") @PathVariable Long id,
+      @Parameter(description = "워크스페이스 ID", example = "1") @RequestParam Long workspaceId) {
+    return ResponseEntity.ok(ApiResponse.ok(receiptService.confirmReceipt(id, workspaceId)));
   }
 }

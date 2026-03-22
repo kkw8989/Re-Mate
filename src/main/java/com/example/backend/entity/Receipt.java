@@ -147,4 +147,12 @@ public class Receipt {
     }
     this.systemErrorCode = null;
   }
+
+  public void confirm() {
+    if (this.status != ReceiptStatus.ANALYZING && this.status != ReceiptStatus.NEED_MANUAL) {
+      throw ErrorCode.INVALID_STATE_TRANSITION.toException(
+          "저장 확정은 ANALYZING 또는 NEED_MANUAL 상태에서만 가능합니다.");
+    }
+    this.status = ReceiptStatus.WAITING;
+  }
 }

@@ -206,14 +206,14 @@
         const isReallyAdmin = window.checkIsAdmin();
 
         try {
-            const res = await fetch(`/api/receipts?workspaceId=${workspaceId}`, {
+            const res = await fetch(`/api/v1/receipts?workspaceId=${workspaceId}`,  {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
             const json = await res.json();
             receiptData = json.data;
 
             if (isReallyAdmin) {
-                fetch(`/api/receipts/stats?workspaceId=${workspaceId}`, {
+                fetch(`/api/v1/receipts/stats?workspaceId=${workspaceId}`, {
                     headers: { 'Authorization': `Bearer ${token}` }
                 })
                     .then(res => res.json())
@@ -284,7 +284,7 @@
 
         try {
             el('progBar').style.width = '60%';
-            const res = await fetch(`/api/receipts/upload/multiple?workspaceId=${workspaceId}`, {
+            const res = await fetch(`/api/v1/receipts/upload/multiple?workspaceId=${workspaceId}`, {
                 method: 'POST',
                 headers: { 'Authorization': `Bearer ${token}` },
                 body: formData
@@ -319,7 +319,7 @@
 
     function exportCSV() {
         const params = new URLSearchParams({ workspaceId });
-        window.location.href = `/api/receipts/export?${params}`;
+        window.location.href = `/api/v1/receipts/export?${params}`;
     }
     async function updateStatus(id, status) {
         let reason = "관리자 요청";
@@ -337,7 +337,7 @@
         }
         try {
             const params = new URLSearchParams({ workspaceId, status, reason });
-            const res = await fetch(`/api/receipts/${id}/status?${params}`, {
+            const res = await fetch(`/api/v1/receipts/${id}/status?${params}`, {
                 method: 'PATCH',
                 headers: { 'Authorization': `Bearer ${token}` }
             });
@@ -393,7 +393,7 @@
         };
         try {
             const params = new URLSearchParams({ workspaceId });
-            const res = await fetch(`/api/receipts/${id}?${params}`, {
+            const res = await fetch(`/api/v1/receipts/${id}?${params}`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
                 body: JSON.stringify(body)
@@ -405,7 +405,7 @@
     async function showHistory(id) {
         const token = localStorage.getItem('accessToken');
         try {
-            const res = await fetch(`/api/receipts/${id}/history`, {
+            const res = await fetch(`/api/v1/receipts/${id}/history`, {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
             const json = await res.json();
