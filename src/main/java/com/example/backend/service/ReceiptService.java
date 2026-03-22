@@ -7,10 +7,12 @@ import com.example.backend.domain.receipt.SystemErrorCode;
 import com.example.backend.dto.ReceiptSummaryDto;
 import com.example.backend.dto.UploadReceiptResponse;
 import com.example.backend.entity.Receipt;
+import com.example.backend.entity.ReceiptItem;
 import com.example.backend.global.error.BusinessException;
 import com.example.backend.global.error.ErrorCode;
 import com.example.backend.ocr.GeminiService;
 import com.example.backend.ocr.GoogleOcrClient;
+import com.example.backend.repository.ReceiptItemRepository;
 import com.example.backend.repository.ReceiptRepository;
 import com.example.backend.repository.UserRepository;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -47,6 +49,7 @@ public class ReceiptService {
   private final GeminiService geminiService;
   private final AuditLogService auditLogService;
   private final TagService tagService;
+  private final ReceiptItemRepository receiptItemRepository;
 
   private final String uploadDir =
       System.getProperty("user.home") + File.separator + "remate_uploads" + File.separator;
@@ -132,6 +135,8 @@ public class ReceiptService {
     String storeName = aiResult.path("storeName").asText("알 수 없는 상호");
     int totalAmount = aiResult.path("totalAmount").asInt(0);
     String tradeAtStr = aiResult.path("tradeAt").asText();
+    int tax = aiResult.path("tax").asInt(0);
+    double confidence = aiResult.path("confidence").asDouble(0.0);
 
     ReceiptStatus nextStatus =
         (aiResult.has("storeName") && !storeName.equals("알 수 없는 상호"))
@@ -154,7 +159,23 @@ public class ReceiptService {
         fullText,
         nextStatus,
         derivedTags,
-        derivedTags.contains("🌙 야간"));
+        derivedTags.contains("🌙 야간"),
+        tax,
+        confidence);
+
+    // items 저장
+    JsonNode items = aiResult.path("items");
+    if (items.isArray()) {
+      for (JsonNode item : items) {
+        receiptItemRepository.save(
+            ReceiptItem.builder()
+                .receiptId(receipt.getId())
+                .name(item.path("name").asText(""))
+                .quantity(item.path("quantity").asInt(0))
+                .price(item.path("price").asInt(0))
+                .build());
+      }
+    }
 
     return receipt;
   }
@@ -290,7 +311,9 @@ public class ReceiptService {
                   ownerName,
                   r.getTags(),
                   r.getRejectionReason(),
-                  r.getUserId());
+                  r.getUserId(),
+                  r.getTax(),
+                  r.getConfidence());
             })
         .collect(Collectors.toList());
   }

@@ -56,6 +56,9 @@ public class Receipt {
 
   private String rejectionReason;
   private LocalDateTime approvedAt;
+  private Integer tax;
+  private Double confidence;
+  private Long fileAssetId;
 
   @ElementCollection(fetch = FetchType.LAZY)
   @CollectionTable(name = "receipt_tags", joinColumns = @JoinColumn(name = "receipt_id"))
@@ -87,7 +90,9 @@ public class Receipt {
       String rawText,
       ReceiptStatus status,
       java.util.List<String> tags,
-      boolean nightTime) {
+      boolean nightTime,
+      Integer tax,
+      Double confidence) {
     this.storeName = storeName;
     this.totalAmount = totalAmount;
     this.tradeAt = tradeAt;
@@ -96,6 +101,8 @@ public class Receipt {
     this.tags.clear();
     if (tags != null) this.tags.addAll(tags);
     this.nightTime = nightTime;
+    this.tax = tax;
+    this.confidence = confidence;
   }
 
   public void markAsFailed(SystemErrorCode errorCode) {

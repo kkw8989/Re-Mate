@@ -39,4 +39,6 @@ public class ReceiptSummaryDto {
   private String rejectionReason;
 
   private Long userId;
+  private Integer tax;
+  private Double confidence;
 }
