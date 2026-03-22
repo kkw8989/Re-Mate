@@ -67,10 +67,6 @@
       <div class="info-value" id="totalAmount">-</div>
     </div>
     <div class="info-row">
-      <div class="info-label">세액</div>
-      <div class="info-value" id="tax">-</div>
-    </div>
-    <div class="info-row">
       <div class="info-label">상태</div>
       <div id="statusArea">-</div>
     </div>
@@ -143,7 +139,6 @@
 
   function renderReceipt(r) {
     document.getElementById('userName').textContent = r.userName || '-';
-    document.getElementById('tax').textContent = r.tax ? `₩${r.tax.toLocaleString()}` : '-';
 
     const statusArea = document.getElementById('statusArea');
     statusArea.innerHTML = `<span class="status-badge ${r.status}">${r.status}</span>`;
