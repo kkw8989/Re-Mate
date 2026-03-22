@@ -39,7 +39,7 @@ public class Receipt {
   @Column(unique = true)
   private String idempotencyKey;
 
-  @Column(name = "file_hash", unique = true)
+  @Column(name = "file_hash")
   private String fileHash;
 
   private String filePath;
