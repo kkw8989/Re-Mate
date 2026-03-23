@@ -16,4 +16,15 @@ public class Workspace {
 
   @Column(nullable = false)
   private String name;
+
+  @Enumerated(EnumType.STRING)
+  private WorkspaceColor color;
+
+  public void updateName(String name) {
+    this.name = name;
+  }
+
+  public void updateColor(WorkspaceColor color) {
+    this.color = color;
+  }
 }
