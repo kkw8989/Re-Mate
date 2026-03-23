@@ -52,21 +52,27 @@
             checkEntry(token);
         }
     };
+
     async function checkEntry(token) {
         try {
-            const res = await fetch('/api/v1/workspaces/entry-check', {
+            const res = await fetch('/api/v1/workspaces/my', {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
             const result = await res.json();
-            if (result.success) {
-                if (result.data.workspaceCount === 0) {
-                    location.href = '/select-workspace.html';
-                } else {
+            if (res.ok && result.data) {
+                if (result.data.workspaceCount > 0) {
                     location.href = '/workspace-list.html';
+                } else {
+                    location.href = '/select-workspace.html';
                 }
-            } else { handleAuthError(); }
-        } catch (e) { handleAuthError(); }
+            } else {
+                handleAuthError();
+            }
+        } catch (e) {
+            handleAuthError();
+        }
     }
+
     function handleAuthError() {
         localStorage.clear();
         document.getElementById('auth-ui').classList.remove('hidden');
