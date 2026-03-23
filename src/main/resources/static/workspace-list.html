@@ -65,17 +65,14 @@
     let selectedWsId = null;
 
     window.onload = () => {
-        if (!token) { location.href = '/signin.html'; return; }
+        if (!token) { location.href = '/index.html'; return; }
         loadMyWorkspaces();
         loadInvitations();
     };
 
     function logout() {
-        localStorage.removeItem('accessToken');
-        localStorage.removeItem('currentWorkspaceId');
-        localStorage.removeItem('userRole');
-        alert("로그아웃 되었습니다.");
-        location.href = '/signin.html';
+        localStorage.clear();
+        location.href = '/index.html';
     }
 
     function openModal(type, wsId = null) {
@@ -92,10 +89,11 @@
     async function loadMyWorkspaces() {
         try {
             const res = await fetch('/api/v1/workspaces/my', { headers: { 'Authorization': `Bearer ${token}` } });
-            const response = await res.json();
+            const result = await res.json();
             const grid = document.getElementById('wsGrid');
+            const list = result.data.workspaces || [];
             grid.querySelectorAll('.ws-card:not(.add-card)').forEach(c => c.remove());
-            response.data.forEach(ws => {
+            list.forEach(ws => {
                 const card = document.createElement('div');
                 card.className = 'ws-card';
                 card.innerHTML = `
@@ -112,23 +110,30 @@
 
     async function createWorkspace() {
         const name = document.getElementById('modalInput').value;
-        const res = await fetch(`/api/v1/workspaces?name=${encodeURIComponent(name)}`, { method: 'POST', headers: { 'Authorization': `Bearer ${token}` } });
-        const result = await res.json();
-        if(result.success) { closeModal(); loadMyWorkspaces(); }
+        const res = await fetch('/api/v1/workspaces', {
+            method: 'POST',
+            headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+            body: JSON.stringify({ name: name })
+        });
+        if(res.ok) { closeModal(); loadMyWorkspaces(); }
     }
 
     async function sendInvitation() {
         const email = document.getElementById('modalInput').value;
-        const res = await fetch(`/api/v1/workspaces/${selectedWsId}/invite?email=${encodeURIComponent(email)}`, { method: 'POST', headers: { 'Authorization': `Bearer ${token}` } });
-        const result = await res.json();
-        if(result.success) { alert("초대 완료"); closeModal(); }
+        const res = await fetch(`/api/v1/workspaces/${selectedWsId}/invite`, {
+            method: 'POST',
+            headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email: email })
+        });
+        if(res.ok) { alert("초대 완료"); closeModal(); }
     }
 
     async function loadInvitations() {
         try {
             const res = await fetch('/api/v1/workspaces/invitations', { headers: { 'Authorization': `Bearer ${token}` } });
-            const response = await res.json();
-            document.getElementById('invitationList').innerHTML = response.data.length === 0 ? '<p style="color:#94a3b8; text-align:center;">초대가 없습니다</p>' : response.data.map(inv => `
+            const result = await res.json();
+            const list = result.data || [];
+            document.getElementById('invitationList').innerHTML = list.length === 0 ? '<p style="color:#94a3b8; text-align:center;">초대가 없습니다</p>' : list.map(inv => `
                 <div class="invitation-item"><span>${inv.workspaceName}</span><button class="btn-accept" onclick="acceptInv(${inv.membershipId})">수락</button></div>
             `).join('');
         } catch (e) { console.error(e); }
@@ -136,8 +141,7 @@
 
     async function acceptInv(id) {
         const res = await fetch(`/api/v1/workspaces/invitations/${id}/accept`, { method: 'POST', headers: { 'Authorization': `Bearer ${token}` } });
-        const result = await res.json();
-        if (result.success) { loadMyWorkspaces(); loadInvitations(); }
+        if (res.ok) { loadMyWorkspaces(); loadInvitations(); }
     }
 
     function enterWorkspace(id, role) {

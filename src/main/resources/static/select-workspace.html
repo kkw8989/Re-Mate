@@ -28,36 +28,46 @@
 <script>
   const token = localStorage.getItem('accessToken');
   window.onload = loadInvitations;
+
   async function createWs() {
     const name = document.getElementById('wsName').value;
     if(!name) return alert("이름을 입력하세요.");
-    const res = await fetch(`/api/v1/workspaces?name=${encodeURIComponent(name)}`, {
-      method: 'POST', headers: { 'Authorization': `Bearer ${token}` }
+    const res = await fetch('/api/v1/workspaces', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ name: name })
     });
-    const data = await res.json();
-    if (data.success) location.href = '/workspace-list.html';
+    if (res.ok) {
+      location.href = '/workspace-list.html';
+    } else {
+      alert("생성 실패");
+    }
   }
+
   async function loadInvitations() {
     const res = await fetch('/api/v1/workspaces/invitations', { headers: { 'Authorization': `Bearer ${token}` } });
-    const response = await res.json();
-    const list = response.data;
+    const result = await res.json();
+    const list = result.data || [];
     if (list.length === 0) {
       document.getElementById('invitationList').innerHTML = '<p class="empty-msg">아직 초대받은 워크스페이스가 없어요</p>';
       return;
     }
     document.getElementById('invitationList').innerHTML = list.map(inv => `
                 <div class="invitation-item">
-                    <span>${inv.workspaceName || '워크스페이스'}</span>
-                    <button class="btn-accept" onclick="acceptInv(${inv.id})">수락하기</button>
+                    <span>${inv.workspaceName}</span>
+                    <button class="btn-accept" onclick="acceptInv(${inv.membershipId})">수락하기</button>
                 </div>
             `).join('');
   }
+
   async function acceptInv(id) {
     const res = await fetch(`/api/v1/workspaces/invitations/${id}/accept`, {
       method: 'POST', headers: { 'Authorization': `Bearer ${token}` }
     });
-    const data = await res.json();
-    if (data.success) location.href = '/workspace-list.html';
+    if (res.ok) location.href = '/workspace-list.html';
   }
 </script>
 </body>
