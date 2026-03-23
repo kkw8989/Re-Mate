@@ -4,7 +4,6 @@ import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jws;
 import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;
-import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.security.Keys;
 import java.nio.charset.StandardCharsets;
 import java.security.Key;
@@ -23,7 +22,7 @@ public class JwtTokenProvider {
   private final long tokenValidityInMilliseconds = 1000L * 60 * 60 * 10;
 
   public JwtTokenProvider(
-          @Value("${app.jwt.secret:remate-dev-secret-key-remate-dev-secret-key}") String secret) {
+      @Value("${app.jwt.secret:remate-dev-secret-key-remate-dev-secret-key}") String secret) {
     this.key = Keys.hmacShaKeyFor(secret.getBytes(StandardCharsets.UTF_8));
   }
 
@@ -36,12 +35,12 @@ public class JwtTokenProvider {
     Date validity = new Date(now.getTime() + tokenValidityInMilliseconds);
 
     return Jwts.builder()
-            .setSubject(email)
-            .claim("role", role)
-            .setIssuedAt(now)
-            .setExpiration(validity)
-            .signWith(key)
-            .compact();
+        .setSubject(email)
+        .claim("role", role)
+        .setIssuedAt(now)
+        .setExpiration(validity)
+        .signWith(key)
+        .compact();
   }
 
   public String resolveToken(String authorizationHeader) {
@@ -74,7 +73,7 @@ public class JwtTokenProvider {
     String roleName = (role == null || role.isBlank()) ? "ROLE_MEMBER" : "ROLE_" + role;
 
     return new UsernamePasswordAuthenticationToken(
-            email, null, List.of(new SimpleGrantedAuthority(roleName)));
+        email, null, List.of(new SimpleGrantedAuthority(roleName)));
   }
 
   private Jws<Claims> parseClaims(String token) {
