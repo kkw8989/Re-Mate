@@ -8,7 +8,10 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface WorkspaceMemberRepository extends JpaRepository<WorkspaceMember, Long> {
   List<WorkspaceMember> findAllByUserIdAndStatus(Long userId, MembershipStatus status);
+
   List<WorkspaceMember> findAllByWorkspaceIdAndStatus(Long workspaceId, MembershipStatus status);
+
   Optional<WorkspaceMember> findByWorkspaceIdAndUserId(Long workspaceId, Long userId);
+
   void deleteAllByWorkspaceId(Long workspaceId);
 }

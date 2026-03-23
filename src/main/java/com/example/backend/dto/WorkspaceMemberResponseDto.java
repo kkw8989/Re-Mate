@@ -9,9 +9,9 @@ import lombok.Getter;
 @Builder
 @AllArgsConstructor
 public class WorkspaceMemberResponseDto {
-    private Long userId;
-    private String name;
-    private String email;
-    private String picture;
-    private WorkspaceRole role;
+  private Long userId;
+  private String name;
+  private String email;
+  private String picture;
+  private WorkspaceRole role;
 }

@@ -1,7 +1,7 @@
 package com.example.backend.dto;
 
-import com.example.backend.entity.WorkspaceRole;
 import com.example.backend.entity.WorkspaceColor;
+import com.example.backend.entity.WorkspaceRole;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Builder;
 import lombok.Getter;

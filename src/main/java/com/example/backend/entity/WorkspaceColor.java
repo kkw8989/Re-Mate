@@ -1,5 +1,9 @@
 package com.example.backend.entity;
 
 public enum WorkspaceColor {
-    GREEN, PURPLE, ORANGE, BLUE, PINK
+  GREEN,
+  PURPLE,
+  ORANGE,
+  BLUE,
+  PINK
 }

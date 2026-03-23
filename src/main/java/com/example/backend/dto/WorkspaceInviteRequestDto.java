@@ -9,6 +9,6 @@ import lombok.NoArgsConstructor;
 @Schema(name = "WorkspaceInviteRequest", description = "워크스페이스 초대 요청 데이터")
 public class WorkspaceInviteRequestDto {
 
-    @Schema(description = "초대할 사용자의 이메일", example = "member@example.com")
-    private String email;
+  @Schema(description = "초대할 사용자의 이메일", example = "member@example.com")
+  private String email;
 }
