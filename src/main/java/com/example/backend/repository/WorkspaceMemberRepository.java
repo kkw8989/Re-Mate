@@ -7,11 +7,8 @@ import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface WorkspaceMemberRepository extends JpaRepository<WorkspaceMember, Long> {
-  Optional<WorkspaceMember> findByWorkspaceIdAndUserId(Long workspaceId, Long userId);
-
-  List<WorkspaceMember> findAllByWorkspaceId(Long workspaceId);
-
-  List<WorkspaceMember> findAllByUserId(Long userId);
-
   List<WorkspaceMember> findAllByUserIdAndStatus(Long userId, MembershipStatus status);
+  List<WorkspaceMember> findAllByWorkspaceIdAndStatus(Long workspaceId, MembershipStatus status);
+  Optional<WorkspaceMember> findByWorkspaceIdAndUserId(Long workspaceId, Long userId);
+  void deleteAllByWorkspaceId(Long workspaceId);
 }
