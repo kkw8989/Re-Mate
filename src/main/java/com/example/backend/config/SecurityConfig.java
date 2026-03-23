@@ -4,6 +4,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import java.util.Arrays;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -21,6 +22,10 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 @RequiredArgsConstructor
 public class SecurityConfig {
 
+  @Value(
+          "${app.cors.allowed-origin-patterns:http://localhost:3000,http://localhost:5173,http://localhost:8080}")
+  private String allowedOriginPatterns;
+
   private final OAuth2SuccessHandler oAuth2SuccessHandler;
   private final JwtAuthenticationFilter jwtAuthenticationFilter;
   private final DeviceAuthenticationFilter deviceAuthenticationFilter;
@@ -28,38 +33,42 @@ public class SecurityConfig {
   @Bean
   public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
     http.cors(cors -> cors.configurationSource(corsConfigurationSource()))
-        .csrf(csrf -> csrf.disable())
-        .formLogin(fl -> fl.disable())
-        .httpBasic(hb -> hb.disable())
-        .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-        .headers(headers -> headers.frameOptions(frame -> frame.disable()))
-        .authorizeHttpRequests(
-            auth ->
-                auth.requestMatchers(
-                        "/",
-                        "/index.html",
-                        "/signin.html",
-                        "/signup.html",
-                        "/upload.html",
-                        "/select-workspace.html",
-                        "/workspace-list.html")
-                    .permitAll()
-                    .requestMatchers("/static/**", "/favicon.ico", "/error", "/css/**", "/js/**")
-                    .permitAll()
-                    .requestMatchers("/api/auth/**", "/api/v1/auth/**", "/api/v1/health")
-                    .permitAll()
-                    .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html")
-                    .permitAll()
-                    .requestMatchers("/h2-console/**")
-                    .permitAll()
-                    .anyRequest()
-                    .authenticated())
-        .oauth2Login(oauth2 -> oauth2.successHandler(oAuth2SuccessHandler))
-        .exceptionHandling(
-            eh ->
-                eh.authenticationEntryPoint(
-                    (request, response, authException) ->
-                        response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "인증이 필요합니다.")));
+            .csrf(csrf -> csrf.disable())
+            .formLogin(fl -> fl.disable())
+            .httpBasic(hb -> hb.disable())
+            .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+            .headers(headers -> headers.frameOptions(frame -> frame.disable()))
+            .authorizeHttpRequests(
+                    auth ->
+                            auth.requestMatchers(
+                                            "/",
+                                            "/index.html",
+                                            "/signin.html",
+                                            "/signup.html",
+                                            "/upload.html",
+                                            "/select-workspace.html",
+                                            "/workspace-list.html",
+                                            "/profile.html",
+                                            "/receipt-detail.html")
+                                    .permitAll()
+                                    .requestMatchers("/static/**", "/favicon.ico", "/error", "/css/**", "/js/**")
+                                    .permitAll()
+                                    .requestMatchers("/images/**")
+                                    .permitAll()
+                                    .requestMatchers("/api/auth/**", "/api/v1/auth/**", "/api/v1/health")
+                                    .permitAll()
+                                    .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html")
+                                    .permitAll()
+                                    .requestMatchers("/h2-console/**")
+                                    .permitAll()
+                                    .anyRequest()
+                                    .authenticated())
+            .oauth2Login(oauth2 -> oauth2.successHandler(oAuth2SuccessHandler))
+            .exceptionHandling(
+                    eh ->
+                            eh.authenticationEntryPoint(
+                                    (request, response, authException) ->
+                                            response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "인증이 필요합니다.")));
 
     http.addFilterBefore(deviceAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
     http.addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
@@ -70,10 +79,16 @@ public class SecurityConfig {
   @Bean
   public CorsConfigurationSource corsConfigurationSource() {
     CorsConfiguration configuration = new CorsConfiguration();
-    configuration.setAllowedOrigins(
-        List.of("http://localhost:3000", "http://localhost:5173", "http://localhost:8080"));
+
+    List<String> originPatterns =
+            Arrays.stream(allowedOriginPatterns.split(","))
+                    .map(String::trim)
+                    .filter(origin -> !origin.isBlank())
+                    .toList();
+
+    configuration.setAllowedOriginPatterns(originPatterns);
     configuration.setAllowedMethods(
-        Arrays.asList("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
+            Arrays.asList("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
     configuration.setAllowedHeaders(List.of("*"));
     configuration.setAllowCredentials(true);
     configuration.setExposedHeaders(List.of("Authorization"));
