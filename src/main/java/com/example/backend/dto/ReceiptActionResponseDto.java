@@ -10,13 +10,13 @@ import lombok.Getter;
 @Getter
 @Builder
 @AllArgsConstructor
-@Schema(name = "UploadReceiptResponse", description = "영수증 업로드 응답")
-public class UploadReceiptResponse {
+@Schema(name = "ReceiptActionResponse", description = "영수증 수정/상태변경/저장확정 응답")
+public class ReceiptActionResponseDto {
 
   @Schema(description = "영수증 ID", example = "1")
   private Long id;
 
-  @Schema(description = "영수증 상태", example = "ANALYZING")
+  @Schema(description = "영수증 상태", example = "WAITING")
   private String status;
 
   @Schema(description = "시스템 에러 코드", example = "OCR_CONNECTION_FAILURE", nullable = true)
@@ -28,7 +28,7 @@ public class UploadReceiptResponse {
   @Schema(description = "거래 일시", example = "2026-03-23T13:44:34", nullable = true)
   private LocalDateTime tradeAt;
 
-  @Schema(description = "총 금액", example = "5500", nullable = true)
+  @Schema(description = "총 금액", example = "5500")
   private Integer totalAmount;
 
   @Schema(description = "야간 거래 여부", example = "false")
@@ -54,7 +54,4 @@ public class UploadReceiptResponse {
 
   @Schema(description = "생성 시각", example = "2026-03-23T13:44:34", nullable = true)
   private LocalDateTime createdAt;
-
-  @Schema(description = "중복 업로드 여부", example = "false")
-  private boolean isDuplicate;
 }

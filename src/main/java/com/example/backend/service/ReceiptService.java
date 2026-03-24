@@ -4,6 +4,7 @@ import com.example.backend.audit.AuditAction;
 import com.example.backend.audit.AuditLogService;
 import com.example.backend.domain.receipt.ReceiptStatus;
 import com.example.backend.domain.receipt.SystemErrorCode;
+import com.example.backend.dto.ReceiptActionResponseDto;
 import com.example.backend.dto.ReceiptDetailDto;
 import com.example.backend.dto.ReceiptSummaryDto;
 import com.example.backend.dto.UploadReceiptResponse;
@@ -90,12 +91,12 @@ public class ReceiptService {
       Optional<Receipt> existingByHash =
           receiptRepository.findByFileHashAndWorkspaceId(fileHash, workspaceId);
       if (existingByHash.isPresent()) {
-        return new UploadReceiptResponse(existingByHash.get(), true);
+        return toUploadReceiptResponse(existingByHash.get(), true);
       }
 
       Optional<Receipt> existingByKey = receiptRepository.findByIdempotencyKey(idempotencyKey);
       if (existingByKey.isPresent()) {
-        return new UploadReceiptResponse(existingByKey.get(), true);
+        return toUploadReceiptResponse(existingByKey.get(), true);
       }
 
       String savedFileName = null;
@@ -115,11 +116,11 @@ public class ReceiptService {
         log.info("=== [검증 1] DB 선저장 완료: ID={}, Status={}", receipt.getId(), receipt.getStatus());
         JsonNode ocrJson = googleOcrClient.recognize(fileBytes);
         log.info("=== [검증 2] OCR 분석 시작 (ID: {})", receipt.getId());
-        return new UploadReceiptResponse(processOcrResult(receipt, ocrJson), false);
+        return toUploadReceiptResponse(processOcrResult(receipt, ocrJson), false);
       } catch (Exception e) {
         log.error("OCR 분석 에러", e);
-        if (receipt != null) return new UploadReceiptResponse(markAsFailed(receipt, e), false);
-        return new UploadReceiptResponse(
+        if (receipt != null) return toUploadReceiptResponse(markAsFailed(receipt, e), false);
+        return toUploadReceiptResponse(
             saveFailedReceipt(idempotencyKey, fileHash, workspaceId, savedFileName, e), false);
       }
     } catch (Exception e) {
@@ -174,7 +175,6 @@ public class ReceiptService {
         tax,
         confidence);
 
-    // items 저장
     JsonNode items = aiResult.path("items");
     if (items.isArray()) {
       for (JsonNode item : items) {
@@ -203,10 +203,7 @@ public class ReceiptService {
   public Receipt getReceiptSecurely(Long id, Long workspaceId) {
     return receiptRepository
         .findByIdAndWorkspaceId(id, workspaceId)
-        .orElseThrow(
-            () ->
-                new com.example.backend.global.error.BusinessException(
-                    com.example.backend.global.error.ErrorCode.NOT_FOUND));
+        .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND));
   }
 
   @Transactional
@@ -458,5 +455,46 @@ public class ReceiptService {
         receipt.getTags(),
         items,
         receipt.isNightTime());
+  }
+
+  public ReceiptActionResponseDto toReceiptActionResponse(Receipt receipt) {
+    return ReceiptActionResponseDto.builder()
+        .id(receipt.getId())
+        .status(receipt.getStatus() != null ? receipt.getStatus().name() : null)
+        .systemErrorCode(
+            receipt.getSystemErrorCode() != null ? receipt.getSystemErrorCode().name() : null)
+        .storeName(receipt.getStoreName())
+        .tradeAt(receipt.getTradeAt())
+        .totalAmount(receipt.getTotalAmount())
+        .nightTime(receipt.isNightTime())
+        .rejectionReason(receipt.getRejectionReason())
+        .approvedAt(receipt.getApprovedAt())
+        .tax(receipt.getTax())
+        .confidence(receipt.getConfidence())
+        .fileAssetId(receipt.getFileAssetId())
+        .tags(receipt.getTags())
+        .createdAt(receipt.getCreatedAt())
+        .build();
+  }
+
+  private UploadReceiptResponse toUploadReceiptResponse(Receipt receipt, boolean isDuplicate) {
+    return UploadReceiptResponse.builder()
+        .id(receipt.getId())
+        .status(receipt.getStatus() != null ? receipt.getStatus().name() : null)
+        .systemErrorCode(
+            receipt.getSystemErrorCode() != null ? receipt.getSystemErrorCode().name() : null)
+        .storeName(receipt.getStoreName())
+        .tradeAt(receipt.getTradeAt())
+        .totalAmount(receipt.getTotalAmount())
+        .nightTime(receipt.isNightTime())
+        .rejectionReason(receipt.getRejectionReason())
+        .approvedAt(receipt.getApprovedAt())
+        .tax(receipt.getTax())
+        .confidence(receipt.getConfidence())
+        .fileAssetId(receipt.getFileAssetId())
+        .tags(receipt.getTags())
+        .createdAt(receipt.getCreatedAt())
+        .isDuplicate(isDuplicate)
+        .build();
   }
 }

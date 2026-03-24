@@ -3,7 +3,10 @@ package com.example.backend.file;
 import com.example.backend.global.common.ApiResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.ExampleObject;
 import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -28,12 +31,36 @@ public class FileController {
       summary = "파일 업로드",
       description =
           """
-                  파일을 업로드합니다.
+                          파일을 업로드합니다.
 
-                  - `type=PROFILE`이면 workspaceId 없이 업로드 가능합니다.
-                  - `type=RECEIPT`이면 workspaceId가 필요합니다.
-                  - multipart/form-data 요청입니다.
-                  """)
+                          - `type=PROFILE`이면 workspaceId 없이 업로드 가능합니다.
+                          - `type=RECEIPT`이면 workspaceId가 필요합니다.
+                          - multipart/form-data 요청입니다.
+                          """)
+  @ApiResponses({
+    @io.swagger.v3.oas.annotations.responses.ApiResponse(
+        responseCode = "200",
+        description = "OK",
+        content =
+            @Content(
+                mediaType = "application/json",
+                examples =
+                    @ExampleObject(
+                        name = "파일 업로드 성공",
+                        value =
+                            """
+                                          {
+                                            "success": true,
+                                            "data": {
+                                              "fileId": 12
+                                            },
+                                            "meta": {
+                                              "timestamp": "2026-03-24T19:36:08.117",
+                                              "traceId": "c7b2bb85d9d7"
+                                            }
+                                          }
+                                          """))),
+  })
   @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
   public ApiResponse<UploadResponse> upload(
       @Parameter(description = "업로드할 파일", required = true) @RequestPart("file") MultipartFile file,
@@ -53,6 +80,15 @@ public class FileController {
   }
 
   @Operation(summary = "파일 다운로드/조회", description = "파일 ID 기준으로 이미지/파일을 조회합니다.")
+  @ApiResponses({
+    @io.swagger.v3.oas.annotations.responses.ApiResponse(
+        responseCode = "200",
+        description = "파일 바이너리 응답",
+        content =
+            @Content(
+                mediaType = "image/png",
+                schema = @Schema(type = "string", format = "binary"))),
+  })
   @GetMapping("/{fileId}")
   public ResponseEntity<?> download(
       @Parameter(description = "파일 ID", example = "1") @PathVariable Long fileId,
