@@ -458,36 +458,36 @@ public class ReceiptController {
                         name = "영수증 이력 조회 성공",
                         value =
                             """
-                                          {
-                                            "success": true,
-                                            "data": [
-                                              {
-                                                "id": 1,
-                                                "action": "UPLOAD",
-                                                "actorType": "MEMBER",
-                                                "actorId": "2",
-                                                "workspaceId": 1,
-                                                "receiptId": 1,
-                                                "detail": "{\"status\":\"ANALYZING\"}",
-                                                "createdAt": "2026-03-24T10:36:08"
-                                              },
-                                              {
-                                                "id": 2,
-                                                "action": "APPROVE",
-                                                "actorType": "MEMBER",
-                                                "actorId": "1",
-                                                "workspaceId": 1,
-                                                "receiptId": 1,
-                                                "detail": "{\"newStatus\":\"APPROVED\"}",
-                                                "createdAt": "2026-03-24T11:00:00"
+                                            {
+                                              "success": true,
+                                              "data": [
+                                                {
+                                                  "id": 1,
+                                                  "action": "UPLOAD",
+                                                  "actorType": "MEMBER",
+                                                  "actorId": "2",
+                                                  "workspaceId": 1,
+                                                  "receiptId": 1,
+                                                  "detail": "{\"status\":\"ANALYZING\"}",
+                                                  "createdAt": "2026-03-24T10:36:08"
+                                                },
+                                                {
+                                                  "id": 2,
+                                                  "action": "APPROVE",
+                                                  "actorType": "MEMBER",
+                                                  "actorId": "1",
+                                                  "workspaceId": 1,
+                                                  "receiptId": 1,
+                                                  "detail": "{\"newStatus\":\"APPROVED\"}",
+                                                  "createdAt": "2026-03-24T11:00:00"
+                                                }
+                                              ],
+                                              "meta": {
+                                                "timestamp": "2026-03-24T19:36:08.117",
+                                                "traceId": "receipt-history-1234"
                                               }
-                                            ],
-                                            "meta": {
-                                              "timestamp": "2026-03-24T19:36:08.117",
-                                              "traceId": "receipt-history-1234"
                                             }
-                                          }
-                                          """))),
+                                            """))),
   })
   @GetMapping("/{id}/history")
   public ResponseEntity<ApiResponse<List<AuditLog>>> getHistory(
