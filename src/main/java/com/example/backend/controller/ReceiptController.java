@@ -468,7 +468,7 @@ public class ReceiptController {
                                                   "actorId": "2",
                                                   "workspaceId": 1,
                                                   "receiptId": 1,
-                                                  "detail": "{\"status\":\"ANALYZING\"}",
+                                                  "detail": "초기 업로드 완료",
                                                   "createdAt": "2026-03-24T10:36:08"
                                                 },
                                                 {
@@ -478,7 +478,7 @@ public class ReceiptController {
                                                   "actorId": "1",
                                                   "workspaceId": 1,
                                                   "receiptId": 1,
-                                                  "detail": "{\"newStatus\":\"APPROVED\"}",
+                                                  "detail": "관리자 승인 처리",
                                                   "createdAt": "2026-03-24T11:00:00"
                                                 }
                                               ],
