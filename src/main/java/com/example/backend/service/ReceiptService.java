@@ -150,7 +150,7 @@ public class ReceiptService {
     double confidence = aiResult.path("confidence").asDouble(0.0);
 
     ReceiptStatus nextStatus =
-        (aiResult.has("storeName") && !storeName.equals("알 수 없는 상호"))
+        (confidence >= 0.7 && !storeName.equals("알 수 없는 상호"))
             ? ReceiptStatus.ANALYZING
             : ReceiptStatus.NEED_MANUAL;
 
