@@ -30,17 +30,17 @@ public class WorkspaceController {
 
   @Operation(summary = "워크스페이스 생성")
   @ApiResponses({
-          @io.swagger.v3.oas.annotations.responses.ApiResponse(
-                  responseCode = "200",
-                  description = "워크스페이스 생성 성공",
-                  content =
-                  @Content(
-                          mediaType = "application/json",
-                          examples =
-                          @ExampleObject(
-                                  name = "워크스페이스 생성 성공",
-                                  value =
-                                          """
+    @io.swagger.v3.oas.annotations.responses.ApiResponse(
+        responseCode = "200",
+        description = "워크스페이스 생성 성공",
+        content =
+            @Content(
+                mediaType = "application/json",
+                examples =
+                    @ExampleObject(
+                        name = "워크스페이스 생성 성공",
+                        value =
+                            """
                                           {
                                             "success": true,
                                             "data": 1,
@@ -53,27 +53,27 @@ public class WorkspaceController {
   })
   @PostMapping
   public ResponseEntity<ApiResponse<Long>> createWorkspace(
-          @RequestBody CreateWorkspaceRequestDto requestDto,
-          @Parameter(hidden = true) Principal principal) {
+      @RequestBody CreateWorkspaceRequestDto requestDto,
+      @Parameter(hidden = true) Principal principal) {
     return ResponseEntity.ok(
-            ApiResponse.ok(
-                    workspaceService.createWorkspace(
-                            requestDto.getName(), requestDto.getColor(), principal.getName())));
+        ApiResponse.ok(
+            workspaceService.createWorkspace(
+                requestDto.getName(), requestDto.getColor(), principal.getName())));
   }
 
   @Operation(summary = "멤버 및 초대 목록 조회")
   @ApiResponses({
-          @io.swagger.v3.oas.annotations.responses.ApiResponse(
-                  responseCode = "200",
-                  description = "멤버 목록 조회 성공",
-                  content =
-                  @Content(
-                          mediaType = "application/json",
-                          examples =
-                          @ExampleObject(
-                                  name = "멤버 목록 조회 성공",
-                                  value =
-                                          """
+    @io.swagger.v3.oas.annotations.responses.ApiResponse(
+        responseCode = "200",
+        description = "멤버 목록 조회 성공",
+        content =
+            @Content(
+                mediaType = "application/json",
+                examples =
+                    @ExampleObject(
+                        name = "멤버 목록 조회 성공",
+                        value =
+                            """
                                           {
                                             "success": true,
                                             "data": [
@@ -96,27 +96,27 @@ public class WorkspaceController {
   })
   @GetMapping("/{workspaceId}/members")
   public ResponseEntity<ApiResponse<List<WorkspaceMemberResponseDto>>> getMembers(
-          @PathVariable Long workspaceId,
-          @Parameter(description = "상태 (ACCEPTED: 현재 멤버, PENDING: 초대 내역)")
+      @PathVariable Long workspaceId,
+      @Parameter(description = "상태 (ACCEPTED: 현재 멤버, PENDING: 초대 내역)")
           @RequestParam(defaultValue = "ACCEPTED")
           MembershipStatus status) {
     return ResponseEntity.ok(
-            ApiResponse.ok(workspaceService.getWorkspaceMembers(workspaceId, status)));
+        ApiResponse.ok(workspaceService.getWorkspaceMembers(workspaceId, status)));
   }
 
   @Operation(summary = "워크스페이스 설정 수정")
   @ApiResponses({
-          @io.swagger.v3.oas.annotations.responses.ApiResponse(
-                  responseCode = "200",
-                  description = "워크스페이스 설정 수정 성공",
-                  content =
-                  @Content(
-                          mediaType = "application/json",
-                          examples =
-                          @ExampleObject(
-                                  name = "워크스페이스 설정 수정 성공",
-                                  value =
-                                          """
+    @io.swagger.v3.oas.annotations.responses.ApiResponse(
+        responseCode = "200",
+        description = "워크스페이스 설정 수정 성공",
+        content =
+            @Content(
+                mediaType = "application/json",
+                examples =
+                    @ExampleObject(
+                        name = "워크스페이스 설정 수정 성공",
+                        value =
+                            """
                                           {
                                             "success": true,
                                             "data": null,
@@ -129,27 +129,27 @@ public class WorkspaceController {
   })
   @PatchMapping("/{workspaceId}/settings")
   public ResponseEntity<ApiResponse<Void>> updateSettings(
-          @PathVariable Long workspaceId,
-          @RequestBody WorkspaceSettingsUpdateDto requestDto,
-          @Parameter(hidden = true) Principal principal) {
+      @PathVariable Long workspaceId,
+      @RequestBody WorkspaceSettingsUpdateDto requestDto,
+      @Parameter(hidden = true) Principal principal) {
     workspaceService.updateWorkspaceSettings(
-            workspaceId, requestDto.getName(), requestDto.getColor(), principal.getName());
+        workspaceId, requestDto.getName(), requestDto.getColor(), principal.getName());
     return ResponseEntity.ok(ApiResponse.ok());
   }
 
   @Operation(summary = "멤버 강퇴 및 초대 취소")
   @ApiResponses({
-          @io.swagger.v3.oas.annotations.responses.ApiResponse(
-                  responseCode = "200",
-                  description = "멤버 강퇴/초대 취소 성공",
-                  content =
-                  @Content(
-                          mediaType = "application/json",
-                          examples =
-                          @ExampleObject(
-                                  name = "멤버 강퇴/초대 취소 성공",
-                                  value =
-                                          """
+    @io.swagger.v3.oas.annotations.responses.ApiResponse(
+        responseCode = "200",
+        description = "멤버 강퇴/초대 취소 성공",
+        content =
+            @Content(
+                mediaType = "application/json",
+                examples =
+                    @ExampleObject(
+                        name = "멤버 강퇴/초대 취소 성공",
+                        value =
+                            """
                                           {
                                             "success": true,
                                             "data": null,
@@ -162,26 +162,26 @@ public class WorkspaceController {
   })
   @DeleteMapping("/{workspaceId}/members/{userId}")
   public ResponseEntity<ApiResponse<Void>> removeMember(
-          @PathVariable Long workspaceId,
-          @PathVariable Long userId,
-          @Parameter(hidden = true) Principal principal) {
+      @PathVariable Long workspaceId,
+      @PathVariable Long userId,
+      @Parameter(hidden = true) Principal principal) {
     workspaceService.removeMember(workspaceId, userId, principal.getName());
     return ResponseEntity.ok(ApiResponse.ok());
   }
 
   @Operation(summary = "워크스페이스 삭제")
   @ApiResponses({
-          @io.swagger.v3.oas.annotations.responses.ApiResponse(
-                  responseCode = "200",
-                  description = "워크스페이스 삭제 성공",
-                  content =
-                  @Content(
-                          mediaType = "application/json",
-                          examples =
-                          @ExampleObject(
-                                  name = "워크스페이스 삭제 성공",
-                                  value =
-                                          """
+    @io.swagger.v3.oas.annotations.responses.ApiResponse(
+        responseCode = "200",
+        description = "워크스페이스 삭제 성공",
+        content =
+            @Content(
+                mediaType = "application/json",
+                examples =
+                    @ExampleObject(
+                        name = "워크스페이스 삭제 성공",
+                        value =
+                            """
                                           {
                                             "success": true,
                                             "data": null,
@@ -194,24 +194,24 @@ public class WorkspaceController {
   })
   @DeleteMapping("/{workspaceId}")
   public ResponseEntity<ApiResponse<Void>> deleteWorkspace(
-          @PathVariable Long workspaceId, @Parameter(hidden = true) Principal principal) {
+      @PathVariable Long workspaceId, @Parameter(hidden = true) Principal principal) {
     workspaceService.deleteWorkspace(workspaceId, principal.getName());
     return ResponseEntity.ok(ApiResponse.ok());
   }
 
   @Operation(summary = "워크스페이스 이메일 초대")
   @ApiResponses({
-          @io.swagger.v3.oas.annotations.responses.ApiResponse(
-                  responseCode = "200",
-                  description = "워크스페이스 초대 성공",
-                  content =
-                  @Content(
-                          mediaType = "application/json",
-                          examples =
-                          @ExampleObject(
-                                  name = "워크스페이스 초대 성공",
-                                  value =
-                                          """
+    @io.swagger.v3.oas.annotations.responses.ApiResponse(
+        responseCode = "200",
+        description = "워크스페이스 초대 성공",
+        content =
+            @Content(
+                mediaType = "application/json",
+                examples =
+                    @ExampleObject(
+                        name = "워크스페이스 초대 성공",
+                        value =
+                            """
                                           {
                                             "success": true,
                                             "data": null,
@@ -224,26 +224,26 @@ public class WorkspaceController {
   })
   @PostMapping("/{workspaceId}/invite")
   public ResponseEntity<ApiResponse<Void>> invite(
-          @PathVariable Long workspaceId,
-          @RequestBody WorkspaceInviteRequestDto requestDto,
-          @Parameter(hidden = true) Principal principal) {
+      @PathVariable Long workspaceId,
+      @RequestBody WorkspaceInviteRequestDto requestDto,
+      @Parameter(hidden = true) Principal principal) {
     workspaceService.inviteByEmail(workspaceId, requestDto.getEmail(), principal.getName());
     return ResponseEntity.ok(ApiResponse.ok());
   }
 
   @Operation(summary = "대기 중인 초대 목록 조회 (나에게 온 초대)")
   @ApiResponses({
-          @io.swagger.v3.oas.annotations.responses.ApiResponse(
-                  responseCode = "200",
-                  description = "초대 목록 조회 성공",
-                  content =
-                  @Content(
-                          mediaType = "application/json",
-                          examples =
-                          @ExampleObject(
-                                  name = "초대 목록 조회 성공",
-                                  value =
-                                          """
+    @io.swagger.v3.oas.annotations.responses.ApiResponse(
+        responseCode = "200",
+        description = "초대 목록 조회 성공",
+        content =
+            @Content(
+                mediaType = "application/json",
+                examples =
+                    @ExampleObject(
+                        name = "초대 목록 조회 성공",
+                        value =
+                            """
                                           {
                                             "success": true,
                                             "data": [
@@ -264,24 +264,24 @@ public class WorkspaceController {
   })
   @GetMapping("/invitations")
   public ResponseEntity<ApiResponse<List<WorkspaceResponseDto>>> getInvitations(
-          @Parameter(hidden = true) Principal principal) {
+      @Parameter(hidden = true) Principal principal) {
     return ResponseEntity.ok(
-            ApiResponse.ok(workspaceService.getPendingInvitations(principal.getName())));
+        ApiResponse.ok(workspaceService.getPendingInvitations(principal.getName())));
   }
 
   @Operation(summary = "초대 수락")
   @ApiResponses({
-          @io.swagger.v3.oas.annotations.responses.ApiResponse(
-                  responseCode = "200",
-                  description = "초대 수락 성공",
-                  content =
-                  @Content(
-                          mediaType = "application/json",
-                          examples =
-                          @ExampleObject(
-                                  name = "초대 수락 성공",
-                                  value =
-                                          """
+    @io.swagger.v3.oas.annotations.responses.ApiResponse(
+        responseCode = "200",
+        description = "초대 수락 성공",
+        content =
+            @Content(
+                mediaType = "application/json",
+                examples =
+                    @ExampleObject(
+                        name = "초대 수락 성공",
+                        value =
+                            """
                                           {
                                             "success": true,
                                             "data": null,
@@ -294,24 +294,24 @@ public class WorkspaceController {
   })
   @PostMapping("/invitations/{membershipId}/accept")
   public ResponseEntity<ApiResponse<Void>> accept(
-          @PathVariable Long membershipId, @Parameter(hidden = true) Principal principal) {
+      @PathVariable Long membershipId, @Parameter(hidden = true) Principal principal) {
     workspaceService.acceptInvitation(membershipId, principal.getName());
     return ResponseEntity.ok(ApiResponse.ok());
   }
 
   @Operation(summary = "초대 거절")
   @ApiResponses({
-          @io.swagger.v3.oas.annotations.responses.ApiResponse(
-                  responseCode = "200",
-                  description = "초대 거절 성공",
-                  content =
-                  @Content(
-                          mediaType = "application/json",
-                          examples =
-                          @ExampleObject(
-                                  name = "초대 거절 성공",
-                                  value =
-                                          """
+    @io.swagger.v3.oas.annotations.responses.ApiResponse(
+        responseCode = "200",
+        description = "초대 거절 성공",
+        content =
+            @Content(
+                mediaType = "application/json",
+                examples =
+                    @ExampleObject(
+                        name = "초대 거절 성공",
+                        value =
+                            """
                                           {
                                             "success": true,
                                             "data": null,
@@ -324,24 +324,24 @@ public class WorkspaceController {
   })
   @PostMapping("/invitations/{membershipId}/reject")
   public ResponseEntity<ApiResponse<Void>> reject(
-          @PathVariable Long membershipId, @Parameter(hidden = true) Principal principal) {
+      @PathVariable Long membershipId, @Parameter(hidden = true) Principal principal) {
     workspaceService.rejectInvitation(membershipId, principal.getName());
     return ResponseEntity.ok(ApiResponse.ok());
   }
 
   @Operation(summary = "내 워크스페이스 목록 조회", description = "내가 속한 워크스페이스 목록을 필요한 필드만 바로 반환합니다.")
   @ApiResponses({
-          @io.swagger.v3.oas.annotations.responses.ApiResponse(
-                  responseCode = "200",
-                  description = "내 워크스페이스 목록 조회 성공",
-                  content =
-                  @Content(
-                          mediaType = "application/json",
-                          examples =
-                          @ExampleObject(
-                                  name = "내 워크스페이스 목록 조회 성공",
-                                  value =
-                                          """
+    @io.swagger.v3.oas.annotations.responses.ApiResponse(
+        responseCode = "200",
+        description = "내 워크스페이스 목록 조회 성공",
+        content =
+            @Content(
+                mediaType = "application/json",
+                examples =
+                    @ExampleObject(
+                        name = "내 워크스페이스 목록 조회 성공",
+                        value =
+                            """
                                           {
                                             "success": true,
                                             "data": [
@@ -369,7 +369,7 @@ public class WorkspaceController {
   })
   @GetMapping("/my")
   public ResponseEntity<ApiResponse<List<WorkspaceResponseDto>>> getMyWorkspaces(
-          @Parameter(hidden = true) Principal principal) {
+      @Parameter(hidden = true) Principal principal) {
     return ResponseEntity.ok(ApiResponse.ok(workspaceService.getMyWorkspaces(principal.getName())));
   }
 }

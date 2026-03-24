@@ -16,17 +16,17 @@ public class HealthController {
 
   @Operation(summary = "서버 체크", description = "서버가 정상적으로 응답 가능한 상태인지 확인합니다.")
   @ApiResponses({
-          @io.swagger.v3.oas.annotations.responses.ApiResponse(
-                  responseCode = "200",
-                  description = "OK",
-                  content =
-                  @Content(
-                          mediaType = "application/json",
-                          examples =
-                          @ExampleObject(
-                                  name = "헬스 체크 성공",
-                                  value =
-                                          """
+    @io.swagger.v3.oas.annotations.responses.ApiResponse(
+        responseCode = "200",
+        description = "OK",
+        content =
+            @Content(
+                mediaType = "application/json",
+                examples =
+                    @ExampleObject(
+                        name = "헬스 체크 성공",
+                        value =
+                            """
                                           {
                                             "success": true,
                                             "data": {

@@ -17,17 +17,17 @@ public class DevicePingController {
 
   @Operation(summary = "디바이스 ping", description = "디바이스 연결 상태를 간단히 확인합니다.")
   @ApiResponses({
-          @io.swagger.v3.oas.annotations.responses.ApiResponse(
-                  responseCode = "200",
-                  description = "OK",
-                  content =
-                  @Content(
-                          mediaType = "application/json",
-                          examples =
-                          @ExampleObject(
-                                  name = "디바이스 ping 성공",
-                                  value =
-                                          """
+    @io.swagger.v3.oas.annotations.responses.ApiResponse(
+        responseCode = "200",
+        description = "OK",
+        content =
+            @Content(
+                mediaType = "application/json",
+                examples =
+                    @ExampleObject(
+                        name = "디바이스 ping 성공",
+                        value =
+                            """
                                           {
                                             "success": true,
                                             "data": "pong",

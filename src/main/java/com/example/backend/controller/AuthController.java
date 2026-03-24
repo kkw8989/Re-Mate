@@ -31,17 +31,17 @@ public class AuthController {
 
   @Operation(summary = "회원가입", description = "이메일, 비밀번호, 이름으로 회원가입합니다.")
   @ApiResponses({
-          @io.swagger.v3.oas.annotations.responses.ApiResponse(
-                  responseCode = "200",
-                  description = "회원가입 성공",
-                  content =
-                  @Content(
-                          mediaType = "application/json",
-                          examples =
-                          @ExampleObject(
-                                  name = "회원가입 성공",
-                                  value =
-                                          """
+    @io.swagger.v3.oas.annotations.responses.ApiResponse(
+        responseCode = "200",
+        description = "회원가입 성공",
+        content =
+            @Content(
+                mediaType = "application/json",
+                examples =
+                    @ExampleObject(
+                        name = "회원가입 성공",
+                        value =
+                            """
                                           {
                                             "success": true,
                                             "data": {
@@ -64,17 +64,17 @@ public class AuthController {
 
   @Operation(summary = "일반 로그인", description = "이메일과 비밀번호로 로그인합니다.")
   @ApiResponses({
-          @io.swagger.v3.oas.annotations.responses.ApiResponse(
-                  responseCode = "200",
-                  description = "로그인 성공",
-                  content =
-                  @Content(
-                          mediaType = "application/json",
-                          examples =
-                          @ExampleObject(
-                                  name = "로그인 성공",
-                                  value =
-                                          """
+    @io.swagger.v3.oas.annotations.responses.ApiResponse(
+        responseCode = "200",
+        description = "로그인 성공",
+        content =
+            @Content(
+                mediaType = "application/json",
+                examples =
+                    @ExampleObject(
+                        name = "로그인 성공",
+                        value =
+                            """
                                           {
                                             "success": true,
                                             "data": {
@@ -97,17 +97,17 @@ public class AuthController {
 
   @Operation(summary = "인증 상태 확인", description = "현재 로그인/인증 상태를 확인합니다.")
   @ApiResponses({
-          @io.swagger.v3.oas.annotations.responses.ApiResponse(
-                  responseCode = "200",
-                  description = "인증 상태 확인 성공",
-                  content =
-                  @Content(
-                          mediaType = "application/json",
-                          examples =
-                          @ExampleObject(
-                                  name = "인증 상태 확인",
-                                  value =
-                                          """
+    @io.swagger.v3.oas.annotations.responses.ApiResponse(
+        responseCode = "200",
+        description = "인증 상태 확인 성공",
+        content =
+            @Content(
+                mediaType = "application/json",
+                examples =
+                    @ExampleObject(
+                        name = "인증 상태 확인",
+                        value =
+                            """
                                           {
                                             "authenticated": true,
                                             "email": "user@example.com",
@@ -124,10 +124,10 @@ public class AuthController {
     Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
 
     if (authentication == null
-            || !authentication.isAuthenticated()
-            || "anonymousUser".equals(authentication.getName())) {
+        || !authentication.isAuthenticated()
+        || "anonymousUser".equals(authentication.getName())) {
       return ResponseEntity.ok(
-              new AuthStatusResponse(false, null, "미인증 상태", null, null, null, null));
+          new AuthStatusResponse(false, null, "미인증 상태", null, null, null, null));
     }
 
     return ResponseEntity.ok(authService.getAuthStatusByPrincipal(authentication.getName()));
@@ -135,17 +135,17 @@ public class AuthController {
 
   @Operation(summary = "내 정보 조회", description = "현재 로그인한 사용자의 이메일, 이름, 프로필 이미지를 조회합니다.")
   @ApiResponses({
-          @io.swagger.v3.oas.annotations.responses.ApiResponse(
-                  responseCode = "200",
-                  description = "내 정보 조회 성공",
-                  content =
-                  @Content(
-                          mediaType = "application/json",
-                          examples =
-                          @ExampleObject(
-                                  name = "내 정보 조회 성공",
-                                  value =
-                                          """
+    @io.swagger.v3.oas.annotations.responses.ApiResponse(
+        responseCode = "200",
+        description = "내 정보 조회 성공",
+        content =
+            @Content(
+                mediaType = "application/json",
+                examples =
+                    @ExampleObject(
+                        name = "내 정보 조회 성공",
+                        value =
+                            """
                                           {
                                             "success": true,
                                             "data": {
