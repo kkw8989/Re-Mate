@@ -46,10 +46,10 @@ public class AuthController {
     Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
 
     if (authentication == null
-            || !authentication.isAuthenticated()
-            || "anonymousUser".equals(authentication.getName())) {
+        || !authentication.isAuthenticated()
+        || "anonymousUser".equals(authentication.getName())) {
       return ResponseEntity.ok(
-              new AuthStatusResponse(false, null, "미인증 상태", null, null, null, null));
+          new AuthStatusResponse(false, null, "미인증 상태", null, null, null, null));
     }
 
     return ResponseEntity.ok(authService.getAuthStatusByPrincipal(authentication.getName()));

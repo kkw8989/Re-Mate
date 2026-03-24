@@ -13,45 +13,45 @@ import lombok.Getter;
 @Schema(name = "ReceiptActionResponse", description = "영수증 수정/상태변경/저장확정 응답")
 public class ReceiptActionResponseDto {
 
-    @Schema(description = "영수증 ID", example = "1")
-    private Long id;
+  @Schema(description = "영수증 ID", example = "1")
+  private Long id;
 
-    @Schema(description = "영수증 상태", example = "WAITING")
-    private String status;
+  @Schema(description = "영수증 상태", example = "WAITING")
+  private String status;
 
-    @Schema(description = "시스템 에러 코드", example = "OCR_CONNECTION_FAILURE", nullable = true)
-    private String systemErrorCode;
+  @Schema(description = "시스템 에러 코드", example = "OCR_CONNECTION_FAILURE", nullable = true)
+  private String systemErrorCode;
 
-    @Schema(description = "가맹점명", example = "스타벅스 상명대점", nullable = true)
-    private String storeName;
+  @Schema(description = "가맹점명", example = "스타벅스 상명대점", nullable = true)
+  private String storeName;
 
-    @Schema(description = "거래 일시", example = "2026-03-23T13:44:34", nullable = true)
-    private LocalDateTime tradeAt;
+  @Schema(description = "거래 일시", example = "2026-03-23T13:44:34", nullable = true)
+  private LocalDateTime tradeAt;
 
-    @Schema(description = "총 금액", example = "5500")
-    private Integer totalAmount;
+  @Schema(description = "총 금액", example = "5500")
+  private Integer totalAmount;
 
-    @Schema(description = "야간 거래 여부", example = "false")
-    private boolean nightTime;
+  @Schema(description = "야간 거래 여부", example = "false")
+  private boolean nightTime;
 
-    @Schema(description = "반려 사유", example = "영수증 정보가 불명확합니다.", nullable = true)
-    private String rejectionReason;
+  @Schema(description = "반려 사유", example = "영수증 정보가 불명확합니다.", nullable = true)
+  private String rejectionReason;
 
-    @Schema(description = "승인 시각", example = "2026-03-23T14:10:00", nullable = true)
-    private LocalDateTime approvedAt;
+  @Schema(description = "승인 시각", example = "2026-03-23T14:10:00", nullable = true)
+  private LocalDateTime approvedAt;
 
-    @Schema(description = "세금", example = "500", nullable = true)
-    private Integer tax;
+  @Schema(description = "세금", example = "500", nullable = true)
+  private Integer tax;
 
-    @Schema(description = "AI 신뢰도", example = "0.91", nullable = true)
-    private Double confidence;
+  @Schema(description = "AI 신뢰도", example = "0.91", nullable = true)
+  private Double confidence;
 
-    @Schema(description = "연결된 파일 자산 ID", example = "12", nullable = true)
-    private Long fileAssetId;
+  @Schema(description = "연결된 파일 자산 ID", example = "12", nullable = true)
+  private Long fileAssetId;
 
-    @Schema(description = "태그 목록")
-    private List<String> tags;
+  @Schema(description = "태그 목록")
+  private List<String> tags;
 
-    @Schema(description = "생성 시각", example = "2026-03-23T13:44:34", nullable = true)
-    private LocalDateTime createdAt;
+  @Schema(description = "생성 시각", example = "2026-03-23T13:44:34", nullable = true)
+  private LocalDateTime createdAt;
 }
