@@ -4,6 +4,7 @@ import com.example.backend.audit.AuditAction;
 import com.example.backend.audit.AuditLogService;
 import com.example.backend.domain.receipt.ReceiptStatus;
 import com.example.backend.domain.receipt.SystemErrorCode;
+import com.example.backend.dto.ReceiptActionResponseDto;
 import com.example.backend.dto.ReceiptDetailDto;
 import com.example.backend.dto.ReceiptSummaryDto;
 import com.example.backend.dto.UploadReceiptResponse;
@@ -53,7 +54,7 @@ public class ReceiptService {
   private final ReceiptItemRepository receiptItemRepository;
 
   private final String uploadDir =
-      System.getProperty("user.home") + File.separator + "remate_uploads" + File.separator;
+          System.getProperty("user.home") + File.separator + "remate_uploads" + File.separator;
 
   private Long getCurrentUserId() {
 
@@ -64,9 +65,9 @@ public class ReceiptService {
     }
 
     return userRepository
-        .findByEmail(auth.getName())
-        .orElseThrow(() -> new BusinessException(ErrorCode.UNAUTHORIZED))
-        .getId();
+            .findByEmail(auth.getName())
+            .orElseThrow(() -> new BusinessException(ErrorCode.UNAUTHORIZED))
+            .getId();
   }
 
   private boolean isAdmin() {
@@ -78,7 +79,7 @@ public class ReceiptService {
 
   @Transactional
   public UploadReceiptResponse uploadAndProcess(
-      String idempotencyKey, MultipartFile file, Long workspaceId) {
+          String idempotencyKey, MultipartFile file, Long workspaceId) {
 
     final Long userId = getCurrentUserId();
     validateFile(file);
@@ -88,14 +89,14 @@ public class ReceiptService {
       String fileHash = HexFormat.of().formatHex(hashBytes);
 
       Optional<Receipt> existingByHash =
-          receiptRepository.findByFileHashAndWorkspaceId(fileHash, workspaceId);
+              receiptRepository.findByFileHashAndWorkspaceId(fileHash, workspaceId);
       if (existingByHash.isPresent()) {
-        return new UploadReceiptResponse(existingByHash.get(), true);
+        return toUploadReceiptResponse(existingByHash.get(), true);
       }
 
       Optional<Receipt> existingByKey = receiptRepository.findByIdempotencyKey(idempotencyKey);
       if (existingByKey.isPresent()) {
-        return new UploadReceiptResponse(existingByKey.get(), true);
+        return toUploadReceiptResponse(existingByKey.get(), true);
       }
 
       String savedFileName = null;
@@ -103,24 +104,24 @@ public class ReceiptService {
       try {
         savedFileName = saveFileToLocal(file);
         receipt =
-            receiptRepository.save(
-                Receipt.builder()
-                    .idempotencyKey(idempotencyKey)
-                    .fileHash(fileHash)
-                    .workspaceId(workspaceId)
-                    .userId(userId)
-                    .status(ReceiptStatus.ANALYZING)
-                    .filePath(savedFileName)
-                    .build());
+                receiptRepository.save(
+                        Receipt.builder()
+                                .idempotencyKey(idempotencyKey)
+                                .fileHash(fileHash)
+                                .workspaceId(workspaceId)
+                                .userId(userId)
+                                .status(ReceiptStatus.ANALYZING)
+                                .filePath(savedFileName)
+                                .build());
         log.info("=== [검증 1] DB 선저장 완료: ID={}, Status={}", receipt.getId(), receipt.getStatus());
         JsonNode ocrJson = googleOcrClient.recognize(fileBytes);
         log.info("=== [검증 2] OCR 분석 시작 (ID: {})", receipt.getId());
-        return new UploadReceiptResponse(processOcrResult(receipt, ocrJson), false);
+        return toUploadReceiptResponse(processOcrResult(receipt, ocrJson), false);
       } catch (Exception e) {
         log.error("OCR 분석 에러", e);
-        if (receipt != null) return new UploadReceiptResponse(markAsFailed(receipt, e), false);
-        return new UploadReceiptResponse(
-            saveFailedReceipt(idempotencyKey, fileHash, workspaceId, savedFileName, e), false);
+        if (receipt != null) return toUploadReceiptResponse(markAsFailed(receipt, e), false);
+        return toUploadReceiptResponse(
+                saveFailedReceipt(idempotencyKey, fileHash, workspaceId, savedFileName, e), false);
       }
     } catch (Exception e) {
       throw new RuntimeException("FILE_PROCESSING_FAILED", e);
@@ -130,7 +131,7 @@ public class ReceiptService {
   private Receipt processOcrResult(Receipt receipt, JsonNode ocrJson) {
     JsonNode textAnnotations = ocrJson.path("responses").get(0).path("textAnnotations");
     String fullText =
-        textAnnotations.isMissingNode() ? "" : textAnnotations.get(0).path("description").asText();
+            textAnnotations.isMissingNode() ? "" : textAnnotations.get(0).path("description").asText();
 
     JsonNode aiResult = geminiService.getParsedReceipt(fullText);
 
@@ -150,9 +151,9 @@ public class ReceiptService {
     double confidence = aiResult.path("confidence").asDouble(0.0);
 
     ReceiptStatus nextStatus =
-        (confidence >= 0.7 && !storeName.equals("알 수 없는 상호"))
-            ? ReceiptStatus.ANALYZING
-            : ReceiptStatus.NEED_MANUAL;
+            (confidence >= 0.7 && !storeName.equals("알 수 없는 상호"))
+                    ? ReceiptStatus.ANALYZING
+                    : ReceiptStatus.NEED_MANUAL;
 
     LocalDateTime tradeAt;
     try {
@@ -164,27 +165,26 @@ public class ReceiptService {
     List<String> derivedTags = tagService.deriveTags(Receipt.builder().tradeAt(tradeAt).build());
 
     receipt.updateAfterAnalysis(
-        storeName,
-        totalAmount,
-        tradeAt,
-        fullText,
-        nextStatus,
-        derivedTags,
-        derivedTags.contains("🌙 야간"),
-        tax,
-        confidence);
+            storeName,
+            totalAmount,
+            tradeAt,
+            fullText,
+            nextStatus,
+            derivedTags,
+            derivedTags.contains("🌙 야간"),
+            tax,
+            confidence);
 
-    // items 저장
     JsonNode items = aiResult.path("items");
     if (items.isArray()) {
       for (JsonNode item : items) {
         receiptItemRepository.save(
-            ReceiptItem.builder()
-                .receiptId(receipt.getId())
-                .name(item.path("name").asText(""))
-                .quantity(item.path("quantity").asInt(0))
-                .price(item.path("price").asInt(0))
-                .build());
+                ReceiptItem.builder()
+                        .receiptId(receipt.getId())
+                        .name(item.path("name").asText(""))
+                        .quantity(item.path("quantity").asInt(0))
+                        .price(item.path("price").asInt(0))
+                        .build());
       }
     }
 
@@ -202,11 +202,8 @@ public class ReceiptService {
 
   public Receipt getReceiptSecurely(Long id, Long workspaceId) {
     return receiptRepository
-        .findByIdAndWorkspaceId(id, workspaceId)
-        .orElseThrow(
-            () ->
-                new com.example.backend.global.error.BusinessException(
-                    com.example.backend.global.error.ErrorCode.NOT_FOUND));
+            .findByIdAndWorkspaceId(id, workspaceId)
+            .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND));
   }
 
   @Transactional
@@ -215,7 +212,7 @@ public class ReceiptService {
     Receipt receipt = getReceiptSecurely(id, workspaceId);
 
     if (receipt.getStatus() == ReceiptStatus.APPROVED
-        || receipt.getStatus() == ReceiptStatus.REJECTED) {
+            || receipt.getStatus() == ReceiptStatus.REJECTED) {
       throw new BusinessException(ErrorCode.AUDIT_ALREADY_DECIDED);
     }
 
@@ -228,12 +225,12 @@ public class ReceiptService {
     receipt.updateStatus(status, reason, currentUserId);
 
     boolean isSelfApproval =
-        status == ReceiptStatus.APPROVED && currentUserId.equals(receipt.getUserId());
+            status == ReceiptStatus.APPROVED && currentUserId.equals(receipt.getUserId());
     if (isSelfApproval) {
       List<String> tags =
-          receipt.getTags() != null
-              ? new java.util.ArrayList<>(receipt.getTags())
-              : new java.util.ArrayList<>();
+              receipt.getTags() != null
+                      ? new java.util.ArrayList<>(receipt.getTags())
+                      : new java.util.ArrayList<>();
       if (!tags.contains("SELF_APPROVED")) {
         tags.add("SELF_APPROVED");
         receipt.updateTags(tags);
@@ -245,28 +242,28 @@ public class ReceiptService {
       action = AuditAction.SELF_APPROVE;
     } else {
       action =
-          (status == ReceiptStatus.APPROVED)
-              ? AuditAction.APPROVE
-              : (status == ReceiptStatus.REJECTED) ? AuditAction.REJECT : AuditAction.ANALYZE;
+              (status == ReceiptStatus.APPROVED)
+                      ? AuditAction.APPROVE
+                      : (status == ReceiptStatus.REJECTED) ? AuditAction.REJECT : AuditAction.ANALYZE;
     }
 
     auditLogService.record(
-        action,
-        "MEMBER",
-        String.valueOf(currentUserId),
-        null,
-        id,
-        Map.of(
-            "oldStatus", oldStatus.name(),
-            "newStatus", status.name(),
-            "reason", finalReason != null ? finalReason : ""));
+            action,
+            "MEMBER",
+            String.valueOf(currentUserId),
+            null,
+            id,
+            Map.of(
+                    "oldStatus", oldStatus.name(),
+                    "newStatus", status.name(),
+                    "reason", finalReason != null ? finalReason : ""));
 
     return receipt;
   }
 
   @Transactional
   public Receipt updateReceipt(
-      Long id, Long workspaceId, Integer totalAmount, String storeName, LocalDateTime tradeAt) {
+          Long id, Long workspaceId, Integer totalAmount, String storeName, LocalDateTime tradeAt) {
 
     Long currentUserId = getCurrentUserId();
 
@@ -280,12 +277,12 @@ public class ReceiptService {
 
     if (oldStatus != receipt.getStatus()) {
       auditLogService.record(
-          AuditAction.ANALYZE,
-          "MEMBER",
-          String.valueOf(currentUserId),
-          null,
-          id,
-          Map.of("oldStatus", oldStatus.name(), "newStatus", receipt.getStatus().name()));
+              AuditAction.ANALYZE,
+              "MEMBER",
+              String.valueOf(currentUserId),
+              null,
+              id,
+              Map.of("oldStatus", oldStatus.name(), "newStatus", receipt.getStatus().name()));
     }
     return receipt;
   }
@@ -296,25 +293,25 @@ public class ReceiptService {
     List<Receipt> receipts = receiptRepository.findAllByWorkspaceId(workspaceId);
 
     return receipts.stream()
-        .map(
-            r -> {
-              String ownerName =
-                  userRepository.findById(r.getUserId()).map(u -> u.getName()).orElse("알 수 없음");
+            .map(
+                    r -> {
+                      String ownerName =
+                              userRepository.findById(r.getUserId()).map(u -> u.getName()).orElse("알 수 없음");
 
-              return new ReceiptSummaryDto(
-                  r.getId(),
-                  r.getStoreName(),
-                  r.getTotalAmount(),
-                  r.getTradeAt(),
-                  r.getStatus(),
-                  ownerName,
-                  r.getTags(),
-                  r.getRejectionReason(),
-                  r.getUserId(),
-                  r.getTax(),
-                  r.getConfidence());
-            })
-        .collect(Collectors.toList());
+                      return new ReceiptSummaryDto(
+                              r.getId(),
+                              r.getStoreName(),
+                              r.getTotalAmount(),
+                              r.getTradeAt(),
+                              r.getStatus(),
+                              ownerName,
+                              r.getTags(),
+                              r.getRejectionReason(),
+                              r.getUserId(),
+                              r.getTax(),
+                              r.getConfidence());
+                    })
+            .collect(Collectors.toList());
   }
 
   private String saveFileToLocal(MultipartFile file) {
@@ -323,9 +320,9 @@ public class ReceiptService {
       if (!dir.exists() && !dir.mkdirs()) throw new IOException("디렉토리 생성 실패");
       String originalFilename = file.getOriginalFilename();
       String extension =
-          (originalFilename != null && originalFilename.contains("."))
-              ? originalFilename.substring(originalFilename.lastIndexOf("."))
-              : "";
+              (originalFilename != null && originalFilename.contains("."))
+                      ? originalFilename.substring(originalFilename.lastIndexOf("."))
+                      : "";
       String savedFileName = UUID.randomUUID() + extension;
       Files.copy(file.getInputStream(), Paths.get(uploadDir).resolve(savedFileName));
       return savedFileName;
@@ -341,7 +338,7 @@ public class ReceiptService {
 
     String contentType = file.getContentType();
     if (contentType == null
-        || !(contentType.equals("image/jpeg") || contentType.equals("image/png"))) {
+            || !(contentType.equals("image/jpeg") || contentType.equals("image/png"))) {
       throw new RuntimeException("FILE_TYPE_NOT_ALLOWED");
     }
     try {
@@ -360,9 +357,9 @@ public class ReceiptService {
 
   private boolean isPng(byte[] h) {
     return (h[0] & 0xFF) == 0x89
-        && (h[1] & 0xFF) == 0x50
-        && (h[2] & 0xFF) == 0x4E
-        && (h[3] & 0xFF) == 0x47;
+            && (h[1] & 0xFF) == 0x50
+            && (h[2] & 0xFF) == 0x4E
+            && (h[3] & 0xFF) == 0x47;
   }
 
   public byte[] generateCsvFromDto(List<ReceiptSummaryDto> receipts) {
@@ -371,13 +368,13 @@ public class ReceiptService {
     DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
     for (ReceiptSummaryDto r : receipts) {
       csv.append(r.getId())
-          .append(",")
-          .append(r.getStoreName())
-          .append(",")
-          .append(r.getTradeAt() != null ? r.getTradeAt().format(formatter) : "")
-          .append(",")
-          .append(r.getTotalAmount())
-          .append("\n");
+              .append(",")
+              .append(r.getStoreName())
+              .append(",")
+              .append(r.getTradeAt() != null ? r.getTradeAt().format(formatter) : "")
+              .append(",")
+              .append(r.getTotalAmount())
+              .append("\n");
     }
     return csv.toString().getBytes(java.nio.charset.StandardCharsets.UTF_8);
   }
@@ -385,20 +382,20 @@ public class ReceiptService {
   @Transactional
   public List<UploadReceiptResponse> uploadMultiple(List<MultipartFile> files, Long workspaceId) {
     return files.stream()
-        .map(
-            file -> {
-              try {
-                return uploadAndProcess("multi-" + UUID.randomUUID(), file, workspaceId);
-              } catch (Exception e) {
-                return null;
-              }
-            })
-        .filter(Objects::nonNull)
-        .collect(Collectors.toList());
+            .map(
+                    file -> {
+                      try {
+                        return uploadAndProcess("multi-" + UUID.randomUUID(), file, workspaceId);
+                      } catch (Exception e) {
+                        return null;
+                      }
+                    })
+            .filter(Objects::nonNull)
+            .collect(Collectors.toList());
   }
 
   private Receipt saveFailedReceipt(
-      String key, String hash, Long workspaceId, String path, Exception e) {
+          String key, String hash, Long workspaceId, String path, Exception e) {
 
     Long userId = getCurrentUserId();
 
@@ -407,15 +404,15 @@ public class ReceiptService {
     else if (e.getMessage() != null && e.getMessage().contains("parse"))
       errorCode = SystemErrorCode.AI_PARSING_ERROR;
     return receiptRepository.save(
-        Receipt.builder()
-            .idempotencyKey(key)
-            .fileHash(hash)
-            .workspaceId(workspaceId)
-            .userId(userId)
-            .status(ReceiptStatus.FAILED_SYSTEM)
-            .systemErrorCode(errorCode)
-            .filePath(path)
-            .build());
+            Receipt.builder()
+                    .idempotencyKey(key)
+                    .fileHash(hash)
+                    .workspaceId(workspaceId)
+                    .userId(userId)
+                    .status(ReceiptStatus.FAILED_SYSTEM)
+                    .systemErrorCode(errorCode)
+                    .filePath(path)
+                    .build());
   }
 
   public java.util.Map<String, Object> getAdminStats(Long workspaceId) {
@@ -440,23 +437,64 @@ public class ReceiptService {
   public ReceiptDetailDto getReceiptDetail(Long id, Long workspaceId) {
     Receipt receipt = getReceiptSecurely(id, workspaceId);
     String ownerName =
-        userRepository.findById(receipt.getUserId()).map(u -> u.getName()).orElse("알 수 없음");
+            userRepository.findById(receipt.getUserId()).map(u -> u.getName()).orElse("알 수 없음");
     List<ReceiptItem> items = receiptItemRepository.findAllByReceiptId(id);
 
     return new ReceiptDetailDto(
-        receipt.getId(),
-        receipt.getStoreName(),
-        receipt.getTotalAmount(),
-        receipt.getTax(),
-        receipt.getTradeAt(),
-        receipt.getApprovedAt(),
-        receipt.getStatus(),
-        receipt.getRejectionReason(),
-        ownerName,
-        receipt.getUserId(),
-        receipt.getFilePath(),
-        receipt.getTags(),
-        items,
-        receipt.isNightTime());
+            receipt.getId(),
+            receipt.getStoreName(),
+            receipt.getTotalAmount(),
+            receipt.getTax(),
+            receipt.getTradeAt(),
+            receipt.getApprovedAt(),
+            receipt.getStatus(),
+            receipt.getRejectionReason(),
+            ownerName,
+            receipt.getUserId(),
+            receipt.getFilePath(),
+            receipt.getTags(),
+            items,
+            receipt.isNightTime());
+  }
+
+  public ReceiptActionResponseDto toReceiptActionResponse(Receipt receipt) {
+    return ReceiptActionResponseDto.builder()
+            .id(receipt.getId())
+            .status(receipt.getStatus() != null ? receipt.getStatus().name() : null)
+            .systemErrorCode(
+                    receipt.getSystemErrorCode() != null ? receipt.getSystemErrorCode().name() : null)
+            .storeName(receipt.getStoreName())
+            .tradeAt(receipt.getTradeAt())
+            .totalAmount(receipt.getTotalAmount())
+            .nightTime(receipt.isNightTime())
+            .rejectionReason(receipt.getRejectionReason())
+            .approvedAt(receipt.getApprovedAt())
+            .tax(receipt.getTax())
+            .confidence(receipt.getConfidence())
+            .fileAssetId(receipt.getFileAssetId())
+            .tags(receipt.getTags())
+            .createdAt(receipt.getCreatedAt())
+            .build();
+  }
+
+  private UploadReceiptResponse toUploadReceiptResponse(Receipt receipt, boolean isDuplicate) {
+    return UploadReceiptResponse.builder()
+            .id(receipt.getId())
+            .status(receipt.getStatus() != null ? receipt.getStatus().name() : null)
+            .systemErrorCode(
+                    receipt.getSystemErrorCode() != null ? receipt.getSystemErrorCode().name() : null)
+            .storeName(receipt.getStoreName())
+            .tradeAt(receipt.getTradeAt())
+            .totalAmount(receipt.getTotalAmount())
+            .nightTime(receipt.isNightTime())
+            .rejectionReason(receipt.getRejectionReason())
+            .approvedAt(receipt.getApprovedAt())
+            .tax(receipt.getTax())
+            .confidence(receipt.getConfidence())
+            .fileAssetId(receipt.getFileAssetId())
+            .tags(receipt.getTags())
+            .createdAt(receipt.getCreatedAt())
+            .isDuplicate(isDuplicate)
+            .build();
   }
 }
