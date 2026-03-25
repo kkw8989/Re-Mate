@@ -53,31 +53,31 @@ public class ReceiptController {
                         name = "영수증 목록 조회 성공",
                         value =
                             """
-                                                          {
-                                                            "success": true,
-                                                            "totalCount": 1,
-                                                            "nextCursor": 0,
-                                                            "data": [
-                                                              {
-                                                                "id": 1,
-                                                                "storeName": "스타벅스 상명대점",
-                                                                "totalAmount": 5500,
-                                                                "tradeAt": "2026-03-24T10:36:08",
-                                                                "status": "WAITING",
-                                                                "ownerName": "둘리",
-                                                                "tags": ["CAFE", "TEAM_EXPENSE"],
-                                                                "rejectionReason": null,
-                                                                "userId": 2,
-                                                                "tax": 500,
-                                                                "confidence": 0.91
-                                                              }
-                                                            ],
-                                                            "meta": {
-                                                              "timestamp": "2026-03-24T19:36:08.117",
-                                                              "traceId": "receipt-list-1234"
-                                                            }
-                                                          }
-                                                          """))),
+                                            {
+                                              "success": true,
+                                              "totalCount": 1,
+                                              "nextCursor": 0,
+                                              "data": [
+                                                {
+                                                  "id": 1,
+                                                  "storeName": "스타벅스 상명대점",
+                                                  "totalAmount": 5500,
+                                                  "tradeAt": "2026-03-24T10:36:08",
+                                                  "status": "WAITING",
+                                                  "ownerName": "둘리",
+                                                  "tags": ["CAFE", "TEAM_EXPENSE"],
+                                                  "rejectionReason": null,
+                                                  "userId": 2,
+                                                  "tax": 500,
+                                                  "confidence": 0.91
+                                                }
+                                              ],
+                                              "meta": {
+                                                "timestamp": "2026-03-24T19:36:08.117",
+                                                "traceId": "receipt-list-1234"
+                                              }
+                                            }
+                                            """)))
   })
   @GetMapping
   public ResponseEntity<ApiListResponse<ReceiptSummaryDto>> getAllReceipts(
@@ -191,8 +191,41 @@ public class ReceiptController {
                 mediaType = "application/json",
                 examples =
                     @ExampleObject(
+                        name = "이력 조회 성공",
                         value =
-                            "{\"success\": true, \"totalCount\": 1, \"nextCursor\": 0, \"data\": [...]}")))
+                            """
+                                            {
+                                              "success": true,
+                                              "totalCount": 2,
+                                              "nextCursor": 0,
+                                              "data": [
+                                                {
+                                                  "id": 1,
+                                                  "action": "UPLOAD",
+                                                  "actorType": "MEMBER",
+                                                  "actorId": "2",
+                                                  "workspaceId": 1,
+                                                  "receiptId": 1,
+                                                  "detail": "초기 업로드 완료",
+                                                  "createdAt": "2026-03-24T10:36:08"
+                                                },
+                                                {
+                                                  "id": 2,
+                                                  "action": "APPROVE",
+                                                  "actorType": "MEMBER",
+                                                  "actorId": "1",
+                                                  "workspaceId": 1,
+                                                  "receiptId": 1,
+                                                  "detail": "관리자 승인 처리",
+                                                  "createdAt": "2026-03-24T11:00:00"
+                                                }
+                                              ],
+                                              "meta": {
+                                                "timestamp": "2026-03-24T19:36:08.117",
+                                                "traceId": "receipt-history-1234"
+                                              }
+                                            }
+                                            """)))
   })
   @GetMapping("/{id}/history")
   public ResponseEntity<ApiListResponse<AuditLog>> getHistory(@PathVariable Long id) {
