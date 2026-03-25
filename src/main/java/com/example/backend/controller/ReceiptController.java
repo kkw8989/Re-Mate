@@ -37,22 +37,22 @@ import org.springframework.web.multipart.MultipartFile;
 @Tag(name = "Receipt", description = "영수증 조회, 업로드, 수정, 상태 변경, 이력, 통계를 관리합니다.")
 public class ReceiptController {
 
-    private final ReceiptService receiptService;
-    private final AuditLogService auditLogService;
+  private final ReceiptService receiptService;
+  private final AuditLogService auditLogService;
 
-    @Operation(summary = "영수증 목록 조회", description = "워크스페이스 ID 기준으로 영수증 목록을 조회합니다.")
-    @ApiResponses({
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(
-                    responseCode = "200",
-                    description = "영수증 목록 조회 성공",
-                    content =
-                    @Content(
-                            mediaType = "application/json",
-                            examples =
-                            @ExampleObject(
-                                    name = "영수증 목록 조회 성공",
-                                    value =
-                                            """
+  @Operation(summary = "영수증 목록 조회", description = "워크스페이스 ID 기준으로 영수증 목록을 조회합니다.")
+  @ApiResponses({
+    @io.swagger.v3.oas.annotations.responses.ApiResponse(
+        responseCode = "200",
+        description = "영수증 목록 조회 성공",
+        content =
+            @Content(
+                mediaType = "application/json",
+                examples =
+                    @ExampleObject(
+                        name = "영수증 목록 조회 성공",
+                        value =
+                            """
                                                           {
                                                             "success": true,
                                                             "totalCount": 1,
@@ -78,134 +78,149 @@ public class ReceiptController {
                                                             }
                                                           }
                                                           """))),
-    })
-    @GetMapping
-    public ResponseEntity<ApiListResponse<ReceiptSummaryDto>> getAllReceipts(
-            @Parameter(description = "워크스페이스 ID", example = "1") @RequestParam Long workspaceId) {
-        List<ReceiptSummaryDto> list = receiptService.getWorkspaceReceipts(workspaceId);
-        return ResponseEntity.ok(ApiListResponse.ok(list, list.size(), 0));
+  })
+  @GetMapping
+  public ResponseEntity<ApiListResponse<ReceiptSummaryDto>> getAllReceipts(
+      @Parameter(description = "워크스페이스 ID", example = "1") @RequestParam Long workspaceId) {
+    List<ReceiptSummaryDto> list = receiptService.getWorkspaceReceipts(workspaceId);
+    return ResponseEntity.ok(ApiListResponse.ok(list, list.size(), 0));
+  }
+
+  @Operation(summary = "영수증 단건 조회", description = "영수증 ID로 단건 상세 조회합니다.")
+  @GetMapping("/{id}")
+  public ResponseEntity<ApiResponse<ReceiptDetailDto>> getReceipt(
+      @Parameter(description = "영수증 ID", example = "1") @PathVariable Long id,
+      @Parameter(description = "워크스페이스 ID", example = "1") @RequestParam Long workspaceId) {
+    return ResponseEntity.ok(ApiResponse.ok(receiptService.getReceiptDetail(id, workspaceId)));
+  }
+
+  @Operation(summary = "영수증 CSV 다운로드", description = "워크스페이스 영수증 목록을 CSV 파일로 다운로드합니다.")
+  @GetMapping("/export")
+  public ResponseEntity<byte[]> exportToCsv(
+      @Parameter(description = "워크스페이스 ID", example = "1") @RequestParam Long workspaceId) {
+    try {
+      List<ReceiptSummaryDto> dtos = receiptService.getWorkspaceReceipts(workspaceId);
+      byte[] out = receiptService.generateCsvFromDto(dtos);
+      return ResponseEntity.ok()
+          .header(HttpHeaders.CONTENT_TYPE, "text/csv; charset=UTF-8")
+          .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=receipt_list.csv")
+          .body(out);
+    } catch (Exception e) {
+      log.error("CSV 생성 실패", e);
+      return ResponseEntity.internalServerError().build();
+    }
+  }
+
+  @Operation(summary = "영수증 단일 업로드")
+  @PostMapping(value = "/upload", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+  public ResponseEntity<ApiResponse<UploadReceiptResponse>> upload(
+      @Parameter(description = "멱등 처리용 키")
+          @RequestHeader(value = "X-IDEMPOTENCY-KEY", required = false)
+          String idempotencyKey,
+      @RequestPart("file") MultipartFile file,
+      @RequestParam("workspaceId") Long workspaceId) {
+
+    if (file == null || file.isEmpty()) {
+      return ResponseEntity.badRequest().build();
     }
 
-    @Operation(summary = "영수증 단건 조회", description = "영수증 ID로 단건 상세 조회합니다.")
-    @GetMapping("/{id}")
-    public ResponseEntity<ApiResponse<ReceiptDetailDto>> getReceipt(
-            @Parameter(description = "영수증 ID", example = "1") @PathVariable Long id,
-            @Parameter(description = "워크스페이스 ID", example = "1") @RequestParam Long workspaceId) {
-        return ResponseEntity.ok(ApiResponse.ok(receiptService.getReceiptDetail(id, workspaceId)));
+    String key =
+        (idempotencyKey == null || idempotencyKey.isBlank())
+            ? "auto-" + UUID.randomUUID()
+            : idempotencyKey;
+    return ResponseEntity.ok(
+        ApiResponse.ok(receiptService.uploadAndProcess(key, file, workspaceId)));
+  }
+
+  @Operation(summary = "영수증 상태 변경")
+  @PatchMapping("/{id}/status")
+  public ResponseEntity<ApiResponse<ReceiptActionResponseDto>> updateStatus(
+      @PathVariable Long id,
+      @RequestParam Long workspaceId,
+      @RequestParam ReceiptStatus status,
+      @RequestParam(required = false) String reason) {
+    return ResponseEntity.ok(
+        ApiResponse.ok(
+            receiptService.toReceiptActionResponse(
+                receiptService.updateStatus(id, workspaceId, status, reason))));
+  }
+
+  @Operation(summary = "영수증 수정")
+  @PutMapping("/{id}")
+  public ResponseEntity<ApiResponse<ReceiptActionResponseDto>> updateReceipt(
+      @PathVariable Long id,
+      @RequestParam Long workspaceId,
+      @RequestBody ReceiptUpdateRequest request) {
+
+    String storeName = request.getStoreName();
+    Integer totalAmount = request.getTotalAmount();
+    String tradeAtValue = request.getTradeAt();
+    LocalDateTime tradeAt;
+
+    try {
+      tradeAt =
+          (tradeAtValue != null && !tradeAtValue.isBlank())
+              ? LocalDateTime.parse(
+                  tradeAtValue, java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"))
+              : LocalDateTime.now();
+    } catch (Exception e) {
+      tradeAt = LocalDateTime.now();
     }
 
-    @Operation(summary = "영수증 CSV 다운로드", description = "워크스페이스 영수증 목록을 CSV 파일로 다운로드합니다.")
-    @GetMapping("/export")
-    public ResponseEntity<byte[]> exportToCsv(
-            @Parameter(description = "워크스페이스 ID", example = "1") @RequestParam Long workspaceId) {
-        try {
-            List<ReceiptSummaryDto> dtos = receiptService.getWorkspaceReceipts(workspaceId);
-            byte[] out = receiptService.generateCsvFromDto(dtos);
-            return ResponseEntity.ok()
-                    .header(HttpHeaders.CONTENT_TYPE, "text/csv; charset=UTF-8")
-                    .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=receipt_list.csv")
-                    .body(out);
-        } catch (Exception e) {
-            log.error("CSV 생성 실패", e);
-            return ResponseEntity.internalServerError().build();
-        }
-    }
+    return ResponseEntity.ok(
+        ApiResponse.ok(
+            receiptService.toReceiptActionResponse(
+                receiptService.updateReceipt(id, workspaceId, totalAmount, storeName, tradeAt))));
+  }
 
-    @Operation(summary = "영수증 단일 업로드")
-    @PostMapping(value = "/upload", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    public ResponseEntity<ApiResponse<UploadReceiptResponse>> upload(
-            @Parameter(description = "멱등 처리용 키") @RequestHeader(value = "X-IDEMPOTENCY-KEY", required = false) String idempotencyKey,
-            @RequestPart("file") MultipartFile file,
-            @RequestParam("workspaceId") Long workspaceId) {
+  @Operation(summary = "영수증 다중 업로드")
+  @PostMapping(value = "/upload/multiple", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+  public ResponseEntity<ApiResponse<List<UploadReceiptResponse>>> uploadMultiple(
+      @RequestPart("files") List<MultipartFile> files,
+      @RequestParam("workspaceId") Long workspaceId) {
+    return ResponseEntity.ok(ApiResponse.ok(receiptService.uploadMultiple(files, workspaceId)));
+  }
 
-        if (file == null || file.isEmpty()) {
-            return ResponseEntity.badRequest().build();
-        }
+  @Operation(summary = "영수증 이력 조회")
+  @ApiResponses({
+    @io.swagger.v3.oas.annotations.responses.ApiResponse(
+        responseCode = "200",
+        description = "이력 조회 성공",
+        content =
+            @Content(
+                mediaType = "application/json",
+                examples =
+                    @ExampleObject(
+                        value =
+                            "{\"success\": true, \"totalCount\": 1, \"nextCursor\": 0, \"data\": [...]}")))
+  })
+  @GetMapping("/{id}/history")
+  public ResponseEntity<ApiListResponse<AuditLog>> getHistory(@PathVariable Long id) {
+    List<AuditLog> logs = auditLogService.findAllByReceiptId(id);
+    return ResponseEntity.ok(ApiListResponse.ok(logs, logs.size(), 0));
+  }
 
-        String key = (idempotencyKey == null || idempotencyKey.isBlank()) ? "auto-" + UUID.randomUUID() : idempotencyKey;
-        return ResponseEntity.ok(ApiResponse.ok(receiptService.uploadAndProcess(key, file, workspaceId)));
-    }
+  @Operation(summary = "워크스페이스 통계 조회")
+  @GetMapping("/stats")
+  public ResponseEntity<ApiResponse<Map<String, Object>>> getStats(@RequestParam Long workspaceId) {
+    return ResponseEntity.ok(ApiResponse.ok(receiptService.getAdminStats(workspaceId)));
+  }
 
-    @Operation(summary = "영수증 상태 변경")
-    @PatchMapping("/{id}/status")
-    public ResponseEntity<ApiResponse<ReceiptActionResponseDto>> updateStatus(
-            @PathVariable Long id,
-            @RequestParam Long workspaceId,
-            @RequestParam ReceiptStatus status,
-            @RequestParam(required = false) String reason) {
-        return ResponseEntity.ok(
-                ApiResponse.ok(
-                        receiptService.toReceiptActionResponse(
-                                receiptService.updateStatus(id, workspaceId, status, reason))));
-    }
+  @Operation(summary = "영수증 삭제")
+  @DeleteMapping("/{id}")
+  public ResponseEntity<ApiResponse<Void>> deleteReceipt(
+      @PathVariable Long id, @RequestParam Long workspaceId) {
+    receiptService.deleteReceipt(id, workspaceId);
+    return ResponseEntity.ok(ApiResponse.ok(null));
+  }
 
-    @Operation(summary = "영수증 수정")
-    @PutMapping("/{id}")
-    public ResponseEntity<ApiResponse<ReceiptActionResponseDto>> updateReceipt(
-            @PathVariable Long id,
-            @RequestParam Long workspaceId,
-            @RequestBody ReceiptUpdateRequest request) {
-
-        String storeName = request.getStoreName();
-        Integer totalAmount = request.getTotalAmount();
-        String tradeAtValue = request.getTradeAt();
-        LocalDateTime tradeAt;
-
-        try {
-            tradeAt = (tradeAtValue != null && !tradeAtValue.isBlank())
-                    ? LocalDateTime.parse(tradeAtValue, java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"))
-                    : LocalDateTime.now();
-        } catch (Exception e) {
-            tradeAt = LocalDateTime.now();
-        }
-
-        return ResponseEntity.ok(
-                ApiResponse.ok(
-                        receiptService.toReceiptActionResponse(
-                                receiptService.updateReceipt(id, workspaceId, totalAmount, storeName, tradeAt))));
-    }
-
-    @Operation(summary = "영수증 다중 업로드")
-    @PostMapping(value = "/upload/multiple", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    public ResponseEntity<ApiResponse<List<UploadReceiptResponse>>> uploadMultiple(
-            @RequestPart("files") List<MultipartFile> files,
-            @RequestParam("workspaceId") Long workspaceId) {
-        return ResponseEntity.ok(ApiResponse.ok(receiptService.uploadMultiple(files, workspaceId)));
-    }
-
-    @Operation(summary = "영수증 이력 조회")
-    @ApiResponses({
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(
-                    responseCode = "200",
-                    description = "이력 조회 성공",
-                    content = @Content(mediaType = "application/json",
-                            examples = @ExampleObject(value = "{\"success\": true, \"totalCount\": 1, \"nextCursor\": 0, \"data\": [...]}")))
-    })
-    @GetMapping("/{id}/history")
-    public ResponseEntity<ApiListResponse<AuditLog>> getHistory(@PathVariable Long id) {
-        List<AuditLog> logs = auditLogService.findAllByReceiptId(id);
-        return ResponseEntity.ok(ApiListResponse.ok(logs, logs.size(), 0));
-    }
-
-    @Operation(summary = "워크스페이스 통계 조회")
-    @GetMapping("/stats")
-    public ResponseEntity<ApiResponse<Map<String, Object>>> getStats(@RequestParam Long workspaceId) {
-        return ResponseEntity.ok(ApiResponse.ok(receiptService.getAdminStats(workspaceId)));
-    }
-
-    @Operation(summary = "영수증 삭제")
-    @DeleteMapping("/{id}")
-    public ResponseEntity<ApiResponse<Void>> deleteReceipt(@PathVariable Long id, @RequestParam Long workspaceId) {
-        receiptService.deleteReceipt(id, workspaceId);
-        return ResponseEntity.ok(ApiResponse.ok(null));
-    }
-
-    @Operation(summary = "영수증 저장 확정")
-    @PatchMapping("/{id}/confirm")
-    public ResponseEntity<ApiResponse<ReceiptActionResponseDto>> confirmReceipt(@PathVariable Long id, @RequestParam Long workspaceId) {
-        return ResponseEntity.ok(
-                ApiResponse.ok(
-                        receiptService.toReceiptActionResponse(
-                                receiptService.confirmReceipt(id, workspaceId))));
-    }
+  @Operation(summary = "영수증 저장 확정")
+  @PatchMapping("/{id}/confirm")
+  public ResponseEntity<ApiResponse<ReceiptActionResponseDto>> confirmReceipt(
+      @PathVariable Long id, @RequestParam Long workspaceId) {
+    return ResponseEntity.ok(
+        ApiResponse.ok(
+            receiptService.toReceiptActionResponse(
+                receiptService.confirmReceipt(id, workspaceId))));
+  }
 }
