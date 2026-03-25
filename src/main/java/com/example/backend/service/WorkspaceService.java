@@ -85,7 +85,6 @@ public class WorkspaceService {
     validateAdmin(workspaceId, principal);
     Workspace ws =
         workspaceRepository.findById(workspaceId).orElseThrow(ErrorCode.WS_NOT_FOUND::toException);
-
     if (name != null) ws.updateName(name);
     if (color != null) ws.updateColor(color);
   }
@@ -97,7 +96,6 @@ public class WorkspaceService {
         workspaceMemberRepository
             .findByWorkspaceIdAndUserId(workspaceId, targetUserId)
             .orElseThrow(ErrorCode.WS_MEMBER_NOT_FOUND::toException);
-
     if (member.getRole() == WorkspaceRole.ADMIN) {
       throw ErrorCode.WS_CANNOT_REMOVE_ADMIN.toException();
     }
@@ -138,7 +136,6 @@ public class WorkspaceService {
   @Transactional
   public void inviteByEmail(Long workspaceId, String email, String adminPrincipal) {
     validateAdmin(workspaceId, adminPrincipal);
-
     User invitee =
         userRepository
             .findByEmail(email)
@@ -175,15 +172,8 @@ public class WorkspaceService {
         workspaceMemberRepository
             .findById(membershipId)
             .orElseThrow(ErrorCode.WS_INVITATION_NOT_FOUND::toException);
-
-    if (!member.getUserId().equals(user.getId())) {
-      throw ErrorCode.FORBIDDEN.toException("본인에게 온 초대만 수락할 수 있습니다.");
-    }
-
-    if (member.getStatus() != MembershipStatus.PENDING) {
-      throw ErrorCode.CONFLICT.toException("이미 처리된 초대입니다.");
-    }
-
+    if (!member.getUserId().equals(user.getId())) throw ErrorCode.FORBIDDEN.toException();
+    if (member.getStatus() != MembershipStatus.PENDING) throw ErrorCode.CONFLICT.toException();
     member.updateStatus(MembershipStatus.ACCEPTED);
   }
 
@@ -194,11 +184,7 @@ public class WorkspaceService {
         workspaceMemberRepository
             .findById(membershipId)
             .orElseThrow(ErrorCode.WS_INVITATION_NOT_FOUND::toException);
-
-    if (!member.getUserId().equals(user.getId())) {
-      throw ErrorCode.FORBIDDEN.toException("본인에게 온 초대만 거절할 수 있습니다.");
-    }
-
+    if (!member.getUserId().equals(user.getId())) throw ErrorCode.FORBIDDEN.toException();
     member.updateStatus(MembershipStatus.REJECTED);
   }
 
@@ -232,15 +218,11 @@ public class WorkspaceService {
         workspaceMemberRepository
             .findByWorkspaceIdAndUserId(workspaceId, user.getId())
             .orElseThrow(ErrorCode.WS_MEMBER_NOT_FOUND::toException);
-    if (requester.getRole() != WorkspaceRole.ADMIN) {
-      throw ErrorCode.WS_ADMIN_REQUIRED.toException();
-    }
+    if (requester.getRole() != WorkspaceRole.ADMIN) throw ErrorCode.WS_ADMIN_REQUIRED.toException();
   }
 
   private User findUserByPrincipal(String principal) {
-    if (principal == null || principal.isBlank()) {
-      throw ErrorCode.UNAUTHORIZED.toException();
-    }
+    if (principal == null || principal.isBlank()) throw ErrorCode.UNAUTHORIZED.toException();
     return userRepository
         .findByEmail(principal)
         .orElseGet(
