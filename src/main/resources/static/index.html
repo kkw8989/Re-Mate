@@ -60,7 +60,7 @@
             });
             const result = await res.json();
             if (res.ok && result.data) {
-                if (result.data.workspaceCount > 0) {
+                if (result.totalCount > 0) {
                     location.href = '/workspace-list.html';
                 } else {
                     location.href = '/select-workspace.html';

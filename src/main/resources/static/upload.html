@@ -220,7 +220,7 @@
                 headers: { 'Authorization': `Bearer ${token}` }
             });
             const json = await res.json();
-            const workspaces = json.data?.workspaces || [];
+            const workspaces = json.data || [];
             el('workspaceList').innerHTML = workspaces.map(w =>
                 `<div class="workspace-item ${w.workspaceId == workspaceId ? 'active' : ''}" onclick="switchWorkspace(${w.workspaceId}, '${escapeHtml(w.workspaceName)}', '${w.role}')">
                     <div class="workspace-dot"></div>

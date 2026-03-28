@@ -91,7 +91,7 @@
             const res = await fetch('/api/v1/workspaces/my', { headers: { 'Authorization': `Bearer ${token}` } });
             const result = await res.json();
             const grid = document.getElementById('wsGrid');
-            const list = result.data.workspaces || [];
+            const list = result.data || [];
             grid.querySelectorAll('.ws-card:not(.add-card)').forEach(c => c.remove());
             list.forEach(ws => {
                 const card = document.createElement('div');
