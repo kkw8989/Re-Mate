@@ -285,9 +285,9 @@
         });
 
         if (sort === 'oldest') {
-            filtered.sort((a, b) => new Date(a.tradeAt) - new Date(b.tradeAt));
+            filtered.sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
         } else {
-            filtered.sort((a, b) => new Date(b.tradeAt) - new Date(a.tradeAt));
+            filtered.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
         }
 
         receiptData = filtered;
@@ -297,13 +297,13 @@
     function renderReceipts() {
         const statusLabel = { WAITING: '대기', ANALYZING: '대기', NEED_MANUAL: '대기', APPROVED: '승인', REJECTED: '반려', FAILED_SYSTEM: '오류' };
         const html = receiptData.map(r => {
-            const tradeAt = r.tradeAt ? r.tradeAt.replace('T', ' ').substring(0, 10) : '-';
+            const createdAt = r.createdAt ? r.createdAt.replace('T', ' ').substring(0, 10) : '-';
             return `<tr onclick="location.href='/receipt-detail.html?id=${r.id}&workspaceId=${workspaceId}'">
                 <td>${escapeHtml(r.userName || '-')}</td>
                 <td><strong>${escapeHtml(r.storeName || '-')}</strong></td>
                 <td>₩${(r.totalAmount || 0).toLocaleString()}</td>
                 <td><span class="status-badge ${r.status}"><span class="dot"></span>${statusLabel[r.status] || r.status}</span></td>
-                <td style="color:#64748b;">${tradeAt}</td>
+                <td style="color:#64748b;">${createdAt}</td>
             </tr>`;
         }).join('');
         el('receiptList').innerHTML = html || '<tr><td colspan="5" style="text-align:center;padding:40px;color:#94a3b8;">데이터가 없습니다.</td></tr>';

@@ -41,4 +41,5 @@ public class ReceiptSummaryDto {
   private Long userId;
   private Integer tax;
   private Double confidence;
+  private LocalDateTime createdAt;
 }
