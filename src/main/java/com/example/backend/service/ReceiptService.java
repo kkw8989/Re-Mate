@@ -309,7 +309,8 @@ public class ReceiptService {
                   r.getRejectionReason(),
                   r.getUserId(),
                   r.getTax(),
-                  r.getConfidence());
+                  r.getConfidence(),
+                  r.getCreatedAt());
             })
         .collect(Collectors.toList());
   }
