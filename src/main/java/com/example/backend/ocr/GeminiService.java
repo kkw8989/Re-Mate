@@ -21,7 +21,7 @@ public class GeminiService {
   private final RestTemplate restTemplate = new RestTemplate();
 
   public JsonNode getParsedReceipt(String rawText) {
-    String model = "models/gemini-2.0-flash";
+    String model = "models/gemini-2.5-flash";
     String url =
         "https://generativelanguage.googleapis.com/v1beta/"
             + model
