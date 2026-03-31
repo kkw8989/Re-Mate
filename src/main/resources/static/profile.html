@@ -32,7 +32,7 @@
 <body>
 <div class="sidebar">
     <div class="logo">Re:Mate</div>
-    <div class="nav-item">워크스페이스</div>
+    <div class="nav-item" onclick="location.href='workspace-list.html'">워크스페이스</div>
     <div class="nav-item active">계정 설정</div>
 </div>
 <div class="main-content">
@@ -89,43 +89,41 @@
             return;
         }
         try {
-            const res = await fetch('/api/v1/users/me', {
+            const res = await fetch('/api/v1/auth/me', {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
             const result = await res.json();
+
             if(result.success) {
                 document.getElementById('email').value = result.data.email;
                 document.getElementById('name').value = result.data.name;
+
                 let pictureData = result.data.picture;
                 if (pictureData) {
-                    if (pictureData.includes('/')) {
-                        pictureData = pictureData.split('/').pop();
-                    }
-                    await updateAvatarView(pictureData);
+                    const fileId = String(pictureData).includes('/')
+                        ? pictureData.split('/').pop()
+                        : pictureData;
+                    updateAvatarView(fileId);
                 }
             }
         } catch (e) {
-            console.error("데이터 로드 실패", e);
+            console.error(e);
         }
     };
 
-    async function updateAvatarView(fileId) {
+    function updateAvatarView(fileId) {
         const plus = document.getElementById('avatarPlus');
         const img = document.getElementById('avatarImg');
         if (!fileId) return;
-        try {
-            const res = await fetch(`/api/v1/files/${fileId}`, {
-                headers: { 'Authorization': `Bearer ${token}` }
-            });
-            if (!res.ok) throw new Error();
-            const blob = await res.blob();
-            const objectUrl = URL.createObjectURL(blob);
-            img.src = objectUrl;
-            img.style.display = 'block';
-            plus.style.display = 'none';
-        } catch (e) {
-            console.error("이미지 로드 실패", e);
-        }
+
+        img.src = `/api/v1/files/${fileId}`;
+        img.style.display = 'block';
+        plus.style.display = 'none';
+
+        img.onerror = () => {
+            img.style.display = 'none';
+            plus.style.display = 'block';
+        };
     }
 
     function uploadProfileImage(input) {
@@ -133,45 +131,43 @@
         selectedFile = input.files[0];
         const plus = document.getElementById('avatarPlus');
         const img = document.getElementById('avatarImg');
+
         const objectUrl = URL.createObjectURL(selectedFile);
         img.src = objectUrl;
         img.style.display = 'block';
         plus.style.display = 'none';
-        input.value = '';
     }
 
     async function updateProfile() {
         const name = document.getElementById('name').value;
         const btn = document.getElementById('btnUpdateProfile');
-        const avatarView = document.getElementById('avatarView');
         btn.disabled = true;
-        avatarView.style.opacity = '0.5';
+
         try {
             if (selectedFile) {
                 const formData = new FormData();
                 formData.append('file', selectedFile);
                 formData.append('type', 'PROFILE');
+
                 const fileRes = await fetch('/api/v1/files', {
                     method: 'POST',
                     headers: { 'Authorization': `Bearer ${token}` },
                     body: formData
                 });
                 const fileResult = await fileRes.json();
-                if (!fileResult.success) {
-                    alert("이미지 업로드 실패");
-                    return;
+
+                if (fileResult.success) {
+                    await fetch('/api/v1/users/me/profile-image', {
+                        method: 'PATCH',
+                        headers: {
+                            'Authorization': `Bearer ${token}`,
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({ fileId: fileResult.data.fileId })
+                    });
                 }
-                const newFileId = fileResult.data.fileId;
-                await fetch('/api/v1/users/me/profile-image', {
-                    method: 'PATCH',
-                    headers: {
-                        'Authorization': `Bearer ${token}`,
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({ fileId: newFileId })
-                });
-                selectedFile = null;
             }
+
             const res = await fetch('/api/v1/users/me', {
                 method: 'PATCH',
                 headers: {
@@ -180,17 +176,18 @@
                 },
                 body: JSON.stringify({ name })
             });
+
             const result = await res.json();
-            if (res.ok && result.success) {
-                alert("수정되었습니다.");
+            if (result.success) {
+                alert("프로필이 저장되었습니다.");
+                selectedFile = null;
             } else {
-                alert(result.error?.message || "수정 실패");
+                alert(result.error?.message || "저장 실패");
             }
         } catch (e) {
-            alert("오류 발생");
+            alert("오류가 발생했습니다.");
         } finally {
             btn.disabled = false;
-            avatarView.style.opacity = '1';
         }
     }
 
