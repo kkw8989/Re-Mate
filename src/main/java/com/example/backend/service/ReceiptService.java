@@ -10,6 +10,10 @@ import com.example.backend.dto.ReceiptSummaryDto;
 import com.example.backend.dto.UploadReceiptResponse;
 import com.example.backend.entity.Receipt;
 import com.example.backend.entity.ReceiptItem;
+import com.example.backend.file.FileAsset;
+import com.example.backend.file.FileAssetRepository;
+import com.example.backend.file.FileAssetType;
+import com.example.backend.file.LocalFileStorageService;
 import com.example.backend.global.error.BusinessException;
 import com.example.backend.global.error.ErrorCode;
 import com.example.backend.ocr.GeminiService;
@@ -18,13 +22,11 @@ import com.example.backend.repository.ReceiptItemRepository;
 import com.example.backend.repository.ReceiptRepository;
 import com.example.backend.repository.UserRepository;
 import com.fasterxml.jackson.databind.JsonNode;
-import java.io.File;
 import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Paths;
 import java.security.MessageDigest;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.HexFormat;
 import java.util.List;
 import java.util.Map;
@@ -34,6 +36,7 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
@@ -52,12 +55,10 @@ public class ReceiptService {
   private final AuditLogService auditLogService;
   private final TagService tagService;
   private final ReceiptItemRepository receiptItemRepository;
-
-  private final String uploadDir =
-      System.getProperty("user.home") + File.separator + "remate_uploads" + File.separator;
+  private final LocalFileStorageService localFileStorageService;
+  private final FileAssetRepository fileAssetRepository;
 
   private Long getCurrentUserId() {
-
     Authentication auth = SecurityContextHolder.getContext().getAuthentication();
 
     if (auth == null || auth.getName() == null) {
@@ -77,12 +78,12 @@ public class ReceiptService {
     return auth.getAuthorities().stream().anyMatch(a -> "ROLE_ADMIN".equals(a.getAuthority()));
   }
 
-  @Transactional
   public UploadReceiptResponse uploadAndProcess(
       String idempotencyKey, MultipartFile file, Long workspaceId) {
 
     final Long userId = getCurrentUserId();
     validateFile(file);
+
     try {
       byte[] fileBytes = file.getBytes();
       byte[] hashBytes = MessageDigest.getInstance("MD5").digest(fileBytes);
@@ -99,10 +100,13 @@ public class ReceiptService {
         return toUploadReceiptResponse(existingByKey.get(), true);
       }
 
-      String savedFileName = null;
-      Receipt receipt = null;
+      AnalyzedReceipt analyzedReceipt = analyzeReceipt(fileBytes);
+      validateAnalyzedReceipt(analyzedReceipt);
+
+      SavedReceiptFile savedReceiptFile = saveReceiptFile(file, userId, workspaceId);
+
+      Receipt receipt;
       try {
-        savedFileName = saveFileToLocal(file);
         receipt =
             receiptRepository.save(
                 Receipt.builder()
@@ -110,94 +114,182 @@ public class ReceiptService {
                     .fileHash(fileHash)
                     .workspaceId(workspaceId)
                     .userId(userId)
-                    .status(ReceiptStatus.ANALYZING)
-                    .filePath(savedFileName)
+                    .status(analyzedReceipt.status())
+                    .filePath(savedReceiptFile.fileName())
+                    .fileAssetId(savedReceiptFile.fileAssetId())
                     .build());
-        log.info("=== [검증 1] DB 선저장 완료: ID={}, Status={}", receipt.getId(), receipt.getStatus());
-        JsonNode ocrJson = googleOcrClient.recognize(fileBytes);
-        log.info("=== [검증 2] OCR 분석 시작 (ID: {})", receipt.getId());
-        return toUploadReceiptResponse(processOcrResult(receipt, ocrJson), false);
-      } catch (Exception e) {
-        log.error("OCR 분석 에러", e);
-        if (receipt != null) return toUploadReceiptResponse(markAsFailed(receipt, e), false);
-        return toUploadReceiptResponse(
-            saveFailedReceipt(idempotencyKey, fileHash, workspaceId, savedFileName, e), false);
+      } catch (DataIntegrityViolationException e) {
+        log.warn("영수증 중복 저장 충돌 발생. 기존 데이터 반환", e);
+
+        Optional<Receipt> duplicateByHash =
+            receiptRepository.findByFileHashAndWorkspaceId(fileHash, workspaceId);
+        if (duplicateByHash.isPresent()) {
+          return toUploadReceiptResponse(duplicateByHash.get(), true);
+        }
+
+        Optional<Receipt> duplicateByKey = receiptRepository.findByIdempotencyKey(idempotencyKey);
+        if (duplicateByKey.isPresent()) {
+          return toUploadReceiptResponse(duplicateByKey.get(), true);
+        }
+
+        throw e;
       }
+
+      try {
+        Receipt savedReceipt = applyAnalyzedReceipt(receipt, analyzedReceipt);
+        return toUploadReceiptResponse(savedReceipt, false);
+      } catch (Exception e) {
+        log.error("영수증 분석 결과 반영 에러", e);
+        return toUploadReceiptResponse(markAsFailed(receipt, e), false);
+      }
+    } catch (BusinessException e) {
+      throw e;
     } catch (Exception e) {
       throw new RuntimeException("FILE_PROCESSING_FAILED", e);
     }
   }
 
-  private Receipt processOcrResult(Receipt receipt, JsonNode ocrJson) {
-    JsonNode textAnnotations = ocrJson.path("responses").get(0).path("textAnnotations");
-    String fullText =
-        textAnnotations.isMissingNode() ? "" : textAnnotations.get(0).path("description").asText();
-
-    JsonNode aiResult = geminiService.getParsedReceipt(fullText);
-
-    String storeName = aiResult.path("storeName").asText("알 수 없는 상호");
-    int totalAmount = 0;
-    JsonNode totalNode = aiResult.path("totalAmount");
-    if (!totalNode.isMissingNode()) {
-      String totalStr = totalNode.asText("0").replaceAll("[,원\\s]", "").replaceAll("\\.", "");
-      try {
-        totalAmount = Integer.parseInt(totalStr);
-      } catch (NumberFormatException e) {
-        totalAmount = totalNode.asInt(0);
-      }
-    }
-    String tradeAtStr = aiResult.path("tradeAt").asText();
-    int tax = aiResult.path("tax").asInt(0);
-    double confidence = aiResult.path("confidence").asDouble(0.0);
-
-    ReceiptStatus nextStatus =
-        (confidence >= 0.7 && !storeName.equals("알 수 없는 상호"))
-            ? ReceiptStatus.ANALYZING
-            : ReceiptStatus.NEED_MANUAL;
-
-    LocalDateTime tradeAt;
+  private AnalyzedReceipt analyzeReceipt(byte[] fileBytes) {
     try {
-      tradeAt = LocalDateTime.parse(tradeAtStr, DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
-    } catch (Exception e) {
-      tradeAt = LocalDateTime.now();
-    }
+      JsonNode ocrJson = googleOcrClient.recognize(fileBytes);
+      JsonNode textAnnotations = ocrJson.path("responses").get(0).path("textAnnotations");
+      String fullText =
+          textAnnotations.isMissingNode()
+              ? ""
+              : textAnnotations.get(0).path("description").asText("");
 
-    List<String> derivedTags = tagService.deriveTags(Receipt.builder().tradeAt(tradeAt).build());
+      JsonNode aiResult = geminiService.getParsedReceipt(fullText);
 
-    receipt.updateAfterAnalysis(
-        storeName,
-        totalAmount,
-        tradeAt,
-        fullText,
-        nextStatus,
-        derivedTags,
-        derivedTags.contains("🌙 야간"),
-        tax,
-        confidence);
-
-    JsonNode items = aiResult.path("items");
-    if (items.isArray()) {
-      for (JsonNode item : items) {
-        receiptItemRepository.save(
-            ReceiptItem.builder()
-                .receiptId(receipt.getId())
-                .name(item.path("name").asText(""))
-                .quantity(item.path("quantity").asInt(0))
-                .price(item.path("price").asInt(0))
-                .build());
+      String storeName = aiResult.path("storeName").asText("").trim();
+      JsonNode totalNode = aiResult.path("totalAmount");
+      int totalAmount = 0;
+      if (!totalNode.isMissingNode()) {
+        String totalStr = totalNode.asText("0").replaceAll("[,원\\s]", "").replaceAll("\\.", "");
+        try {
+          totalAmount = Integer.parseInt(totalStr);
+        } catch (NumberFormatException e) {
+          totalAmount = totalNode.asInt(0);
+        }
       }
+
+      String tradeAtStr = aiResult.path("tradeAt").asText();
+      int tax = aiResult.path("tax").asInt(0);
+      double confidence = aiResult.path("confidence").asDouble(0.0);
+
+      LocalDateTime tradeAt;
+      try {
+        tradeAt =
+            LocalDateTime.parse(tradeAtStr, DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
+      } catch (Exception e) {
+        tradeAt = LocalDateTime.now();
+      }
+
+      List<String> derivedTags = tagService.deriveTags(Receipt.builder().tradeAt(tradeAt).build());
+
+      JsonNode itemsNode = aiResult.path("items");
+      List<ReceiptItem> items = new ArrayList<>();
+      if (itemsNode.isArray()) {
+        for (JsonNode item : itemsNode) {
+          items.add(
+              ReceiptItem.builder()
+                  .name(item.path("name").asText(""))
+                  .quantity(item.path("quantity").asInt(0))
+                  .price(item.path("price").asInt(0))
+                  .build());
+        }
+      }
+
+      ReceiptStatus nextStatus =
+          (confidence >= 0.7 && !storeName.isBlank())
+              ? ReceiptStatus.ANALYZING
+              : ReceiptStatus.NEED_MANUAL;
+
+      return new AnalyzedReceipt(
+          fullText,
+          storeName,
+          totalAmount,
+          tradeAt,
+          tax,
+          confidence,
+          nextStatus,
+          derivedTags,
+          items);
+    } catch (BusinessException e) {
+      throw e;
+    } catch (Exception e) {
+      log.error("OCR 분석 에러", e);
+      throw new RuntimeException("OCR_ANALYSIS_FAILED", e);
+    }
+  }
+
+  private void validateAnalyzedReceipt(AnalyzedReceipt analyzedReceipt) {
+    boolean hasRawText =
+        analyzedReceipt.fullText() != null && !analyzedReceipt.fullText().isBlank();
+    boolean hasStoreName =
+        analyzedReceipt.storeName() != null
+            && !analyzedReceipt.storeName().isBlank()
+            && !"알 수 없는 상호".equals(analyzedReceipt.storeName());
+    boolean hasPositiveAmount = analyzedReceipt.totalAmount() > 0;
+    boolean hasReceiptKeyword = containsReceiptKeyword(analyzedReceipt.fullText());
+
+    if (!hasRawText || (!hasStoreName && !hasPositiveAmount) || !hasReceiptKeyword) {
+      throw ErrorCode.VALIDATION_FAILED.toException("영수증으로 인식되지 않은 이미지입니다.");
+    }
+  }
+
+  private boolean containsReceiptKeyword(String fullText) {
+    if (fullText == null || fullText.isBlank()) {
+      return false;
     }
 
-    return receipt;
+    String normalized = fullText.replaceAll("\\s+", "").toLowerCase();
+    return normalized.contains("합계")
+        || normalized.contains("총액")
+        || normalized.contains("승인")
+        || normalized.contains("카드")
+        || normalized.contains("매출")
+        || normalized.contains("거래")
+        || normalized.contains("부가세")
+        || normalized.contains("현금영수증")
+        || normalized.contains("receipt")
+        || normalized.contains("total");
+  }
+
+  private Receipt applyAnalyzedReceipt(Receipt receipt, AnalyzedReceipt analyzedReceipt) {
+    receipt.updateAfterAnalysis(
+        analyzedReceipt.storeName(),
+        analyzedReceipt.totalAmount(),
+        analyzedReceipt.tradeAt(),
+        analyzedReceipt.fullText(),
+        analyzedReceipt.status(),
+        analyzedReceipt.derivedTags(),
+        analyzedReceipt.derivedTags().contains("🌙 야간"),
+        analyzedReceipt.tax(),
+        analyzedReceipt.confidence());
+
+    Receipt savedReceipt = receiptRepository.save(receipt);
+
+    for (ReceiptItem item : analyzedReceipt.items()) {
+      receiptItemRepository.save(
+          ReceiptItem.builder()
+              .receiptId(savedReceipt.getId())
+              .name(item.getName())
+              .quantity(item.getQuantity())
+              .price(item.getPrice())
+              .build());
+    }
+
+    return savedReceipt;
   }
 
   private Receipt markAsFailed(Receipt receipt, Exception e) {
     SystemErrorCode errorCode = SystemErrorCode.UNKNOWN_ERROR;
     if (e instanceof IOException) errorCode = SystemErrorCode.OCR_CONNECTION_FAILURE;
-    else if (e.getMessage() != null && e.getMessage().contains("parse"))
+    else if (e.getMessage() != null && e.getMessage().contains("parse")) {
       errorCode = SystemErrorCode.AI_PARSING_ERROR;
+    }
     receipt.markAsFailed(errorCode);
-    return receipt;
+    return receiptRepository.save(receipt);
   }
 
   public Receipt getReceiptSecurely(Long id, Long workspaceId) {
@@ -315,40 +407,56 @@ public class ReceiptService {
         .collect(Collectors.toList());
   }
 
-  private String saveFileToLocal(MultipartFile file) {
+  private SavedReceiptFile saveReceiptFile(MultipartFile file, Long userId, Long workspaceId) {
     try {
-      File dir = new File(uploadDir);
-      if (!dir.exists() && !dir.mkdirs()) throw new IOException("디렉토리 생성 실패");
-      String originalFilename = file.getOriginalFilename();
-      String extension =
-          (originalFilename != null && originalFilename.contains("."))
-              ? originalFilename.substring(originalFilename.lastIndexOf("."))
-              : "";
-      String savedFileName = UUID.randomUUID() + extension;
-      Files.copy(file.getInputStream(), Paths.get(uploadDir).resolve(savedFileName));
-      return savedFileName;
+      String storageKey = localFileStorageService.save(FileAssetType.RECEIPT, file);
+      String fileName = storageKey.substring(storageKey.lastIndexOf("/") + 1);
+
+      FileAsset fileAsset =
+          fileAssetRepository.save(
+              new FileAsset(
+                  FileAssetType.RECEIPT,
+                  file.getOriginalFilename() != null ? file.getOriginalFilename() : fileName,
+                  file.getContentType() != null
+                      ? file.getContentType()
+                      : "application/octet-stream",
+                  file.getSize(),
+                  storageKey,
+                  userId,
+                  workspaceId));
+
+      return new SavedReceiptFile(fileAsset.getId(), fileName);
     } catch (IOException e) {
-      throw new RuntimeException("FILE_SAVE_FAILED");
+      throw ErrorCode.FILE_UPLOAD_FAILED.toException();
     }
   }
 
   private void validateFile(MultipartFile file) {
+    if (file == null || file.isEmpty()) {
+      throw ErrorCode.VALIDATION_FAILED.toException("업로드 파일이 필요합니다.");
+    }
+
     if (file.getSize() > 10 * 1024 * 1024) {
-      throw new RuntimeException("FILE_TOO_LARGE");
+      throw new BusinessException(ErrorCode.FILE_TOO_LARGE);
     }
 
     String contentType = file.getContentType();
     if (contentType == null
         || !(contentType.equals("image/jpeg") || contentType.equals("image/png"))) {
-      throw new RuntimeException("FILE_TYPE_NOT_ALLOWED");
+      throw new BusinessException(ErrorCode.FILE_TYPE_NOT_ALLOWED);
     }
+
     try {
       byte[] header = new byte[8];
-      if (file.getInputStream().read(header) < 4) throw new RuntimeException("FILE_TOO_SMALL");
-      if (isJpeg(header) || isPng(header)) return;
-      throw new RuntimeException("FILE_TYPE_NOT_ALLOWED");
+      if (file.getInputStream().read(header) < 4) {
+        throw ErrorCode.FILE_TYPE_NOT_ALLOWED.toException();
+      }
+      if (isJpeg(header) || isPng(header)) {
+        return;
+      }
+      throw ErrorCode.FILE_TYPE_NOT_ALLOWED.toException();
     } catch (IOException e) {
-      throw new RuntimeException("FILE_UPLOAD_FAILED");
+      throw ErrorCode.FILE_UPLOAD_FAILED.toException();
     }
   }
 
@@ -393,27 +501,6 @@ public class ReceiptService {
             })
         .filter(Objects::nonNull)
         .collect(Collectors.toList());
-  }
-
-  private Receipt saveFailedReceipt(
-      String key, String hash, Long workspaceId, String path, Exception e) {
-
-    Long userId = getCurrentUserId();
-
-    SystemErrorCode errorCode = SystemErrorCode.UNKNOWN_ERROR;
-    if (e instanceof IOException) errorCode = SystemErrorCode.OCR_CONNECTION_FAILURE;
-    else if (e.getMessage() != null && e.getMessage().contains("parse"))
-      errorCode = SystemErrorCode.AI_PARSING_ERROR;
-    return receiptRepository.save(
-        Receipt.builder()
-            .idempotencyKey(key)
-            .fileHash(hash)
-            .workspaceId(workspaceId)
-            .userId(userId)
-            .status(ReceiptStatus.FAILED_SYSTEM)
-            .systemErrorCode(errorCode)
-            .filePath(path)
-            .build());
   }
 
   public java.util.Map<String, Object> getAdminStats(Long workspaceId) {
@@ -498,4 +585,17 @@ public class ReceiptService {
         .isDuplicate(isDuplicate)
         .build();
   }
+
+  private record SavedReceiptFile(Long fileAssetId, String fileName) {}
+
+  private record AnalyzedReceipt(
+      String fullText,
+      String storeName,
+      int totalAmount,
+      LocalDateTime tradeAt,
+      int tax,
+      double confidence,
+      ReceiptStatus status,
+      List<String> derivedTags,
+      List<ReceiptItem> items) {}
 }
