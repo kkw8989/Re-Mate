@@ -2,86 +2,79 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <title>Receipt Master | 회원가입</title>
+    <title>ReMate | 회원가입</title>
     <style>
-        body { font-family: sans-serif; display: flex; align-items: center; justify-content: center; min-height: 100vh; margin: 0; background-color: #f4f7f6; }
-        .container { background: white; padding: 40px; border-radius: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); width: 350px; }
-        h2 { margin-bottom: 30px; text-align: center; }
-        input { width: 100%; padding: 12px; margin: 8px 0; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; }
-        .btn-submit { width: 100%; padding: 12px; background: #5cb85c; color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; margin-top: 15px; font-size: 1rem; }
-        .btn-submit:disabled { background: #ccc; cursor: not-allowed; }
-        .error-msg { color: #d9534f; font-size: 0.8rem; margin-bottom: 5px; display: none; }
-        .link-group { text-align: center; margin-top: 20px; font-size: 0.85rem; }
-        .link-group a { color: #666; text-decoration: none; }
+        body { font-family: 'Pretendard', sans-serif; display: flex; align-items: center; justify-content: center; min-height: 100vh; margin: 0; background-color: #f8fafc; }
+        .container { background: white; padding: 40px; border-radius: 24px; box-shadow: 0 10px 25px rgba(0,0,0,0.05); width: 350px; text-align: center; }
+        h2 { margin-bottom: 25px; font-size: 1.5rem; color: #1e293b; }
+        input { width: 100%; padding: 14px; margin: 8px 0; border: 1px solid #e2e8f0; border-radius: 12px; box-sizing: border-box; font-size: 1rem; transition: 0.2s; }
+        input:focus { outline: 2px solid #3b82f6; border-color: transparent; }
+        .btn-submit { width: 100%; padding: 14px; background: #3b82f6; color: white; border: none; border-radius: 12px; font-weight: bold; cursor: pointer; margin-top: 15px; font-size: 1rem; transition: 0.2s; }
+        .btn-submit:disabled { background: #cbd5e1; cursor: not-allowed; }
+        .btn-submit:hover:not(:disabled) { background: #2563eb; }
+        .link-group { margin-top: 24px; font-size: 0.85rem; color: #64748b; }
+        .link-group a { color: #3b82f6; text-decoration: none; font-weight: 600; margin: 0 5px; }
+        .error-msg { color: #ef4444; font-size: 0.8rem; margin-top: 10px; display: none; text-align: left; padding-left: 5px; min-height: 1.2em; line-height: 1.4; }
     </style>
 </head>
 <body>
 <div class="container">
-    <h2>일반 회원가입</h2>
-
+    <div style="font-size: 1.8rem; font-weight: 800; color: #3b82f6; margin-bottom: 10px; cursor: pointer;" onclick="location.href='/'">✅ Re:Mate</div>
+    <h2>회원가입</h2>
     <input type="email" id="email" placeholder="이메일">
     <input type="text" id="name" placeholder="표시명 (닉네임)">
     <input type="password" id="password" placeholder="비밀번호">
     <input type="password" id="confirm" placeholder="비밀번호 확인">
-
+    <div id="error-display" class="error-msg"></div>
     <button onclick="doSignup()" id="signup-btn" class="btn-submit">가입하기</button>
-
     <div class="link-group">
-        <a href="/signin.html">취소하고 돌아가기</a>
+        <a href="/signin.html">로그인으로 돌아가기</a>
     </div>
 </div>
-
 <script>
-    if (localStorage.getItem('accessToken')) {
-        location.href = "/";
-    }
-
     async function doSignup() {
         const email = document.getElementById('email').value;
         const name = document.getElementById('name').value;
         const password = document.getElementById('password').value;
         const confirm = document.getElementById('confirm').value;
         const btn = document.getElementById('signup-btn');
+        const errorDisplay = document.getElementById('error-display');
+        errorDisplay.style.display = 'none';
 
-        if (password !== confirm) return alert("비밀번호가 일치하지 않습니다.");
+        if (!email || !name || !password || !confirm) return showError("모든 항목을 입력해주세요.");
+        if (password !== confirm) return showError("비밀번호가 일치하지 않습니다.");
 
         try {
             btn.disabled = true;
             btn.innerText = "가입 중...";
-
             const response = await fetch('/api/v1/auth/signup', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ email, name, password })
             });
-
             const result = await response.json();
-
             if (response.ok) {
-                alert("회원가입에 성공했습니다! 로그인 페이지로 이동합니다.");
+                alert("회원가입 성공! 로그인해주세요.");
                 location.href = "/signin.html";
             } else {
-                const errorCode = result.error ? result.error.code : (result.code || "");
-                const errorMsg = result.error ? result.error.message : (result.message || "가입 실패");
-
-                if (errorCode === 'AUTH_EMAIL_ALREADY_EXISTS') {
-                    alert("이미 사용 중인 이메일입니다.");
-                } else {
-                    alert(errorMsg);
-                }
+                // 백엔드 ErrorResponse 객체 내의 message 필드를 최우선으로 출력
+                // result.message가 "요청 값 검증에 실패했습니다." 일 경우에도 상세 메시지를 담고 있을 것임
+                let msg = result.message || (result.error && result.error.message) || "입력 형식을 확인해주세요.";
+                showError(msg);
             }
-        } catch (error) {
-            console.error("Error details:", error);
-            alert("서버와 통신할 수 없습니다.");
+        } catch (e) {
+            showError("서버와 통신할 수 없습니다.");
         } finally {
             btn.disabled = false;
             btn.innerText = "가입하기";
         }
     }
-
-    document.addEventListener('keypress', (e) => {
-        if (e.key === 'Enter') doSignup();
-    });
+    function showError(msg) {
+        const errorDisplay = document.getElementById('error-display');
+        errorDisplay.innerText = msg;
+        errorDisplay.style.display = 'block';
+    }
+    document.addEventListener('keypress', (e) => { if (e.key === 'Enter') doSignup(); });
 </script>
 </body>
 </html>

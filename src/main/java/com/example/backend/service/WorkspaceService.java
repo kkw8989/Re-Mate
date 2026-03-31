@@ -56,6 +56,27 @@ public class WorkspaceService {
   }
 
   @Transactional(readOnly = true)
+  public WorkspaceResponseDto getWorkspaceDetail(Long workspaceId, String principal) {
+    User user = findUserByPrincipal(principal);
+
+    Workspace ws =
+        workspaceRepository.findById(workspaceId).orElseThrow(ErrorCode.WS_NOT_FOUND::toException);
+
+    WorkspaceMember member =
+        workspaceMemberRepository
+            .findByWorkspaceIdAndUserId(workspaceId, user.getId())
+            .orElseThrow(ErrorCode.WS_MEMBER_NOT_FOUND::toException);
+
+    return WorkspaceResponseDto.builder()
+        .workspaceId(ws.getId())
+        .workspaceName(ws.getName())
+        .color(ws.getColor())
+        .role(member.getRole())
+        .membershipId(member.getId())
+        .build();
+  }
+
+  @Transactional(readOnly = true)
   public List<WorkspaceMemberResponseDto> getWorkspaceMembers(
       Long workspaceId, MembershipStatus status) {
     List<WorkspaceMember> members =
@@ -143,18 +164,22 @@ public class WorkspaceService {
 
     workspaceMemberRepository
         .findByWorkspaceIdAndUserId(workspaceId, invitee.getId())
-        .ifPresent(
-            m -> {
-              throw ErrorCode.WS_ALREADY_JOINED.toException();
+        .ifPresentOrElse(
+            member -> {
+              if (member.getStatus() == MembershipStatus.ACCEPTED) {
+                throw ErrorCode.WS_ALREADY_JOINED.toException();
+              }
+              member.updateStatus(MembershipStatus.PENDING);
+            },
+            () -> {
+              workspaceMemberRepository.save(
+                  WorkspaceMember.builder()
+                      .workspaceId(workspaceId)
+                      .userId(invitee.getId())
+                      .role(WorkspaceRole.MEMBER)
+                      .status(MembershipStatus.PENDING)
+                      .build());
             });
-
-    workspaceMemberRepository.save(
-        WorkspaceMember.builder()
-            .workspaceId(workspaceId)
-            .userId(invitee.getId())
-            .role(WorkspaceRole.MEMBER)
-            .status(MembershipStatus.PENDING)
-            .build());
 
     auditLogService.record(
         AuditAction.MEMBER_JOIN_REQUEST,

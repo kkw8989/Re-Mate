@@ -2,82 +2,72 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <title>Receipt Master | 로그인</title>
+    <title>ReMate | 로그인</title>
     <style>
-        body { font-family: sans-serif; display: flex; align-items: center; justify-content: center; min-height: 100vh; margin: 0; background-color: #f4f7f6; }
-        .container { background: white; padding: 40px; border-radius: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); width: 350px; }
-        h2 { margin-bottom: 25px; text-align: center; }
-        input { width: 100%; padding: 12px; margin: 8px 0; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; }
-        .btn-login { width: 100%; padding: 12px; background: #4CAF50; color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; margin-top: 15px; font-size: 1rem; }
-        .btn-login:disabled { background: #ccc; }
-        .link-group { text-align: center; margin-top: 20px; font-size: 0.85rem; }
-        .link-group a { color: #666; text-decoration: none; margin: 0 5px; }
-        .link-group a:hover { text-decoration: underline; }
+        body { font-family: 'Pretendard', sans-serif; display: flex; align-items: center; justify-content: center; min-height: 100vh; margin: 0; background-color: #f8fafc; }
+        .container { background: white; padding: 40px; border-radius: 24px; box-shadow: 0 10px 25px rgba(0,0,0,0.05); width: 350px; text-align: center; }
+        h2 { margin-bottom: 25px; font-size: 1.5rem; color: #1e293b; }
+        input { width: 100%; padding: 14px; margin: 8px 0; border: 1px solid #e2e8f0; border-radius: 12px; box-sizing: border-box; font-size: 1rem; transition: 0.2s; }
+        input:focus { outline: 2px solid #3b82f6; border-color: transparent; }
+        .btn-login { width: 100%; padding: 14px; background: #3b82f6; color: white; border: none; border-radius: 12px; font-weight: bold; cursor: pointer; margin-top: 15px; font-size: 1rem; transition: 0.2s; }
+        .btn-login:disabled { background: #cbd5e1; cursor: not-allowed; }
+        .btn-login:hover:not(:disabled) { background: #2563eb; }
+        .link-group { margin-top: 24px; font-size: 0.85rem; color: #64748b; }
+        .link-group a { color: #3b82f6; text-decoration: none; font-weight: 600; margin: 0 5px; }
+        .error-msg { color: #ef4444; font-size: 0.8rem; margin-top: 10px; display: none; text-align: left; padding-left: 5px; min-height: 1.2em; line-height: 1.4; }
     </style>
 </head>
 <body>
 <div class="container">
+    <div style="font-size: 1.8rem; font-weight: 800; color: #3b82f6; margin-bottom: 10px; cursor: pointer;" onclick="location.href='/'">✅ Re:Mate</div>
     <h2>로그인</h2>
-    <input type="email" id="email" placeholder="이메일">
-    <input type="password" id="password" placeholder="비밀번호">
+    <input type="email" id="email" placeholder="이메일" autocomplete="email">
+    <input type="password" id="password" placeholder="비밀번호" autocomplete="current-password">
+    <div id="error-display" class="error-msg"></div>
     <button onclick="handleLogin()" id="login-btn" class="btn-login">로그인</button>
-
     <div class="link-group">
-        <a href="/signup.html">회원가입</a> |
-        <a href="/">홈으로</a>
+        <a href="/signup.html">회원가입</a> | <a href="/">홈으로</a>
     </div>
 </div>
-
 <script>
     async function handleLogin() {
         const email = document.getElementById('email').value;
         const password = document.getElementById('password').value;
         const btn = document.getElementById('login-btn');
-
+        const errorDisplay = document.getElementById('error-display');
+        errorDisplay.style.display = 'none';
+        if (!email || !password) return showError("이메일과 비밀번호를 입력해주세요.");
         try {
             btn.disabled = true;
             btn.innerText = "인증 중...";
-
             const response = await fetch('/api/v1/auth/signin', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ email, password })
             });
-
             const result = await response.json();
-
             if (response.ok) {
-                const token = result.accessToken || (result.data && result.data.accessToken);
-                const userEmail = result.email || (result.data && result.data.email);
-                const userName = result.name || (result.data && result.data.name);
-                const userId = result.userId || (result.data && result.data.userId);
-
-                localStorage.setItem('accessToken', token);
-                localStorage.setItem('userEmail', userEmail);
-                localStorage.setItem('userName', userName);
-                localStorage.setItem('currentUserId', userId);
-
-                alert(userName + "님, 환영합니다!");
-                location.href = "/";
+                const data = result.data || result;
+                localStorage.setItem('accessToken', data.accessToken);
+                localStorage.setItem('userEmail', data.email);
+                localStorage.setItem('userName', data.name);
+                location.href = "/workspace-list.html";
             } else {
-                const errorCode = result.error ? result.error.code : result.message;
-                const errorMsg = result.error ? result.error.message : result.message;
-
-                if (errorCode === "AUTH_INVALID_CREDENTIAL") {
-                    alert("이메일 또는 비밀번호가 잘못되었습니다.");
-                } else {
-                    alert(errorMsg || "로그인 실패");
-                }
+                let msg = result.message || result.error?.message || "로그인 정보를 확인해주세요.";
+                showError(msg);
             }
         } catch (e) {
-            console.error(e);
-            alert("서버와 통신할 수 없습니다.");
+            showError("서버와 통신할 수 없습니다.");
         } finally {
             btn.disabled = false;
             btn.innerText = "로그인";
         }
     }
-
+    function showError(msg) {
+        const errorDisplay = document.getElementById('error-display');
+        errorDisplay.innerText = msg;
+        errorDisplay.style.display = 'block';
+    }
     document.addEventListener('keypress', (e) => { if (e.key === 'Enter') handleLogin(); });
 </script>
 </body>

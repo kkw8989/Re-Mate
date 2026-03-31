@@ -49,7 +49,10 @@ public class SecurityConfig {
                         "/select-workspace.html",
                         "/workspace-list.html",
                         "/profile.html",
-                        "/receipt-detail.html")
+                        "/receipt-detail.html",
+                        "/workspace-manage.html")
+                    .permitAll()
+                    .requestMatchers("/api/v1/files/**")
                     .permitAll()
                     .requestMatchers("/static/**", "/favicon.ico", "/error", "/css/**", "/js/**")
                     .permitAll()
@@ -79,20 +82,17 @@ public class SecurityConfig {
   @Bean
   public CorsConfigurationSource corsConfigurationSource() {
     CorsConfiguration configuration = new CorsConfiguration();
-
     List<String> originPatterns =
         Arrays.stream(allowedOriginPatterns.split(","))
             .map(String::trim)
             .filter(origin -> !origin.isBlank())
             .toList();
-
     configuration.setAllowedOriginPatterns(originPatterns);
     configuration.setAllowedMethods(
         Arrays.asList("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
     configuration.setAllowedHeaders(List.of("*"));
     configuration.setAllowCredentials(true);
     configuration.setExposedHeaders(List.of("Authorization"));
-
     UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
     source.registerCorsConfiguration("/**", configuration);
     return source;

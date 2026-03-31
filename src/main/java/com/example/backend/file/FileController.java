@@ -4,7 +4,6 @@ import com.example.backend.global.common.ApiResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
-import io.swagger.v3.oas.annotations.media.ExampleObject;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -31,49 +30,22 @@ public class FileController {
       summary = "파일 업로드",
       description =
           """
-                          파일을 업로드합니다.
-
-                          - `type=PROFILE`이면 workspaceId 없이 업로드 가능합니다.
-                          - `type=RECEIPT`이면 workspaceId가 필요합니다.
-                          - multipart/form-data 요청입니다.
-                          """)
+                                  파일을 업로드합니다.
+                                  - `type=PROFILE`이면 workspaceId 없이 업로드 가능합니다.
+                                  - `type=RECEIPT`이면 workspaceId가 필요합니다.
+                                  """)
   @ApiResponses({
-    @io.swagger.v3.oas.annotations.responses.ApiResponse(
-        responseCode = "200",
-        description = "OK",
-        content =
-            @Content(
-                mediaType = "application/json",
-                examples =
-                    @ExampleObject(
-                        name = "파일 업로드 성공",
-                        value =
-                            """
-                                          {
-                                            "success": true,
-                                            "data": {
-                                              "fileId": 12
-                                            },
-                                            "meta": {
-                                              "timestamp": "2026-03-24T19:36:08.117",
-                                              "traceId": "c7b2bb85d9d7"
-                                            }
-                                          }
-                                          """))),
+    @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "OK")
   })
   @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
   public ApiResponse<UploadResponse> upload(
-      @Parameter(description = "업로드할 파일", required = true) @RequestPart("file") MultipartFile file,
-      @Parameter(description = "파일 타입(PROFILE 또는 RECEIPT)", required = true, example = "PROFILE")
-          @RequestParam("type")
-          FileAssetType type,
-      @Parameter(description = "워크스페이스 ID(RECEIPT일 때 필요)", example = "1")
-          @RequestParam(value = "workspaceId", required = false)
-          Long workspaceId,
+      @RequestPart("file") MultipartFile file,
+      @RequestParam("type") FileAssetType type,
+      @RequestParam(value = "workspaceId", required = false) Long workspaceId,
       @Parameter(hidden = true) Authentication authentication) {
 
     boolean isDevice = hasAuthority(authentication, "ROLE_DEVICE");
-    String authName = authentication.getName();
+    String authName = (authentication != null) ? authentication.getName() : null;
 
     Long fileId = service.upload(file, type, workspaceId, authName, isDevice);
     return ApiResponse.ok(new UploadResponse(fileId));
@@ -91,12 +63,12 @@ public class FileController {
   })
   @GetMapping("/{fileId}")
   public ResponseEntity<?> download(
-      @Parameter(description = "파일 ID", example = "1") @PathVariable Long fileId,
-      @Parameter(hidden = true) Authentication authentication)
+      @Parameter(description = "파일 ID", example = "1") @PathVariable Long fileId)
       throws IOException {
-    boolean isAdmin = hasAuthority(authentication, "ROLE_ADMIN");
-    boolean isDevice = hasAuthority(authentication, "ROLE_DEVICE");
-    String authName = authentication.getName();
+
+    boolean isAdmin = false;
+    boolean isDevice = false;
+    String authName = null;
 
     FileAssetService.LoadedFile loaded =
         service.loadForDownload(fileId, authName, isAdmin, isDevice);
@@ -113,6 +85,7 @@ public class FileController {
   }
 
   private boolean hasAuthority(Authentication authentication, String authority) {
+    if (authentication == null) return false;
     return authentication.getAuthorities().stream()
         .anyMatch(a -> authority.equals(a.getAuthority()));
   }

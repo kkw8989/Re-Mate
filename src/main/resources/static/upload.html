@@ -7,8 +7,6 @@
         :root { --primary:#3b82f6; --bg:#f8fafc; --card:#ffffff; --text:#1e293b; --sidebar:220px; }
         * { box-sizing: border-box; }
         body { font-family:'Pretendard',sans-serif; background:var(--bg); margin:0; color:var(--text); display:flex; min-height:100vh; }
-
-        /* 사이드바 */
         .sidebar { width:var(--sidebar); background:#fff; border-right:1px solid #e2e8f0; padding:24px 0; display:flex; flex-direction:column; position:fixed; height:100vh; overflow-y:auto; }
         .sidebar-logo { padding:0 20px 20px; font-weight:800; font-size:1.2rem; color:#1e293b; border-bottom:1px solid #f1f5f9; margin-bottom:12px; }
         .sidebar-section { font-size:0.72rem; color:#94a3b8; font-weight:600; padding:8px 20px; letter-spacing:0.05em; }
@@ -17,35 +15,23 @@
         .workspace-item.active { background:#eff6ff; color:#2563eb; font-weight:700; }
         .workspace-dot { width:8px; height:8px; border-radius:50%; background:#94a3b8; flex-shrink:0; }
         .workspace-item.active .workspace-dot { background:#2563eb; }
-
-        /* 메인 */
         .main { margin-left:var(--sidebar); flex:1; display:flex; flex-direction:column; }
-
-        /* 헤더 */
         .header { background:#fff; border-bottom:1px solid #e2e8f0; padding:16px 32px; display:flex; justify-content:space-between; align-items:center; position:sticky; top:0; z-index:10; }
         .header-title { font-size:1.1rem; font-weight:700; display:flex; align-items:center; gap:8px; }
         .header-right { display:flex; align-items:center; gap:12px; }
         .header-btn { padding:8px 16px; border-radius:10px; border:1px solid #e2e8f0; background:#fff; cursor:pointer; font-size:0.85rem; font-weight:600; }
         .header-user { display:flex; align-items:center; gap:8px; font-size:0.9rem; font-weight:600; }
-
-        /* 콘텐츠 */
         .content { padding:32px; }
-
-        /* 통계 카드 */
         .stats-grid { display:grid; grid-template-columns:repeat(4, 1fr); gap:16px; margin-bottom:28px; }
         .stat-card { background:#fff; padding:20px 24px; border-radius:16px; box-shadow:0 2px 8px rgba(0,0,0,0.04); }
         .stat-label { font-size:0.8rem; color:#64748b; font-weight:600; margin-bottom:8px; }
         .stat-value { font-size:1.8rem; font-weight:800; color:#1e293b; }
-
-        /* 목록 카드 */
         .list-card { background:#fff; border-radius:20px; box-shadow:0 2px 8px rgba(0,0,0,0.04); padding:24px; }
         .list-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; }
         .list-title { font-size:1rem; font-weight:700; }
         .list-actions { display:flex; gap:8px; }
         .btn-download { padding:9px 18px; border-radius:10px; border:1px solid #e2e8f0; background:#fff; cursor:pointer; font-size:0.85rem; font-weight:600; }
         .btn-upload { padding:9px 18px; border-radius:10px; border:none; background:#1e293b; color:#fff; cursor:pointer; font-size:0.85rem; font-weight:600; }
-
-        /* 필터 */
         .filter-row { display:flex; gap:10px; margin-bottom:20px; }
         .search-box { flex:1; position:relative; }
         .search-box input { width:100%; padding:9px 12px 9px 36px; border:1px solid #e2e8f0; border-radius:10px; font-size:0.88rem; outline:none; }
@@ -53,8 +39,6 @@
         .search-icon { position:absolute; left:10px; top:50%; transform:translateY(-50%); color:#94a3b8; font-size:0.9rem; }
         .filter-select { padding:9px 12px; border:1px solid #e2e8f0; border-radius:10px; font-size:0.88rem; background:#fff; cursor:pointer; outline:none; color:#475569; font-weight:500; }
         .filter-select:focus { border-color:var(--primary); }
-
-        /* 테이블 */
         table { width:100%; border-collapse:collapse; }
         th { padding:12px 16px; font-size:0.8rem; font-weight:600; color:#94a3b8; border-bottom:1px solid #f1f5f9; text-align:left; }
         td { padding:14px 16px; font-size:0.88rem; border-bottom:1px solid #f8fafc; vertical-align:middle; }
@@ -68,8 +52,6 @@
         .REJECTED { background:#fef2f2; color:#b91c1c; }
         .REJECTED .dot { background:#b91c1c; }
         .FAILED_SYSTEM { background:#fef2f2; color:#b91c1c; }
-
-        /* 업로드 모달 */
         .modal { display:none; position:fixed; z-index:1000; left:0; top:0; width:100%; height:100%; background:rgba(15,23,42,0.4); backdrop-filter:blur(4px); }
         .modal-content { background:#fff; margin:5% auto; padding:32px; border-radius:24px; width:90%; max-width:560px; box-shadow:0 20px 40px rgba(0,0,0,0.15); }
         .modal-title { font-size:1.1rem; font-weight:700; margin-bottom:20px; }
@@ -87,50 +69,32 @@
 </head>
 <body>
 
-<!-- 사이드바 -->
 <div class="sidebar">
     <div class="sidebar-logo" onclick="location.href='/workspace-list.html'" style="cursor:pointer;">✅ Re:Mate</div>
     <div class="sidebar-section">Workspaces</div>
     <div id="workspaceList"></div>
 </div>
 
-<!-- 메인 -->
 <div class="main">
-    <!-- 헤더 -->
     <div class="header">
         <div class="header-title" id="headerTitle">워크스페이스</div>
         <div class="header-right">
-            <div id="adminBtns" style="display:none;">
-                <button class="header-btn">⚙️ 관리</button>
-                <button class="header-btn">👥 초대하기</button>
+            <div id="adminBtns" style="display:none; gap:10px;">
+                <button class="header-btn" onclick="location.href='/workspace-manage.html'">⚙️ 관리</button>
+                <button class="header-btn" onclick="openModal('inviteModal')">👥 초대하기</button>
             </div>
             <div class="header-user">👤 <span id="headerUserName">-</span></div>
         </div>
     </div>
 
-    <!-- 콘텐츠 -->
     <div class="content">
-        <!-- 통계 -->
         <div class="stats-grid">
-            <div class="stat-card">
-                <div class="stat-label">총 영수증</div>
-                <div class="stat-value" id="statTotal">0<span style="font-size:1rem;color:#94a3b8;margin-left:4px;">건</span></div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-label">승인 대기</div>
-                <div class="stat-value" id="statPending">0<span style="font-size:1rem;color:#94a3b8;margin-left:4px;">건</span></div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-label">승인 완료</div>
-                <div class="stat-value" id="statApproved">0<span style="font-size:1rem;color:#94a3b8;margin-left:4px;">건</span></div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-label">반려</div>
-                <div class="stat-value" id="statRejected">0<span style="font-size:1rem;color:#94a3b8;margin-left:4px;">건</span></div>
-            </div>
+            <div class="stat-card"><div class="stat-label">총 영수증</div><div class="stat-value" id="statTotal">0<span style="font-size:1rem;color:#94a3b8;margin-left:4px;">건</span></div></div>
+            <div class="stat-card"><div class="stat-label">승인 대기</div><div class="stat-value" id="statPending">0<span style="font-size:1rem;color:#94a3b8;margin-left:4px;">건</span></div></div>
+            <div class="stat-card"><div class="stat-label">승인 완료</div><div class="stat-value" id="statApproved">0<span style="font-size:1rem;color:#94a3b8;margin-left:4px;">건</span></div></div>
+            <div class="stat-card"><div class="stat-label">반려</div><div class="stat-value" id="statRejected">0<span style="font-size:1rem;color:#94a3b8;margin-left:4px;">건</span></div></div>
         </div>
 
-        <!-- 목록 -->
         <div class="list-card">
             <div class="list-header">
                 <div class="list-title">영수증 목록</div>
@@ -140,53 +104,33 @@
                 </div>
             </div>
             <div class="filter-row">
-                <div class="search-box">
-                    <span class="search-icon">🔍</span>
-                    <input type="text" id="searchInput" placeholder="가맹점 검색" oninput="filterReceipts()">
-                </div>
-                <select class="filter-select" id="filterUser" onchange="filterReceipts()">
-                    <option value="">게시자 ▾</option>
-                </select>
-                <select class="filter-select" id="filterStatus" onchange="filterReceipts()">
-                    <option value="">상태 ▾</option>
-                    <option value="WAITING">대기</option>
-                    <option value="APPROVED">승인</option>
-                    <option value="REJECTED">반려</option>
-                </select>
-                <select class="filter-select" id="filterSort" onchange="filterReceipts()">
-                    <option value="newest">최신순 ▾</option>
-                    <option value="oldest">오래된순</option>
-                </select>
+                <div class="search-box"><span class="search-icon">🔍</span><input type="text" id="searchInput" placeholder="가맹점 검색" oninput="filterReceipts()"></div>
+                <select class="filter-select" id="filterUser" onchange="filterReceipts()"><option value="">게시자 ▾</option></select>
+                <select class="filter-select" id="filterStatus" onchange="filterReceipts()"><option value="">상태 ▾</option><option value="WAITING">대기</option><option value="APPROVED">승인</option><option value="REJECTED">반려</option></select>
+                <select class="filter-select" id="filterSort" onchange="filterReceipts()"><option value="newest">최신순 ▾</option><option value="oldest">오래된순</option></select>
             </div>
-            <table>
-                <thead>
-                <tr>
-                    <th>게시자</th>
-                    <th>가맹점</th>
-                    <th>금액</th>
-                    <th>상태</th>
-                    <th>게시일</th>
-                </tr>
-                </thead>
-                <tbody id="receiptList"></tbody>
-            </table>
+            <table><thead><tr><th>게시자</th><th>가맹점</th><th>금액</th><th>상태</th><th>게시일</th></tr></thead><tbody id="receiptList"></tbody></table>
         </div>
     </div>
 </div>
 
-<!-- 업로드 모달 -->
 <div id="uploadModal" class="modal">
     <div class="modal-content">
         <div class="modal-title">📸 영수증 업로드</div>
-        <div class="upload-zone" id="dropZone">
-            <p style="margin:0; color:#64748b;">파일을 클릭하거나 여기로 드래그하세요</p>
-            <input type="file" id="fileInput" accept="image/*" multiple style="display:none" />
-        </div>
+        <div class="upload-zone" id="dropZone"><p style="margin:0; color:#64748b;">파일을 클릭하거나 여기로 드래그하세요</p><input type="file" id="fileInput" accept="image/*" multiple style="display:none" /></div>
         <div class="thumbs" id="thumbs"></div>
         <div class="progress-container" id="progCont"><div class="progress-bar" id="progBar"></div></div>
+        <div class="modal-btns"><button class="btn-cancel" onclick="closeModal('uploadModal')">취소</button><button class="btn-confirm" id="uploadBtn">AI 분석 시작하기</button></div>
+    </div>
+</div>
+
+<div id="inviteModal" class="modal">
+    <div class="modal-content" style="max-width:400px;">
+        <div class="modal-title">👥 멤버 초대하기</div>
+        <input type="email" id="inviteEmail" placeholder="초대할 이메일 입력" style="width:100%; padding:12px; border:1px solid #e2e8f0; border-radius:10px; margin-bottom:15px;">
         <div class="modal-btns">
-            <button class="btn-cancel" onclick="closeModal('uploadModal')">취소</button>
-            <button class="btn-confirm" id="uploadBtn">AI 분석 시작하기</button>
+            <button class="btn-cancel" onclick="closeModal('inviteModal')">취소</button>
+            <button class="btn-confirm" id="btnSendInvite" onclick="sendInvitation()">초대장 전송</button>
         </div>
     </div>
 </div>
@@ -196,7 +140,6 @@
     let allReceipts = [];
     const el = id => document.getElementById(id);
     const escapeHtml = s => String(s ?? '').replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
-
     const token = localStorage.getItem('accessToken');
     const workspaceId = localStorage.getItem('currentWorkspaceId');
     const userName = localStorage.getItem('userName');
@@ -205,32 +148,53 @@
     function closeModal(id) { el(id).style.display = 'none'; }
     function openModal(id) { el(id).style.display = 'block'; }
 
+    async function sendInvitation() {
+        const emailInput = el('inviteEmail');
+        const email = emailInput.value.trim();
+        const btn = el('btnSendInvite');
+
+        if (!email) return alert("이메일을 입력해주세요.");
+
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(email)) return alert("올바른 이메일 형식이 아닙니다.");
+
+        btn.disabled = true;
+        try {
+            const res = await fetch(`/api/v1/workspaces/${workspaceId}/invite`, {
+                method: 'POST',
+                headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email })
+            });
+            const result = await res.json();
+            if(res.ok && result.success) {
+                alert("초대장을 보냈습니다.");
+                emailInput.value = '';
+                closeModal('inviteModal');
+            } else {
+                alert(result.error?.message || "초대 실패");
+            }
+        } catch(e) { alert("통신 오류"); } finally { btn.disabled = false; }
+    }
+
     function initLayout() {
         el('headerUserName').textContent = userName || '-';
-        if (checkIsAdmin()) {
-            el('adminBtns').style.display = 'flex';
-            el('downloadBtn').style.display = 'inline-block';
-        }
+        if (checkIsAdmin()) { el('adminBtns').style.display = 'flex'; el('downloadBtn').style.display = 'inline-block'; }
         loadWorkspaces();
     }
 
     async function loadWorkspaces() {
         try {
-            const res = await fetch('/api/v1/workspaces/my', {
-                headers: { 'Authorization': `Bearer ${token}` }
-            });
+            const res = await fetch('/api/v1/workspaces/my', { headers: { 'Authorization': `Bearer ${token}` } });
             const json = await res.json();
             const workspaces = json.data || [];
             el('workspaceList').innerHTML = workspaces.map(w =>
                 `<div class="workspace-item ${w.workspaceId == workspaceId ? 'active' : ''}" onclick="switchWorkspace(${w.workspaceId}, '${escapeHtml(w.workspaceName)}', '${w.role}')">
-                    <div class="workspace-dot"></div>
-                    ${escapeHtml(w.workspaceName)}
+                    <div class="workspace-dot"></div>${escapeHtml(w.workspaceName)}
                 </div>`
             ).join('');
-
             const current = workspaces.find(w => w.workspaceId == workspaceId);
             if (current) el('headerTitle').textContent = current.workspaceName;
-        } catch (e) { console.error('워크스페이스 목록 실패', e); }
+        } catch (e) { console.error(e); }
     }
 
     function switchWorkspace(id, name, role) {
@@ -241,34 +205,25 @@
 
     async function fetchStats() {
         try {
-            const res = await fetch(`/api/v1/receipts/stats?workspaceId=${workspaceId}`, {
-                headers: { 'Authorization': `Bearer ${token}` }
-            });
+            const res = await fetch(`/api/v1/receipts/stats?workspaceId=${workspaceId}`, { headers: { 'Authorization': `Bearer ${token}` } });
             const json = await res.json();
             const s = json.data;
             el('statTotal').innerHTML = `${s.totalCount || 0}<span style="font-size:1rem;color:#94a3b8;margin-left:4px;">건</span>`;
             el('statPending').innerHTML = `${s.pendingCount || 0}<span style="font-size:1rem;color:#94a3b8;margin-left:4px;">건</span>`;
             el('statApproved').innerHTML = `${s.approvedCount || 0}<span style="font-size:1rem;color:#94a3b8;margin-left:4px;">건</span>`;
             el('statRejected').innerHTML = `${s.rejectedCount || 0}<span style="font-size:1rem;color:#94a3b8;margin-left:4px;">건</span>`;
-        } catch (e) { console.error('통계 실패', e); }
+        } catch (e) { console.error(e); }
     }
 
     async function fetchReceipts() {
-        if (!token || !workspaceId) return;
         try {
-            const res = await fetch(`/api/v1/receipts?workspaceId=${workspaceId}`, {
-                headers: { 'Authorization': `Bearer ${token}` }
-            });
+            const res = await fetch(`/api/v1/receipts?workspaceId=${workspaceId}`, { headers: { 'Authorization': `Bearer ${token}` } });
             const json = await res.json();
             allReceipts = json.data || [];
-
             const users = [...new Set(allReceipts.map(r => r.userName).filter(Boolean))];
-            const filterUser = el('filterUser');
-            filterUser.innerHTML = `<option value="">게시자 ▾</option>` +
-                users.map(u => `<option value="${escapeHtml(u)}">${escapeHtml(u)}</option>`).join('');
-
+            el('filterUser').innerHTML = `<option value="">게시자 ▾</option>` + users.map(u => `<option value="${escapeHtml(u)}">${escapeHtml(u)}</option>`).join('');
             filterReceipts();
-        } catch (e) { console.error('목록 실패', e); }
+        } catch (e) { console.error(e); }
     }
 
     function filterReceipts() {
@@ -276,111 +231,45 @@
         const userFilter = el('filterUser').value;
         const statusFilter = el('filterStatus').value;
         const sort = el('filterSort').value;
-
         let filtered = allReceipts.filter(r => {
             const matchSearch = !search || (r.storeName || '').toLowerCase().includes(search);
             const matchUser = !userFilter || r.userName === userFilter;
             const matchStatus = !statusFilter || r.status === statusFilter;
             return matchSearch && matchUser && matchStatus;
         });
-
-        if (sort === 'oldest') {
-            filtered.sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
-        } else {
-            filtered.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-        }
-
+        filtered.sort((a, b) => sort === 'oldest' ? new Date(a.createdAt) - new Date(b.createdAt) : new Date(b.createdAt) - new Date(a.createdAt));
         receiptData = filtered;
         renderReceipts();
     }
 
     function renderReceipts() {
         const statusLabel = { WAITING: '대기', ANALYZING: '대기', NEED_MANUAL: '대기', APPROVED: '승인', REJECTED: '반려', FAILED_SYSTEM: '오류' };
-        const html = receiptData.map(r => {
-            const createdAt = r.createdAt ? r.createdAt.replace('T', ' ').substring(0, 10) : '-';
-            return `<tr onclick="location.href='/receipt-detail.html?id=${r.id}&workspaceId=${workspaceId}'">
-                <td>${escapeHtml(r.userName || '-')}</td>
-                <td><strong>${escapeHtml(r.storeName || '-')}</strong></td>
-                <td>₩${(r.totalAmount || 0).toLocaleString()}</td>
-                <td><span class="status-badge ${r.status}"><span class="dot"></span>${statusLabel[r.status] || r.status}</span></td>
-                <td style="color:#64748b;">${createdAt}</td>
-            </tr>`;
-        }).join('');
-        el('receiptList').innerHTML = html || '<tr><td colspan="5" style="text-align:center;padding:40px;color:#94a3b8;">데이터가 없습니다.</td></tr>';
+        el('receiptList').innerHTML = receiptData.map(r => `<tr onclick="location.href='/receipt-detail.html?id=${r.id}&workspaceId=${workspaceId}'">
+            <td>${escapeHtml(r.userName || '-')}</td><td><strong>${escapeHtml(r.storeName || '-')}</strong></td><td>₩${(r.totalAmount || 0).toLocaleString()}</td>
+            <td><span class="status-badge ${r.status}"><span class="dot"></span>${statusLabel[r.status] || r.status}</span></td><td style="color:#64748b;">${r.createdAt ? r.createdAt.substring(0, 10) : '-'}</td>
+        </tr>`).join('') || '<tr><td colspan="5" style="text-align:center;padding:40px;color:#94a3b8;">데이터가 없습니다.</td></tr>';
     }
 
     async function uploadReceipts() {
         const files = el('fileInput').files;
         if (files.length === 0) return alert("파일을 선택해주세요.");
-        if (!workspaceId) return alert('워크스페이스 정보 누락');
-
         const formData = new FormData();
         Array.from(files).forEach(f => formData.append('files', f));
-
-        el('progCont').style.display = 'block';
-        el('progBar').style.width = '30%';
-        el('uploadBtn').disabled = true;
-
+        el('progCont').style.display = 'block'; el('progBar').style.width = '30%'; el('uploadBtn').disabled = true;
         try {
-            el('progBar').style.width = '60%';
-            const res = await fetch(`/api/v1/receipts/upload/multiple?workspaceId=${workspaceId}`, {
-                method: 'POST',
-                headers: { 'Authorization': `Bearer ${token}` },
-                body: formData
-            });
-            el('progBar').style.width = '100%';
-            if (res.ok) {
-                const json = await res.json();
-                const results = json.data || [];
-                const duplicates = results.filter(r => r.duplicate);
-                const newReceipts = results.filter(r => !r.duplicate);
-
-                if (duplicates.length > 0) {
-                    alert("이미 등록된 영수증이 포함되어 있습니다.");
-                }
-
-                if (newReceipts.length === 1) {
-                    // 새 영수증 1개 → 바로 상세 페이지로 이동 (미리보기)
-                    const receipt = newReceipts[0];
-                    location.href = `/receipt-detail.html?id=${receipt.id}&workspaceId=${workspaceId}&preview=true`;
-                } else if (newReceipts.length > 1) {
-                    // 여러 개 → 목록으로 이동
-                    alert(`${newReceipts.length}개 분석 완료! 각 영수증을 확인해주세요.`);
-                    closeModal('uploadModal');
-                    fetchReceipts();
-                    fetchStats();
-                } else {
-                    closeModal('uploadModal');
-                    fetchReceipts();
-                    fetchStats();
-                }
-            } else {
-                alert(`업로드 실패: ${res.status}`);
-            }
-        } catch (e) {
-            alert("오류: " + e.message);
-        } finally {
-            setTimeout(() => { el('progCont').style.display = 'none'; el('progBar').style.width = '0%'; }, 500);
-            el('uploadBtn').disabled = false;
-        }
+            const res = await fetch(`/api/v1/receipts/upload/multiple?workspaceId=${workspaceId}`, { method: 'POST', headers: { 'Authorization': `Bearer ${token}` }, body: formData });
+            if (res.ok) { location.reload(); } else { alert("업로드 실패"); }
+        } catch (e) { alert("오류"); } finally { el('uploadBtn').disabled = false; }
     }
 
-    function exportCSV() {
-        window.location.href = `/api/v1/receipts/export?workspaceId=${workspaceId}`;
-    }
-
+    function exportCSV() { window.location.href = `/api/v1/receipts/export?workspaceId=${workspaceId}`; }
     el('dropZone').addEventListener('click', () => el('fileInput').click());
     el('fileInput').addEventListener('change', e => {
         el('thumbs').innerHTML = Array.from(e.target.files).map(f => `<img src="${URL.createObjectURL(f)}" class="thumb">`).join('');
         el('thumbs').style.display = 'grid';
     });
     el('uploadBtn').onclick = uploadReceipts;
-
-    window.onload = () => {
-        initLayout();
-        fetchStats();
-        fetchReceipts();
-    };
+    window.onload = () => { initLayout(); fetchStats(); fetchReceipts(); };
 </script>
 </body>
 </html>

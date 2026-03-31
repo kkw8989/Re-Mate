@@ -78,17 +78,24 @@ public class FileAssetService {
     FileAsset asset =
         repo.findById(fileId).orElseThrow(() -> ErrorCode.FILE_NOT_FOUND.toException());
 
+    if (asset.getType() == FileAssetType.PROFILE) {
+      return loadFromStorage(asset);
+    }
+
     Long requesterId = resolveUserId(authName);
 
     if (!canRead(asset, requesterId, isAdmin)) {
       throw ErrorCode.FORBIDDEN.toException();
     }
 
+    return loadFromStorage(asset);
+  }
+
+  private LoadedFile loadFromStorage(FileAsset asset) {
     Path path = storage.load(asset.getStorageKey());
     if (!Files.exists(path)) {
       throw ErrorCode.FILE_NOT_FOUND.toException();
     }
-
     return new LoadedFile(asset, path);
   }
 
@@ -98,7 +105,7 @@ public class FileAssetService {
     }
 
     if (asset.getType() == FileAssetType.PROFILE) {
-      return asset.getUploaderId().equals(requesterId);
+      return true;
     }
 
     Long wsId = asset.getWorkspaceId();
@@ -160,7 +167,7 @@ public class FileAssetService {
             && header[0] == 'R'
             && header[1] == 'I'
             && header[2] == 'F'
-            && header[3] == 'F'
+            && header[3] == 'B'
             && header[8] == 'W'
             && header[9] == 'E'
             && header[10] == 'B'
@@ -174,6 +181,9 @@ public class FileAssetService {
   }
 
   private Long resolveUserId(String authName) {
+    if (authName == null) {
+      throw ErrorCode.UNAUTHORIZED.toException("인증 사용자 정보를 찾을 수 없습니다.");
+    }
     return userRepository
         .findByEmail(authName)
         .map(u -> u.getId())
