@@ -10,20 +10,24 @@
         .header-area { display: flex; justify-content: space-between; align-items: center; width: 100%; margin-bottom: 20px; }
         .header-btns { display: flex; gap: 12px; }
         .btn-mypage { padding: 8px 16px; background: var(--primary); color: white; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; transition: 0.2s; }
-        .btn-mypage:hover { background: var(--accent); }
         .btn-logout { padding: 8px 16px; background: white; color: var(--red); border: 1px solid var(--red); border-radius: 8px; font-weight: 600; cursor: pointer; transition: 0.2s; }
-        .btn-logout:hover { background: var(--red); color: white; }
         .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 20px; margin-top: 20px; margin-bottom: 60px; }
-        .ws-card { background: white; padding: 24px; border-radius: 16px; border: 1px solid #e2e8f0; cursor: pointer; transition: 0.2s; position: relative; box-shadow: 0 2px 4px rgba(0,0,0,0.02); display: flex; flex-direction: column; justify-content: space-between; min-height: 160px; }
+        .ws-card { background: white; padding: 24px; border-radius: 16px; border: 1px solid #e2e8f0; cursor: pointer; transition: 0.2s; position: relative; box-shadow: 0 2px 4px rgba(0,0,0,0.02); display: flex; flex-direction: column; min-height: 120px; box-sizing: border-box; }
         .ws-card:hover { border-color: var(--accent); transform: translateY(-2px); }
-        .ws-card.add-card { border: 2px dashed #cbd5e1; display: flex; align-items: center; justify-content: center; gap: 10px; color: #64748b; font-weight: 600; min-height: 160px; }
-        .invite-btn { margin-top: 12px; width: 100%; padding: 8px; background: #f1f5f9; border-radius: 8px; border: none; font-size: 0.8rem; font-weight: 600; color: var(--primary); cursor: pointer; }
+        .ws-card.add-card { border: 2px dashed #cbd5e1; align-items: center; justify-content: center; color: #64748b; font-weight: 600; flex-direction: row; }
+        .color-dot { width: 12px; height: 12px; border-radius: 50%; display: inline-block; }
         .invitation-section { background: white; padding: 32px; border-radius: 24px; border: 1px solid #e2e8f0; margin-top: 40px; width: 100%; box-sizing: border-box; }
         .invitation-item { display: flex; justify-content: space-between; align-items: center; padding: 16px; border-bottom: 1px solid #f1f5f9; }
+        .invitation-actions { display: flex; gap: 8px; }
         .btn-accept { background: var(--accent); color: white; border: none; padding: 8px 16px; border-radius: 8px; cursor: pointer; font-weight: 600; }
+        .btn-reject { background: white; color: var(--red); border: 1px solid var(--red); padding: 8px 16px; border-radius: 8px; cursor: pointer; font-weight: 600; }
+        .btn-reject:hover { background: #fff1f2; }
         .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); display: none; align-items: center; justify-content: center; z-index: 1000; }
         .modal { background: white; padding: 32px; border-radius: 20px; width: 100%; max-width: 400px; }
         .modal input { width: 100%; padding: 12px; border: 1px solid #e2e8f0; border-radius: 10px; margin: 15px 0; box-sizing: border-box; }
+        .color-selector { display: flex; gap: 10px; margin-bottom: 20px; justify-content: center; }
+        .color-opt { width: 30px; height: 30px; border-radius: 50%; cursor: pointer; border: 2px solid transparent; }
+        .color-opt.selected { border-color: #1e293b; transform: scale(1.1); }
         .modal-btns { display: flex; gap: 10px; justify-content: flex-end; }
         .btn { padding: 10px 20px; border-radius: 8px; border: none; cursor: pointer; font-weight: 600; }
         .btn-confirm { background: var(--primary); color: white; }
@@ -39,7 +43,7 @@
         </div>
     </div>
     <div class="grid" id="wsGrid">
-        <div class="ws-card add-card" onclick="openModal('create')">
+        <div class="ws-card add-card" onclick="openModal()">
             <span>➕</span> 새로운 워크스페이스
         </div>
     </div>
@@ -51,40 +55,51 @@
 
 <div id="wsModal" class="modal-overlay">
     <div class="modal">
-        <h2 id="modalTitle">새로운 워크스페이스</h2>
-        <input type="text" id="modalInput" placeholder="입력해 주세요">
+        <h2>새로운 워크스페이스</h2>
+        <div class="color-selector">
+            <div class="color-opt" style="background:#22c55e" data-color="GREEN" onclick="selectColor(this)"></div>
+            <div class="color-opt" style="background:#a855f7" data-color="PURPLE" onclick="selectColor(this)"></div>
+            <div class="color-opt" style="background:#f59e0b" data-color="ORANGE" onclick="selectColor(this)"></div>
+            <div class="color-opt" style="background:#3b82f6" data-color="BLUE" onclick="selectColor(this)"></div>
+            <div class="color-opt" style="background:#ec4899" data-color="PINK" onclick="selectColor(this)"></div>
+        </div>
+        <input type="text" id="modalInput" placeholder="워크스페이스 이름 입력">
         <div class="modal-btns">
             <button class="btn" onclick="closeModal()">취소</button>
-            <button class="btn btn-confirm" id="modalConfirmBtn">확인</button>
+            <button class="btn btn-confirm" onclick="createWorkspace()">확인</button>
         </div>
     </div>
 </div>
 
 <script>
     const token = localStorage.getItem('accessToken');
-    let selectedWsId = null;
+    let selectedColor = 'BLUE';
+    const colorMap = { 'GREEN': '#22c55e', 'PURPLE': '#a855f7', 'ORANGE': '#f59e0b', 'BLUE': '#3b82f6', 'PINK': '#ec4899' };
 
     window.onload = () => {
-        if (!token) { location.href = '/index.html'; return; }
+        if (!token) { location.href = '/signin.html'; return; }
         loadMyWorkspaces();
         loadInvitations();
     };
 
-    function logout() {
-        localStorage.clear();
-        location.href = '/index.html';
+    function logout() { localStorage.clear(); location.href = '/signin.html'; }
+
+    function selectColor(el) {
+        document.querySelectorAll('.color-opt').forEach(opt => opt.classList.remove('selected'));
+        el.classList.add('selected');
+        selectedColor = el.dataset.color;
     }
 
-    function openModal(type, wsId = null) {
+    function openModal() {
         const modal = document.getElementById('wsModal');
-        document.getElementById('modalTitle').innerText = type === 'create' ? "새로운 워크스페이스" : "팀원 초대하기";
-        document.getElementById('modalInput').placeholder = type === 'create' ? "워크스페이스 이름 입력" : "초대할 이메일 입력";
-        selectedWsId = wsId;
-        document.getElementById('modalConfirmBtn').onclick = type === 'create' ? createWorkspace : sendInvitation;
         modal.style.display = 'flex';
+        selectColor(document.querySelector('[data-color="BLUE"]'));
     }
 
-    function closeModal() { document.getElementById('wsModal').style.display = 'none'; document.getElementById('modalInput').value = ''; }
+    function closeModal() {
+        document.getElementById('wsModal').style.display = 'none';
+        document.getElementById('modalInput').value = '';
+    }
 
     async function loadMyWorkspaces() {
         try {
@@ -96,12 +111,13 @@
             list.forEach(ws => {
                 const card = document.createElement('div');
                 card.className = 'ws-card';
+                card.onclick = () => enterWorkspace(ws.workspaceId, ws.role);
                 card.innerHTML = `
-                    <div onclick="enterWorkspace(${ws.workspaceId}, '${ws.role}')" style="flex-grow:1;">
-                        <div style="font-weight:700; font-size:1.1rem;">${ws.role === 'ADMIN' ? '👑' : '👤'} ${ws.workspaceName}</div>
-                        <div style="font-size:0.85rem; color:#94a3b8; margin-top:8px;">클릭하여 입장</div>
+                    <div style="display:flex; align-items:center; gap:8px; font-weight:700; font-size:1.1rem;">
+                        <span class="color-dot" style="background:${colorMap[ws.color] || '#cbd5e1'}"></span>
+                        ${ws.role === 'ADMIN' ? '👑' : '👤'} ${ws.workspaceName}
                     </div>
-                    ${ws.role === 'ADMIN' ? `<button class="invite-btn" onclick="event.stopPropagation(); openModal('invite', ${ws.workspaceId})">이메일로 팀원 초대</button>` : ''}
+                    <div style="font-size:0.85rem; color:#94a3b8; margin-top:12px;">클릭하여 입장</div>
                 `;
                 grid.insertBefore(card, grid.firstChild);
             });
@@ -110,22 +126,13 @@
 
     async function createWorkspace() {
         const name = document.getElementById('modalInput').value;
+        if(!name) return alert("이름을 입력하세요.");
         const res = await fetch('/api/v1/workspaces', {
             method: 'POST',
             headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
-            body: JSON.stringify({ name: name })
+            body: JSON.stringify({ name: name, color: selectedColor })
         });
         if(res.ok) { closeModal(); loadMyWorkspaces(); }
-    }
-
-    async function sendInvitation() {
-        const email = document.getElementById('modalInput').value;
-        const res = await fetch(`/api/v1/workspaces/${selectedWsId}/invite`, {
-            method: 'POST',
-            headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
-            body: JSON.stringify({ email: email })
-        });
-        if(res.ok) { alert("초대 완료"); closeModal(); }
     }
 
     async function loadInvitations() {
@@ -134,7 +141,13 @@
             const result = await res.json();
             const list = result.data || [];
             document.getElementById('invitationList').innerHTML = list.length === 0 ? '<p style="color:#94a3b8; text-align:center;">초대가 없습니다</p>' : list.map(inv => `
-                <div class="invitation-item"><span>${inv.workspaceName}</span><button class="btn-accept" onclick="acceptInv(${inv.membershipId})">수락</button></div>
+                <div class="invitation-item">
+                    <span>${inv.workspaceName}</span>
+                    <div class="invitation-actions">
+                        <button class="btn-accept" onclick="acceptInv(${inv.membershipId})">수락</button>
+                        <button class="btn-reject" onclick="rejectInv(${inv.membershipId})">거절</button>
+                    </div>
+                </div>
             `).join('');
         } catch (e) { console.error(e); }
     }
@@ -142,6 +155,17 @@
     async function acceptInv(id) {
         const res = await fetch(`/api/v1/workspaces/invitations/${id}/accept`, { method: 'POST', headers: { 'Authorization': `Bearer ${token}` } });
         if (res.ok) { loadMyWorkspaces(); loadInvitations(); }
+    }
+
+    async function rejectInv(id) {
+        if (!confirm("초대를 거절하시겠습니까?")) return;
+        try {
+            const res = await fetch(`/api/v1/workspaces/invitations/${id}/reject`, {
+                method: 'POST',
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (res.ok) { loadInvitations(); }
+        } catch (e) { console.error(e); }
     }
 
     function enterWorkspace(id, role) {

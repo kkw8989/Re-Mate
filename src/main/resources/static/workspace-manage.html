@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>워크스페이스 관리</title>
+    <style>
+        :root { --primary:#3b82f6; --bg:#f8fafc; --text:#1e293b; --sidebar:220px; --accent: #1e40af; }
+        body { font-family:'Pretendard',sans-serif; background:var(--bg); margin:0; display:flex; min-height:100vh; color: var(--text); }
+        .sidebar { width:var(--sidebar); background:#fff; border-right:1px solid #e2e8f0; padding:24px 0; display:flex; flex-direction:column; position:fixed; height:100vh; }
+        .sidebar-logo { padding:0 20px 20px; font-weight:800; font-size:1.2rem; cursor:pointer; border-bottom:1px solid #f1f5f9; margin-bottom:12px; }
+        .sidebar-section { font-size:0.72rem; color:#94a3b8; font-weight:600; padding:8px 20px; letter-spacing:0.05em; }
+        .workspace-item { padding:12px 20px; cursor:pointer; font-size:0.9rem; display:flex; align-items:center; gap:10px; transition: .2s; }
+        .workspace-item.active { background:#eff6ff; color:#2563eb; font-weight:700; }
+        .workspace-dot { width:8px; height:8px; border-radius:50%; background:#cbd5e1; }
+        .main { margin-left:var(--sidebar); flex:1; padding:40px; display: flex; flex-direction: column; align-items: flex-start; }
+        .content-wrapper { width: 100%; max-width: 800px; }
+        .back-link { cursor:pointer; color:#64748b; margin-bottom:20px; display:inline-block; font-size:0.9rem; }
+        .manage-card { background:#fff; border-radius:12px; padding:32px; box-shadow:0 1px 3px rgba(0,0,0,0.1); margin-bottom:24px; width: 100%; box-sizing: border-box; }
+        .card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; }
+        .section-title { font-size:1.2rem; font-weight:700; margin: 0; }
+        .btn-invite-open { background: var(--accent); color: white; border: none; padding: 8px 16px; border-radius: 6px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 6px; font-size: 0.85rem; }
+        .label { font-size:0.85rem; color:#64748b; font-weight:600; margin-bottom:10px; }
+        input[type="text"], input[type="email"] { width:100%; max-width: 400px; padding:12px; border:1px solid #e2e8f0; border-radius:8px; font-size:1rem; margin-bottom:24px; outline-color: var(--primary); box-sizing: border-box; }
+        .color-picker { display:flex; gap:12px; margin-bottom:30px; }
+        .color-opt { width:36px; height:36px; border-radius:50%; cursor:pointer; display:flex; align-items:center; justify-content:center; color:white; font-size:18px; font-weight:bold; transition: 0.2s; }
+        .color-opt.active { outline: 2px solid #1e293b; outline-offset: 3px; transform: scale(1.05); }
+        .list-item { display:flex; justify-content:space-between; align-items:center; padding:16px 0; border-bottom:1px solid #f1f5f9; }
+        .user-info { display:flex; align-items:center; gap:12px; }
+        .user-avatar { width:44px; height:44px; background:#e2e8f0; border-radius:50%; display:flex; align-items:center; justify-content:center; overflow:hidden; font-weight: 700; color: #475569; position: relative; }
+        .user-avatar img { width:100%; height:100%; object-fit:cover; }
+        .btn-blue { padding:14px 60px; background:#2563eb; color:#fff; border:none; border-radius:10px; font-weight:700; cursor:pointer; transition: .2s; }
+        .btn-outline { padding:8px 16px; border:1px solid #e2e8f0; background:#fff; border-radius:8px; cursor:pointer; font-size:0.85rem; color: #64748b; font-weight: 600; }
+        .btn-outline:hover { background: #f8fafc; color: #ef4444; border-color: #fecaca; }
+        .btn-delete-ws { background:none; border:none; color:#94a3b8; text-decoration:underline; cursor:pointer; margin-top:20px; font-size: 0.85rem; }
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); display: none; align-items: center; justify-content: center; z-index: 1000; }
+        .modal { background: white; padding: 32px; border-radius: 16px; width: 100%; max-width: 400px; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1); }
+        .modal h2 { margin-top: 0; font-size: 1.25rem; margin-bottom: 20px; }
+        .modal-btns { display: flex; gap: 12px; justify-content: flex-end; margin-top: 10px; }
+        .btn-confirm { background: var(--primary); color: white; border: none; padding: 10px 20px; border-radius: 8px; font-weight: 600; cursor: pointer; }
+        .btn-cancel { background: #f1f5f9; color: #64748b; border: none; padding: 10px 20px; border-radius: 8px; font-weight: 600; cursor: pointer; }
+    </style>
+</head>
+<body>
+<div class="sidebar">
+    <div class="sidebar-logo" onclick="location.href='/workspace-list.html'">✅ Re:Mate</div>
+    <div class="sidebar-section">Workspaces</div>
+    <div id="workspaceList"></div>
+</div>
+
+<div class="main">
+    <div class="content-wrapper">
+        <div class="back-link" onclick="location.href='/upload.html'">← 돌아가기</div>
+
+        <div class="manage-card">
+            <div class="section-title" id="cardTitle">이름 없음</div>
+            <div class="label" style="margin-top:20px;">워크스페이스 이름</div>
+            <input type="text" id="wsNameInput">
+            <div class="label">색상</div>
+            <div class="color-picker" id="colorPicker">
+                <div class="color-opt" style="background:#22c55e" data-color="GREEN"></div>
+                <div class="color-opt" style="background:#a855f7" data-color="PURPLE"></div>
+                <div class="color-opt" style="background:#f59e0b" data-color="ORANGE"></div>
+                <div class="color-opt" style="background:#3b82f6" data-color="BLUE"></div>
+                <div class="color-opt" style="background:#ec4899" data-color="PINK"></div>
+            </div>
+            <button class="btn-blue" onclick="updateWorkspace()">변경</button>
+        </div>
+
+        <div class="manage-card">
+            <div class="section-title">멤버</div>
+            <div id="memberList" style="margin-top:10px;"></div>
+        </div>
+
+        <div class="manage-card">
+            <div class="card-header">
+                <div class="section-title">초대 대기</div>
+                <button class="btn-invite-open" onclick="openInviteModal()">➕ 초대하기</button>
+            </div>
+            <div id="inviteList"></div>
+        </div>
+
+        <button class="btn-delete-ws" onclick="deleteWorkspace()">워크스페이스 삭제하기</button>
+    </div>
+</div>
+
+<div id="inviteModal" class="modal-overlay">
+    <div class="modal">
+        <h2>멤버 초대하기</h2>
+        <div class="label">이메일 주소</div>
+        <input type="email" id="inviteEmailInput" placeholder="example@mail.com" style="max-width: 100%;">
+        <div class="modal-btns">
+            <button class="btn-cancel" onclick="closeInviteModal()">취소</button>
+            <button class="btn-confirm" onclick="sendInvite()">초대 발송</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    const token = localStorage.getItem('accessToken');
+    const workspaceId = localStorage.getItem('currentWorkspaceId');
+    let selectedColor = "";
+
+    async function init() {
+        if (!workspaceId || !token) return;
+        await loadWsDetail();
+        Promise.all([loadWorkspaces(), loadMembers(), loadInvites()]);
+    }
+
+    async function loadWsDetail() {
+        try {
+            const res = await fetch(`/api/v1/workspaces/${workspaceId}`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            const json = await res.json();
+            const w = json.data;
+            if (w) {
+                const currentName = w.workspaceName || w.name || "이름 없음";
+                document.getElementById('wsNameInput').value = currentName;
+                document.getElementById('cardTitle').textContent = currentName;
+                selectedColor = w.color;
+                updateColorUI();
+            }
+        } catch (e) { console.error(e); }
+    }
+
+    function updateColorUI() {
+        document.querySelectorAll('.color-opt').forEach(opt => {
+            const colorVal = opt.dataset.color;
+            const isActive = colorVal === selectedColor;
+            opt.classList.toggle('active', isActive);
+            opt.innerHTML = isActive ? '✓' : '';
+            opt.onclick = () => { selectedColor = colorVal; updateColorUI(); };
+        });
+    }
+
+    async function loadMembers() {
+        try {
+            const res = await fetch(`/api/v1/workspaces/${workspaceId}/members?status=ACCEPTED`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            const json = await res.json();
+            const data = json.data || [];
+            const baseHost = window.location.origin;
+
+            document.getElementById('memberList').innerHTML = data.map(m => {
+                let imgSrc = "";
+                if (m.picture) {
+                    imgSrc = m.picture.startsWith('http') ? m.picture : baseHost + m.picture;
+                }
+                const fallbackChar = m.name ? m.name[0] : 'U';
+                return `
+                <div class="list-item">
+                    <div class="user-info">
+                        <div class="user-avatar">
+                            ${imgSrc ? `<img src="${imgSrc}" onerror="this.style.display='none'; this.parentElement.innerText='${fallbackChar}'">` : fallbackChar}
+                        </div>
+                        <div style="display:flex; flex-direction:column;">
+                            <strong style="font-size:0.95rem;">${m.name || '사용자'}</strong>
+                            <span style="font-size:0.75rem; color:#94a3b8;">${m.email || ''}</span>
+                        </div>
+                    </div>
+                    ${m.role !== 'ADMIN' ? `<button class="btn-outline" onclick="removeMember(${m.userId})">삭제</button>` : '<span style="color:#94a3b8; font-size:0.8rem; font-weight:600;">방장</span>'}
+                </div>`;
+            }).join('') || '<div style="color:#94a3b8; padding:20px 0; text-align:center;">멤버가 없습니다.</div>';
+        } catch (e) { console.error(e); }
+    }
+
+    async function loadWorkspaces() {
+        try {
+            const res = await fetch('/api/v1/workspaces/my', { headers: { 'Authorization': `Bearer ${token}` } });
+            const json = await res.json();
+            document.getElementById('workspaceList').innerHTML = (json.data || []).map(w => `
+                <div class="workspace-item ${w.workspaceId == workspaceId ? 'active' : ''}" onclick="switchWorkspace(${w.workspaceId})">
+                    <div class="workspace-dot"></div>${w.workspaceName}
+                </div>
+            `).join('');
+        } catch (e) { console.error(e); }
+    }
+
+    async function loadInvites() {
+        try {
+            const res = await fetch(`/api/v1/workspaces/${workspaceId}/members?status=PENDING`, { headers: { 'Authorization': `Bearer ${token}` } });
+            const json = await res.json();
+            const data = json.data || [];
+            document.getElementById('inviteList').innerHTML = data.map(i => `
+                <div class="list-item">
+                    <span style="font-weight:500;">${i.email}</span>
+                    <button class="btn-outline" onclick="cancelInvite(${i.userId})">취소</button>
+                </div>
+            `).join('') || '<div style="color:#94a3b8; padding:20px 0; text-align:center;">대기 중인 초대가 없습니다.</div>';
+        } catch (e) { console.error(e); }
+    }
+
+    function openInviteModal() {
+        document.getElementById('inviteModal').style.display = 'flex';
+        document.getElementById('inviteEmailInput').focus();
+    }
+
+    function closeInviteModal() {
+        document.getElementById('inviteModal').style.display = 'none';
+        document.getElementById('inviteEmailInput').value = '';
+    }
+
+    async function sendInvite() {
+        const email = document.getElementById('inviteEmailInput').value;
+        if (!email) return alert("이메일을 입력해주세요.");
+
+        try {
+            const res = await fetch(`/api/v1/workspaces/${workspaceId}/invite`, {
+                method: 'POST',
+                headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email: email })
+            });
+            const result = await res.json();
+            if (res.ok) {
+                alert("초대가 발송되었습니다.");
+                closeInviteModal();
+                loadInvites();
+            } else {
+                alert(result.message || "초대에 실패했습니다.");
+            }
+        } catch (e) {
+            console.error(e);
+            alert("통신 오류가 발생했습니다.");
+        }
+    }
+
+    async function updateWorkspace() {
+        const newName = document.getElementById('wsNameInput').value;
+        if (!newName) return alert("이름을 입력하세요.");
+        const res = await fetch(`/api/v1/workspaces/${workspaceId}/settings`, {
+            method: 'PATCH',
+            headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+            body: JSON.stringify({ name: newName, color: selectedColor })
+        });
+        if (res.ok) { alert("수정되었습니다."); location.reload(); }
+        else { alert("수정 실패"); }
+    }
+
+    async function removeMember(uid) { if(confirm("추방하시겠습니까?")) { await fetch(`/api/v1/workspaces/${workspaceId}/members/${uid}`, { method:'DELETE', headers:{'Authorization':`Bearer ${token}`} }); loadMembers(); } }
+    async function cancelInvite(uid) { if(confirm("취소하시겠습니까?")) { await fetch(`/api/v1/workspaces/${workspaceId}/members/${uid}`, { method:'DELETE', headers:{'Authorization':`Bearer ${token}`} }); loadInvites(); } }
+    async function deleteWorkspace() { if(confirm("삭제하시겠습니까?")) { await fetch(`/api/v1/workspaces/${workspaceId}`, { method:'DELETE', headers:{'Authorization':`Bearer ${token}`} }); location.href="/workspace-list.html"; } }
+    function switchWorkspace(id) { localStorage.setItem('currentWorkspaceId', id); location.href = '/upload.html'; }
+
+    init();
+</script>
+</body>
+</html>
