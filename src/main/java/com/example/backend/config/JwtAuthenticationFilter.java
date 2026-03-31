@@ -22,6 +22,12 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
   private final JwtTokenProvider jwtTokenProvider;
 
   @Override
+  protected boolean shouldNotFilter(HttpServletRequest request) throws ServletException {
+    String path = request.getRequestURI();
+    return path.startsWith("/api/v1/files/");
+  }
+
+  @Override
   protected void doFilterInternal(
       HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
       throws ServletException, IOException {
@@ -31,18 +37,15 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     if (token != null) {
       try {
-
         if (jwtTokenProvider.validateToken(token)) {
           Authentication auth = jwtTokenProvider.getAuthentication(token);
           SecurityContextHolder.getContext().setAuthentication(auth);
         }
       } catch (ExpiredJwtException e) {
-
-        sendErrorResponse(response, ErrorCode.UNAUTHORIZED, "토큰이 만료되었습니다. 다시 로그인해주세요.");
+        sendErrorResponse(response, ErrorCode.UNAUTHORIZED, "토큰이 만료되었습니다.");
         return;
       } catch (Exception e) {
-
-        sendErrorResponse(response, ErrorCode.UNAUTHORIZED, "유효하지 않은 인증 토큰입니다.");
+        sendErrorResponse(response, ErrorCode.UNAUTHORIZED, "유효하지 않은 토큰입니다.");
         return;
       }
     }
@@ -50,7 +53,6 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     filterChain.doFilter(request, response);
   }
 
-  /** 팀원의 ApiResponse 규격 + ErrorCode 상수를 활용한 에러 응답 */
   private void sendErrorResponse(HttpServletResponse response, ErrorCode errorCode, String message)
       throws IOException {
     response.setStatus(errorCode.status().value());
