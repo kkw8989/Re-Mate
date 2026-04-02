@@ -66,11 +66,36 @@ public class Receipt {
   @Builder.Default
   private java.util.List<String> tags = new java.util.ArrayList<>();
 
+  @ElementCollection(fetch = FetchType.LAZY)
+  @CollectionTable(
+      name = "receipt_inappropriate_reasons",
+      joinColumns = @JoinColumn(name = "receipt_id"))
+  @Column(name = "reason")
+  @Builder.Default
+  private java.util.List<String> inappropriateReasons = new java.util.ArrayList<>();
+
+  private Integer discountAmount;
+
+  @Column(length = 500)
+  private String aiReason;
+
   public void updateTags(java.util.List<String> newTags) {
     this.tags.clear();
     if (newTags != null) {
       this.tags.addAll(newTags);
     }
+  }
+
+  public void updateInappropriateReasons(java.util.List<String> reasons) {
+    this.inappropriateReasons.clear();
+    if (reasons != null) {
+      this.inappropriateReasons.addAll(reasons);
+    }
+  }
+
+  public void updateDiscountAndReason(Integer discountAmount, String aiReason) {
+    this.discountAmount = discountAmount;
+    this.aiReason = aiReason;
   }
 
   private LocalDateTime createdAt;

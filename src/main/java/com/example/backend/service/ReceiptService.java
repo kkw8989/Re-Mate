@@ -423,7 +423,10 @@ public class ReceiptService {
                   r.getUserId(),
                   r.getTax(),
                   r.getConfidence(),
-                  r.getCreatedAt());
+                  r.getCreatedAt(),
+                  r.getInappropriateReasons(),
+                  r.getDiscountAmount(),
+                  r.getAiReason());
             })
         .collect(Collectors.toList());
   }
@@ -563,7 +566,10 @@ public class ReceiptService {
         receipt.getFilePath(),
         receipt.getTags(),
         items,
-        receipt.isNightTime());
+        receipt.isNightTime(),
+        receipt.getInappropriateReasons(),
+        receipt.getDiscountAmount(),
+        receipt.getAiReason());
   }
 
   public ReceiptActionResponseDto toReceiptActionResponse(Receipt receipt) {
@@ -604,6 +610,9 @@ public class ReceiptService {
         .tags(receipt.getTags())
         .createdAt(receipt.getCreatedAt())
         .isDuplicate(isDuplicate)
+        .inappropriateReasons(receipt.getInappropriateReasons())
+        .discountAmount(receipt.getDiscountAmount())
+        .aiReason(receipt.getAiReason())
         .build();
   }
 
