@@ -18,3 +18,7 @@ src/main/resources/application-secret.properties
 # allow gradle wrapper
 !gradle/wrapper/gradle-wrapper.jar
 !gradle/wrapper/gradle-wrapper.properties
+
+# Storage
+storage/receipt/
+storage/profile/

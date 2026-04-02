@@ -100,9 +100,9 @@ public class ReceiptService {
         return toUploadReceiptResponse(existingByKey.get(), true);
       }
 
-      SavedReceiptFile savedReceiptFile = saveReceiptFile(file, userId, workspaceId);
-      AnalyzedReceipt analyzedReceipt = analyzeReceipt(fileBytes, savedReceiptFile.fileName());
+      AnalyzedReceipt analyzedReceipt = analyzeReceipt(fileBytes, file.getContentType());
       validateAnalyzedReceipt(analyzedReceipt);
+      SavedReceiptFile savedReceiptFile = saveReceiptFile(file, userId, workspaceId);
 
       Receipt receipt;
       try {
@@ -148,7 +148,7 @@ public class ReceiptService {
     }
   }
 
-  private AnalyzedReceipt analyzeReceipt(byte[] fileBytes, String filePath) {
+  private AnalyzedReceipt analyzeReceipt(byte[] fileBytes, String contentType) {
     try {
       JsonNode ocrJson = googleOcrClient.recognize(fileBytes);
       JsonNode textAnnotations = ocrJson.path("responses").get(0).path("textAnnotations");
@@ -157,7 +157,8 @@ public class ReceiptService {
               ? ""
               : textAnnotations.get(0).path("description").asText("");
 
-      JsonNode aiResult = geminiService.getParsedReceipt(fullText, filePath);
+      String mimeType = contentType != null ? contentType : "image/jpeg";
+      JsonNode aiResult = geminiService.getParsedReceipt(fullText, fileBytes, mimeType);
 
       String storeName = aiResult.path("storeName").asText("").trim();
       JsonNode totalNode = aiResult.path("totalAmount");

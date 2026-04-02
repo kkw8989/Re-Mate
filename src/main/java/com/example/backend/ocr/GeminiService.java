@@ -2,9 +2,6 @@ package com.example.backend.ocr;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import java.io.File;
-import java.nio.file.Files;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.List;
@@ -25,10 +22,7 @@ public class GeminiService {
   private final ObjectMapper objectMapper = new ObjectMapper();
   private final RestTemplate restTemplate = new RestTemplate();
 
-  private final String uploadDir =
-      Paths.get("storage", "receipt").toAbsolutePath().normalize().toString() + File.separator;
-
-  public JsonNode getParsedReceipt(String rawText, String filePath) {
+  public JsonNode getParsedReceipt(String rawText, byte[] imageBytes, String mimeType) {
     String model = "models/gemini-2.5-flash";
     String url =
         "https://generativelanguage.googleapis.com/v1beta/"
@@ -94,16 +88,10 @@ public class GeminiService {
 
     List<Map<String, Object>> parts = new ArrayList<>();
 
-    if (filePath != null && !filePath.isBlank()) {
-      try {
-        byte[] imageBytes = Files.readAllBytes(Paths.get(uploadDir + filePath));
-        String base64Image = Base64.getEncoder().encodeToString(imageBytes);
-        String mimeType = filePath.toLowerCase().endsWith(".png") ? "image/png" : "image/jpeg";
-        parts.add(Map.of("inline_data", Map.of("mime_type", mimeType, "data", base64Image)));
-        log.info("=== 이미지 전송 완료: {}", filePath);
-      } catch (Exception e) {
-        log.warn("=== 이미지 로딩 실패, rawText만 사용: {}", e.getMessage());
-      }
+    if (imageBytes != null && imageBytes.length > 0) {
+      String base64Image = Base64.getEncoder().encodeToString(imageBytes);
+      parts.add(Map.of("inline_data", Map.of("mime_type", mimeType, "data", base64Image)));
+      log.info("=== 이미지 전송 완료 ({}bytes)", imageBytes.length);
     }
 
     parts.add(Map.of("text", prompt));
