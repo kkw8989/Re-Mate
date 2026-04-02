@@ -2,6 +2,8 @@ package com.example.backend.ocr;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import java.util.ArrayList;
+import java.util.Base64;
 import java.util.List;
 import java.util.Map;
 import lombok.extern.slf4j.Slf4j;
@@ -20,7 +22,7 @@ public class GeminiService {
   private final ObjectMapper objectMapper = new ObjectMapper();
   private final RestTemplate restTemplate = new RestTemplate();
 
-  public JsonNode getParsedReceipt(String rawText) {
+  public JsonNode getParsedReceipt(String rawText, byte[] imageBytes, String mimeType) {
     String model = "models/gemini-2.5-flash";
     String url =
         "https://generativelanguage.googleapis.com/v1beta/"
@@ -33,7 +35,8 @@ public class GeminiService {
 
     String prompt =
         "너는 한국 영수증 데이터 추출 전문가야.\n"
-            + "아래 OCR 텍스트는 다양한 종류의 한국 영수증에서 추출된 텍스트야.\n"
+            + "아래는 영수증 이미지와 OCR로 추출한 텍스트야.\n"
+            + "이미지를 직접 보고 판단하되, OCR 텍스트를 참고해서 더 정확하게 추출해줘.\n"
             + "텍스트를 분석해서 아래 JSON 형식으로만 응답해줘. 설명이나 마크다운 없이 순수 JSON만.\n\n"
             + "추출 규칙:\n"
             + "1. storeName: 가맹점명/상호명/매장명.\n"
@@ -80,12 +83,22 @@ public class GeminiService {
             + "    {\"name\": \"상품명\", \"quantity\": 숫자, \"price\": 숫자}\n"
             + "  ]\n"
             + "}\n\n"
-            + "영수증 텍스트:\n"
+            + "영수증 OCR 텍스트 (참고용):\n"
             + rawText;
+
+    List<Map<String, Object>> parts = new ArrayList<>();
+
+    if (imageBytes != null && imageBytes.length > 0) {
+      String base64Image = Base64.getEncoder().encodeToString(imageBytes);
+      parts.add(Map.of("inline_data", Map.of("mime_type", mimeType, "data", base64Image)));
+      log.info("=== 이미지 전송 완료 ({}bytes)", imageBytes.length);
+    }
+
+    parts.add(Map.of("text", prompt));
 
     Map<String, Object> body =
         Map.of(
-            "contents", List.of(Map.of("parts", List.of(Map.of("text", prompt)))),
+            "contents", List.of(Map.of("parts", parts)),
             "generationConfig", Map.of("response_mime_type", "application/json"));
 
     try {

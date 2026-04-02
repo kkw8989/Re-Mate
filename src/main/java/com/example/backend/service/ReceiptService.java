@@ -100,9 +100,8 @@ public class ReceiptService {
         return toUploadReceiptResponse(existingByKey.get(), true);
       }
 
-      AnalyzedReceipt analyzedReceipt = analyzeReceipt(fileBytes);
+      AnalyzedReceipt analyzedReceipt = analyzeReceipt(fileBytes, file.getContentType());
       validateAnalyzedReceipt(analyzedReceipt);
-
       SavedReceiptFile savedReceiptFile = saveReceiptFile(file, userId, workspaceId);
 
       Receipt receipt;
@@ -149,7 +148,7 @@ public class ReceiptService {
     }
   }
 
-  private AnalyzedReceipt analyzeReceipt(byte[] fileBytes) {
+  private AnalyzedReceipt analyzeReceipt(byte[] fileBytes, String contentType) {
     try {
       JsonNode ocrJson = googleOcrClient.recognize(fileBytes);
       JsonNode textAnnotations = ocrJson.path("responses").get(0).path("textAnnotations");
@@ -158,7 +157,8 @@ public class ReceiptService {
               ? ""
               : textAnnotations.get(0).path("description").asText("");
 
-      JsonNode aiResult = geminiService.getParsedReceipt(fullText);
+      String mimeType = contentType != null ? contentType : "image/jpeg";
+      JsonNode aiResult = geminiService.getParsedReceipt(fullText, fileBytes, mimeType);
 
       String storeName = aiResult.path("storeName").asText("").trim();
       JsonNode totalNode = aiResult.path("totalAmount");
@@ -196,6 +196,27 @@ public class ReceiptService {
                   .quantity(item.path("quantity").asInt(0))
                   .price(item.path("price").asInt(0))
                   .build());
+        }
+      }
+
+      if (itemsNode.isArray() && totalAmount > 0) {
+        int itemsTotal = 0;
+        for (ReceiptItem item : items) {
+          itemsTotal += item.getQuantity() * item.getPrice();
+        }
+
+        if (itemsTotal > 0) {
+          int itemsTotalWithTax = itemsTotal + tax;
+          boolean amountMismatch =
+              Math.abs(itemsTotal - totalAmount) > totalAmount * 0.1
+                  && Math.abs(itemsTotalWithTax - totalAmount) > totalAmount * 0.1;
+
+          if (amountMismatch) {
+            log.warn(
+                "=== items 합계({}) + tax({}) = {} / totalAmount({}) 10% 이상 차이 → NEED_MANUAL 유도",
+                itemsTotal, tax, itemsTotalWithTax, totalAmount);
+            confidence = Math.min(confidence, 0.4);
+          }
         }
       }
 

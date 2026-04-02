@@ -258,7 +258,30 @@
         el('progCont').style.display = 'block'; el('progBar').style.width = '30%'; el('uploadBtn').disabled = true;
         try {
             const res = await fetch(`/api/v1/receipts/upload/multiple?workspaceId=${workspaceId}`, { method: 'POST', headers: { 'Authorization': `Bearer ${token}` }, body: formData });
-            if (res.ok) { location.reload(); } else { alert("업로드 실패"); }
+            if (res.ok) {
+                const json = await res.json();
+                const results = json.data || [];
+                const duplicates = results.filter(r => r.duplicate);
+                const newReceipts = results.filter(r => !r.duplicate);
+
+                if (duplicates.length > 0) {
+                    alert("이미 등록된 영수증이 포함되어 있습니다.");
+                }
+
+                if (newReceipts.length === 1) {
+                    const receipt = newReceipts[0];
+                    location.href = `/receipt-detail.html?id=${receipt.id}&workspaceId=${workspaceId}&preview=true`;
+                } else if (newReceipts.length > 1) {
+                    alert(`${newReceipts.length}개 분석 완료! 각 영수증을 확인해주세요.`);
+                    closeModal('uploadModal');
+                    fetchReceipts();
+                    fetchStats();
+                } else {
+                    closeModal('uploadModal');
+                    fetchReceipts();
+                    fetchStats();
+                }
+            }
         } catch (e) { alert("오류"); } finally { el('uploadBtn').disabled = false; }
     }
 
