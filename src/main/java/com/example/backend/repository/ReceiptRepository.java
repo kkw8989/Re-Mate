@@ -1,6 +1,7 @@
 package com.example.backend.repository;
 
 import com.example.backend.entity.Receipt;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -36,4 +37,19 @@ public interface ReceiptRepository extends JpaRepository<Receipt, Long> {
           + "sum(r.totalAmount) as totalAmount "
           + "FROM Receipt r WHERE r.workspaceId = :workspaceId")
   java.util.Map<String, Object> getWorkspaceStats(@Param("workspaceId") Long workspaceId);
+
+  @Query(
+      "SELECT r FROM Receipt r "
+          + "WHERE r.workspaceId = :workspaceId "
+          + "AND r.userId = :userId "
+          + "AND LOWER(REPLACE(r.storeName, ' ', '')) = :normalizedStore "
+          + "AND r.tradeAt BETWEEN :from AND :to "
+          + "AND r.id != :excludeId")
+  List<Receipt> findSplitPaymentCandidates(
+      @Param("workspaceId") Long workspaceId,
+      @Param("userId") Long userId,
+      @Param("normalizedStore") String normalizedStore,
+      @Param("from") LocalDateTime from,
+      @Param("to") LocalDateTime to,
+      @Param("excludeId") Long excludeId);
 }
