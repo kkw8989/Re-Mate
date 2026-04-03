@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import java.time.LocalDate;
 import java.util.HashSet;
 import java.util.Set;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cache.annotation.Cacheable;
@@ -13,13 +14,14 @@ import org.springframework.web.client.RestTemplate;
 
 @Slf4j
 @Service
+@RequiredArgsConstructor
 public class HolidayService {
 
   @Value("${public.data.api.key}")
   private String apiKey;
 
-  private final RestTemplate restTemplate = new RestTemplate();
-  private final ObjectMapper objectMapper = new ObjectMapper();
+  private final RestTemplate restTemplate;
+  private final ObjectMapper objectMapper;
 
   @Cacheable(value = "holidays", key = "#year + '-' + #month")
   public Set<LocalDate> getHolidays(int year, int month) {
