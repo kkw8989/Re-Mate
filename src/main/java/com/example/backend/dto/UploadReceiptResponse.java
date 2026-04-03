@@ -57,4 +57,13 @@ public class UploadReceiptResponse {
 
   @Schema(description = "중복 업로드 여부", example = "false")
   private boolean isDuplicate;
+
+  @Schema(description = "부적절 판정 사유 목록", nullable = true)
+  private List<String> inappropriateReasons;
+
+  @Schema(description = "할인 금액", example = "1000", nullable = true)
+  private Integer discountAmount;
+
+  @Schema(description = "AI 추천 반려 사유", nullable = true)
+  private String aiReason;
 }

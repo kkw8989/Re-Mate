@@ -42,4 +42,7 @@ public class ReceiptSummaryDto {
   private Integer tax;
   private Double confidence;
   private LocalDateTime createdAt;
+  private List<String> inappropriateReasons;
+  private Integer discountAmount;
+  private String aiReason;
 }
