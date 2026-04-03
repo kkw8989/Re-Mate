@@ -39,6 +39,12 @@
     .btn-cancel-modal { background:#f1f5f9; color:#475569; }
     .modal-input { width:100%; padding:10px; border:1px solid #e2e8f0; border-radius:8px; box-sizing:border-box; margin-top:12px; font-size:0.95rem; }
     .modal-input:focus { outline:none; border-color:var(--primary); }
+    .tag-chip { display:inline-block; padding:3px 10px; border-radius:20px; font-size:0.72rem; font-weight:700; margin:2px; }
+    .tag-NIGHT_PAYMENT { background:#fef3c7; color:#b45309; }
+    .tag-HOLIDAY_PAYMENT { background:#dbeafe; color:#1d4ed8; }
+    .tag-SUSPICIOUS_ENTERTAINMENT { background:#fce7f3; color:#9d174d; }
+    .tag-SPLIT_PAYMENT_SUSPICIOUS { background:#fef2f2; color:#b91c1c; }
+    .ai-reason { font-size:0.8rem; color:#64748b; margin-top:6px; padding:8px 12px; background:#f8fafc; border-radius:8px; border-left:3px solid #e2e8f0; }
   </style>
 </head>
 <body>
@@ -73,6 +79,15 @@
     <div class="info-row" id="rejectionRow" style="display:none;">
       <div class="info-label">반려 사유</div>
       <div class="info-value" id="rejectionReason" style="color:#b91c1c;">-</div>
+    </div>
+    <div class="info-row" id="inappropriateRow" style="display:none;">
+      <div class="info-label">⚠️ 의심 태그</div>
+      <div id="inappropriateTags"></div>
+      <div class="ai-reason" id="aiReason" style="display:none;"></div>
+    </div>
+    <div class="info-row" id="discountRow" style="display:none;">
+      <div class="info-label">할인금액</div>
+      <div class="info-value" id="discountAmount">-</div>
     </div>
     <div id="actionArea"></div>
   </div>
@@ -160,21 +175,49 @@
       document.getElementById('totalAmount').innerHTML = `<input type="number" id="editAmount" value="${r.totalAmount || 0}" style="width:100%;padding:8px;border:1px solid #e2e8f0;border-radius:8px;font-size:0.95rem;">`;
       document.getElementById('tradeAt').innerHTML = `<input type="datetime-local" id="editTradeAt" value="${r.tradeAt ? r.tradeAt.substring(0,16) : ''}" style="width:100%;padding:8px;border:1px solid #e2e8f0;border-radius:8px;font-size:0.95rem;">`;
       document.getElementById('actionArea').innerHTML = `
-      <div class="action-btns" style="margin-top:16px;">
-        <button class="btn" style="background:#3b82f6;color:white;flex:1;" onclick="doConfirm()">💾 저장</button>
-        <button class="btn" style="background:#f1f5f9;color:#475569;flex:1;" onclick="doDelete()">🗑️ 취소</button>
-      </div>`;
+    <div class="action-btns" style="margin-top:16px;">
+      <button class="btn" style="background:#3b82f6;color:white;flex:1;" onclick="doConfirm()">💾 저장</button>
+      <button class="btn" style="background:#f1f5f9;color:#475569;flex:1;" onclick="doDelete()">🗑️ 취소</button>
+    </div>`;
     } else {
       document.getElementById('storeName').textContent = r.storeName || '-';
       document.getElementById('totalAmount').textContent = `₩${(r.totalAmount || 0).toLocaleString()}`;
       document.getElementById('tradeAt').textContent = r.tradeAt ? r.tradeAt.replace('T', ' ').substring(0, 16) : '-';
       if (!isFinal && checkIsAdmin()) {
         document.getElementById('actionArea').innerHTML = `
-        <div class="action-btns">
-          <button class="btn btn-approve" onclick="openModal('approveModal')">승인</button>
-          <button class="btn btn-reject" onclick="openModal('rejectModal')">반려</button>
-        </div>`;
+      <div class="action-btns">
+        <button class="btn btn-approve" onclick="openModal('approveModal')">승인</button>
+        <button class="btn btn-reject" onclick="openModal('rejectModal')">반려</button>
+      </div>`;
       }
+    }
+
+    const tagLabels = {
+      NIGHT_PAYMENT: '🌙 심야 결제 의심',
+      HOLIDAY_PAYMENT: '📅 공휴일 결제 의심',
+      SUSPICIOUS_ENTERTAINMENT: '🍺 유흥업소 의심',
+      SPLIT_PAYMENT_SUSPICIOUS: '✂️ 쪼개기 결제 의심'
+    };
+
+    if (r.inappropriateReasons && r.inappropriateReasons.length > 0) {
+      const currentUserId = localStorage.getItem('userId');
+      const canSeeTags = checkIsAdmin() || String(r.userId) === String(currentUserId);
+
+      if (canSeeTags) {
+        document.getElementById('inappropriateRow').style.display = 'block';
+        document.getElementById('inappropriateTags').innerHTML = r.inappropriateReasons
+                .map(tag => `<span class="tag-chip tag-${tag}">${tagLabels[tag] || tag}</span>`)
+                .join('');
+        if (r.aiReason) {
+          document.getElementById('aiReason').style.display = 'block';
+          document.getElementById('aiReason').textContent = '💬 ' + r.aiReason;
+        }
+      }
+    }
+
+    if (r.discountAmount && r.discountAmount > 0) {
+      document.getElementById('discountRow').style.display = 'block';
+      document.getElementById('discountAmount').textContent = `₩${r.discountAmount.toLocaleString()}`;
     }
 
     if (r.items && r.items.length > 0) {
@@ -184,6 +227,7 @@
       ).join('');
     }
   }
+
   async function doApprove() {
     try {
       const p = new URLSearchParams({ workspaceId, status: 'APPROVED', reason: '관리자 승인' });

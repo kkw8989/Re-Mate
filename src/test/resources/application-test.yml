@@ -15,3 +15,7 @@ google:
     api-key: test-api-key
   api:
     key: test-api-key
+public:
+  data:
+    api:
+      key: test-dummy-key

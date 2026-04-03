@@ -57,6 +57,7 @@ public class ReceiptService {
   private final ReceiptItemRepository receiptItemRepository;
   private final LocalFileStorageService localFileStorageService;
   private final FileAssetRepository fileAssetRepository;
+  private final InappropriateReasonService inappropriateReasonService;
 
   private Long getCurrentUserId() {
     Authentication auth = SecurityContextHolder.getContext().getAuthentication();
@@ -161,6 +162,10 @@ public class ReceiptService {
       JsonNode aiResult = geminiService.getParsedReceipt(fullText, fileBytes, mimeType);
 
       String storeName = aiResult.path("storeName").asText("").trim();
+      String category = aiResult.path("category").asText("OTHER");
+      int discountAmount = aiResult.path("discountAmount").asInt(0);
+      String aiReason = aiResult.path("aiReason").asText("");
+
       JsonNode totalNode = aiResult.path("totalAmount");
       int totalAmount = 0;
       if (!totalNode.isMissingNode()) {
@@ -234,7 +239,10 @@ public class ReceiptService {
           confidence,
           nextStatus,
           derivedTags,
-          items);
+          items,
+          category,
+          discountAmount,
+          aiReason);
     } catch (BusinessException e) {
       throw e;
     } catch (Exception e) {
@@ -288,6 +296,8 @@ public class ReceiptService {
         analyzedReceipt.tax(),
         analyzedReceipt.confidence());
 
+    receipt.updateDiscountAndReason(analyzedReceipt.discountAmount(), analyzedReceipt.aiReason());
+
     Receipt savedReceipt = receiptRepository.save(receipt);
 
     for (ReceiptItem item : analyzedReceipt.items()) {
@@ -298,6 +308,15 @@ public class ReceiptService {
               .quantity(item.getQuantity())
               .price(item.getPrice())
               .build());
+    }
+
+    List<String> inappropriateReasons =
+        inappropriateReasonService.evaluate(
+            savedReceipt, analyzedReceipt.category(), savedReceipt.getWorkspaceId());
+
+    if (!inappropriateReasons.isEmpty()) {
+      savedReceipt.updateInappropriateReasons(inappropriateReasons);
+      receiptRepository.save(savedReceipt);
     }
 
     return savedReceipt;
@@ -627,5 +646,8 @@ public class ReceiptService {
       double confidence,
       ReceiptStatus status,
       List<String> derivedTags,
-      List<ReceiptItem> items) {}
+      List<ReceiptItem> items,
+      String category,
+      int discountAmount,
+      String aiReason) {}
 }
