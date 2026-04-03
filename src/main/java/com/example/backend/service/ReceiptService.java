@@ -312,10 +312,7 @@ public class ReceiptService {
 
     List<String> inappropriateReasons =
         inappropriateReasonService.evaluate(
-            savedReceipt,
-            analyzedReceipt.category(),
-            savedReceipt.getWorkspaceId(),
-            savedReceipt.getUserId());
+            savedReceipt, analyzedReceipt.category(), savedReceipt.getWorkspaceId());
 
     if (!inappropriateReasons.isEmpty()) {
       savedReceipt.updateInappropriateReasons(inappropriateReasons);

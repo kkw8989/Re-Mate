@@ -51,6 +51,7 @@
                 localStorage.setItem('accessToken', data.accessToken);
                 localStorage.setItem('userEmail', data.email);
                 localStorage.setItem('userName', data.name);
+                localStorage.setItem('userId', data.userId);
                 location.href = "/workspace-list.html";
             } else {
                 let msg = result.message || result.error?.message || "로그인 정보를 확인해주세요.";

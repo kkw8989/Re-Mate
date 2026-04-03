@@ -24,7 +24,7 @@ public class InappropriateReasonService {
       List.of("호프", "포차", "주점", "bar", "바", "클럽", "나이트", "룸살롱", "단란주점", "가라오케", "노래방", "펍");
 
   @Transactional
-  public List<String> evaluate(Receipt receipt, String category, Long workspaceId, Long userId) {
+  public List<String> evaluate(Receipt receipt, String category, Long workspaceId) {
 
     List<String> reasons = new ArrayList<>();
     List<StringBuilder> aiReasonParts = new ArrayList<>();
@@ -50,11 +50,11 @@ public class InappropriateReasonService {
       log.info("=== 유흥업소 의심 감지: {}", receipt.getStoreName());
     }
 
-    if (isSplitPayment(receipt, workspaceId, userId)) {
+    if (isSplitPayment(receipt, workspaceId)) {
       reasons.add("SPLIT_PAYMENT_SUSPICIOUS");
       aiReasonParts.add(new StringBuilder("30분 이내 동일 상호 결제 감지"));
       log.info("=== 쪼개기 결제 의심 감지: {}", receipt.getStoreName());
-      applySplitPaymentTagToOthers(receipt, workspaceId, userId);
+      applySplitPaymentTagToOthers(receipt, workspaceId);
     }
 
     if (!reasons.isEmpty()) {
@@ -98,7 +98,7 @@ public class InappropriateReasonService {
         .anyMatch(k -> normalized.contains(k.toLowerCase()));
   }
 
-  private boolean isSplitPayment(Receipt receipt, Long workspaceId, Long userId) {
+  private boolean isSplitPayment(Receipt receipt, Long workspaceId) {
     if (receipt.getStoreName() == null || receipt.getTradeAt() == null) return false;
 
     String normalizedStore = receipt.getStoreName().replaceAll("\\s+", "").toLowerCase();
@@ -107,12 +107,12 @@ public class InappropriateReasonService {
 
     List<Receipt> nearby =
         receiptRepository.findSplitPaymentCandidates(
-            workspaceId, userId, normalizedStore, from, to, receipt.getId());
+            workspaceId, normalizedStore, from, to, receipt.getId());
 
     return !nearby.isEmpty();
   }
 
-  private void applySplitPaymentTagToOthers(Receipt receipt, Long workspaceId, Long userId) {
+  private void applySplitPaymentTagToOthers(Receipt receipt, Long workspaceId) {
     if (receipt.getStoreName() == null || receipt.getTradeAt() == null) return;
 
     String normalizedStore = receipt.getStoreName().replaceAll("\\s+", "").toLowerCase();
@@ -121,7 +121,7 @@ public class InappropriateReasonService {
 
     List<Receipt> others =
         receiptRepository.findSplitPaymentCandidates(
-            workspaceId, userId, normalizedStore, from, to, receipt.getId());
+            workspaceId, normalizedStore, from, to, receipt.getId());
 
     for (Receipt other : others) {
       List<String> otherReasons = new ArrayList<>(other.getInappropriateReasons());
