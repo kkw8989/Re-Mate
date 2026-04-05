@@ -1,5 +1,6 @@
 package com.example.backend.controller;
 
+import com.example.backend.audit.AuditAction;
 import com.example.backend.audit.AuditLog;
 import com.example.backend.audit.AuditLogService;
 import com.example.backend.domain.receipt.ReceiptStatus;
@@ -8,8 +9,11 @@ import com.example.backend.dto.ReceiptDetailDto;
 import com.example.backend.dto.ReceiptSummaryDto;
 import com.example.backend.dto.ReceiptUpdateRequest;
 import com.example.backend.dto.UploadReceiptResponse;
+import com.example.backend.entity.Receipt;
 import com.example.backend.global.common.ApiListResponse;
 import com.example.backend.global.common.ApiResponse;
+import com.example.backend.repository.ReceiptRepository;
+import com.example.backend.service.ExcelExportService;
 import com.example.backend.service.ReceiptService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -39,6 +43,12 @@ public class ReceiptController {
 
   private final ReceiptService receiptService;
   private final AuditLogService auditLogService;
+  private final ReceiptRepository receiptRepository;
+  private final ExcelExportService excelExportService;
+
+  private Long getCurrentUserId() {
+    return receiptService.getCurrentUserId();
+  }
 
   @Operation(summary = "영수증 목록 조회", description = "워크스페이스 ID 기준으로 영수증 목록을 조회합니다.")
   @ApiResponses({
@@ -94,19 +104,35 @@ public class ReceiptController {
     return ResponseEntity.ok(ApiResponse.ok(receiptService.getReceiptDetail(id, workspaceId)));
   }
 
-  @Operation(summary = "영수증 CSV 다운로드", description = "워크스페이스 영수증 목록을 CSV 파일로 다운로드합니다.")
+  @Operation(summary = "영수증 엑셀 다운로드", description = "워크스페이스 영수증 목록을 엑셀 파일로 다운로드합니다.")
   @GetMapping("/export")
-  public ResponseEntity<byte[]> exportToCsv(
+  public ResponseEntity<byte[]> exportToExcel(
       @Parameter(description = "워크스페이스 ID", example = "1") @RequestParam Long workspaceId) {
     try {
-      List<ReceiptSummaryDto> dtos = receiptService.getWorkspaceReceipts(workspaceId);
-      byte[] out = receiptService.generateCsvFromDto(dtos);
+      // 관리자 권한 체크
+      if (!receiptService.isAdminOfWorkspace(receiptService.getCurrentUserId(), workspaceId)) {
+        return ResponseEntity.status(403).build();
+      }
+      List<Receipt> receipts = receiptRepository.findAllByWorkspaceId(workspaceId);
+      byte[] out = excelExportService.generateExcel(receipts, workspaceId);
+
+      auditLogService.record(
+          AuditAction.DOWNLOAD,
+          "MEMBER",
+          String.valueOf(getCurrentUserId()),
+          workspaceId,
+          null,
+          Map.of("type", "excel_export", "workspaceId", String.valueOf(workspaceId)));
+
       return ResponseEntity.ok()
-          .header(HttpHeaders.CONTENT_TYPE, "text/csv; charset=UTF-8")
-          .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=receipt_list.csv")
+          .header(
+              HttpHeaders.CONTENT_TYPE,
+              "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+          .header(
+              HttpHeaders.CONTENT_DISPOSITION, "attachment; filename*=UTF-8''receipt_export.xlsx")
           .body(out);
     } catch (Exception e) {
-      log.error("CSV 생성 실패", e);
+      log.error("엑셀 생성 실패", e);
       return ResponseEntity.internalServerError().build();
     }
   }

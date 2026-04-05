@@ -79,6 +79,13 @@ public class Receipt {
   @Column(length = 500)
   private String aiReason;
 
+  @Column(length = 50)
+  private String category;
+
+  public void updateCategory(String category) {
+    this.category = category;
+  }
+
   public void updateTags(java.util.List<String> newTags) {
     this.tags.clear();
     if (newTags != null) {

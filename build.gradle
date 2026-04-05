@@ -73,6 +73,8 @@ dependencies {
     testImplementation 'com.h2database:h2'
 
     implementation 'org.springframework.boot:spring-boot-starter-cache'
+
+    implementation 'org.apache.poi:poi-ooxml:5.2.5'
 }
 
 tasks.named('test') {

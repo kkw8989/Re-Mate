@@ -21,6 +21,7 @@ import com.example.backend.ocr.GoogleOcrClient;
 import com.example.backend.repository.ReceiptItemRepository;
 import com.example.backend.repository.ReceiptRepository;
 import com.example.backend.repository.UserRepository;
+import com.example.backend.repository.WorkspaceMemberRepository;
 import com.fasterxml.jackson.databind.JsonNode;
 import java.io.IOException;
 import java.security.MessageDigest;
@@ -58,8 +59,9 @@ public class ReceiptService {
   private final LocalFileStorageService localFileStorageService;
   private final FileAssetRepository fileAssetRepository;
   private final InappropriateReasonService inappropriateReasonService;
+  private final WorkspaceMemberRepository workspaceMemberRepository;
 
-  private Long getCurrentUserId() {
+  public Long getCurrentUserId() {
     Authentication auth = SecurityContextHolder.getContext().getAuthentication();
 
     if (auth == null || auth.getName() == null) {
@@ -77,6 +79,13 @@ public class ReceiptService {
     if (auth == null) return false;
 
     return auth.getAuthorities().stream().anyMatch(a -> "ROLE_ADMIN".equals(a.getAuthority()));
+  }
+
+  public boolean isAdminOfWorkspace(Long userId, Long workspaceId) {
+    return workspaceMemberRepository
+        .findByWorkspaceIdAndUserId(workspaceId, userId)
+        .map(m -> m.getRole() != null && "ADMIN".equals(m.getRole().name()))
+        .orElse(false);
   }
 
   public UploadReceiptResponse uploadAndProcess(
@@ -297,6 +306,7 @@ public class ReceiptService {
         analyzedReceipt.confidence());
 
     receipt.updateDiscountAndReason(analyzedReceipt.discountAmount(), analyzedReceipt.aiReason());
+    receipt.updateCategory(analyzedReceipt.category());
 
     Receipt savedReceipt = receiptRepository.save(receipt);
 
@@ -445,7 +455,8 @@ public class ReceiptService {
                   r.getCreatedAt(),
                   r.getInappropriateReasons(),
                   r.getDiscountAmount(),
-                  r.getAiReason());
+                  r.getAiReason(),
+                  r.getCategory());
             })
         .collect(Collectors.toList());
   }
@@ -514,23 +525,6 @@ public class ReceiptService {
         && (h[3] & 0xFF) == 0x47;
   }
 
-  public byte[] generateCsvFromDto(List<ReceiptSummaryDto> receipts) {
-    StringBuilder csv = new StringBuilder();
-    csv.append('\ufeff').append("번호,상호명,날짜,금액\n");
-    DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
-    for (ReceiptSummaryDto r : receipts) {
-      csv.append(r.getId())
-          .append(",")
-          .append(r.getStoreName())
-          .append(",")
-          .append(r.getTradeAt() != null ? r.getTradeAt().format(formatter) : "")
-          .append(",")
-          .append(r.getTotalAmount())
-          .append("\n");
-    }
-    return csv.toString().getBytes(java.nio.charset.StandardCharsets.UTF_8);
-  }
-
   @Transactional
   public List<UploadReceiptResponse> uploadMultiple(List<MultipartFile> files, Long workspaceId) {
     return files.stream()
@@ -588,7 +582,8 @@ public class ReceiptService {
         receipt.isNightTime(),
         receipt.getInappropriateReasons(),
         receipt.getDiscountAmount(),
-        receipt.getAiReason());
+        receipt.getAiReason(),
+        receipt.getCategory());
   }
 
   public ReceiptActionResponseDto toReceiptActionResponse(Receipt receipt) {

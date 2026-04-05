@@ -99,7 +99,7 @@
             <div class="list-header">
                 <div class="list-title">영수증 목록</div>
                 <div class="list-actions">
-                    <button class="btn-download" id="downloadBtn" style="display:none;" onclick="exportCSV()">다운로드</button>
+                    <button class="btn-download" id="downloadBtn" style="display:none;" onclick="exportExcel()">엑셀 다운로드</button>
                     <button class="btn-upload" onclick="openModal('uploadModal')">업로드</button>
                 </div>
             </div>
@@ -288,7 +288,33 @@
         } catch (e) { alert("오류"); } finally { el('uploadBtn').disabled = false; }
     }
 
-    function exportCSV() { window.location.href = `/api/v1/receipts/export?workspaceId=${workspaceId}`; }
+    async function exportExcel() {
+        try {
+            const res = await fetch(`/api/v1/receipts/export?workspaceId=${workspaceId}`, {
+                method: 'GET',
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (res.status === 403) {
+                alert("관리자만 다운로드할 수 있습니다.");
+                return;
+            }
+            if (!res.ok) {
+                alert("다운로드 실패");
+                return;
+            }
+            const blob = await res.blob();
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'receipt_export.xlsx';
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+            window.URL.revokeObjectURL(url);
+        } catch (e) {
+            alert("다운로드 오류");
+        }
+    }
     el('dropZone').addEventListener('click', () => el('fileInput').click());
     el('fileInput').addEventListener('change', e => {
         el('thumbs').innerHTML = Array.from(e.target.files).map(f => `<img src="${URL.createObjectURL(f)}" class="thumb">`).join('');

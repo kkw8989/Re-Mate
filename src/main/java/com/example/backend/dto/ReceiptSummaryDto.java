@@ -45,4 +45,5 @@ public class ReceiptSummaryDto {
   private List<String> inappropriateReasons;
   private Integer discountAmount;
   private String aiReason;
+  private String category;
 }

@@ -63,4 +63,7 @@ public class ReceiptDetailDto {
 
   @Schema(description = "AI 추천 반려 사유", nullable = true)
   private String aiReason;
+
+  @Schema(description = "업종 분류", example = "FOOD")
+  private String category;
 }
