@@ -4,6 +4,7 @@ import com.example.backend.audit.AuditAction;
 import com.example.backend.audit.AuditLog;
 import com.example.backend.audit.AuditLogService;
 import com.example.backend.domain.receipt.ReceiptStatus;
+import com.example.backend.dto.ExportSelectedRequest;
 import com.example.backend.dto.ReceiptActionResponseDto;
 import com.example.backend.dto.ReceiptDetailDto;
 import com.example.backend.dto.ReceiptSummaryDto;
@@ -24,7 +25,9 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.UUID;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpHeaders;
@@ -109,7 +112,7 @@ public class ReceiptController {
   public ResponseEntity<byte[]> exportToExcel(
       @Parameter(description = "워크스페이스 ID", example = "1") @RequestParam Long workspaceId) {
     try {
-      // 관리자 권한 체크
+
       if (!receiptService.isAdminOfWorkspace(receiptService.getCurrentUserId(), workspaceId)) {
         return ResponseEntity.status(403).build();
       }
@@ -133,6 +136,56 @@ public class ReceiptController {
           .body(out);
     } catch (Exception e) {
       log.error("엑셀 생성 실패", e);
+      return ResponseEntity.internalServerError().build();
+    }
+  }
+
+  @Operation(summary = "영수증 선택 다운로드", description = "선택한 영수증만 엑셀 파일로 다운로드합니다. 관리자만 가능합니다.")
+  @PostMapping("/export/selected")
+  public ResponseEntity<byte[]> exportSelectedToExcel(@RequestBody ExportSelectedRequest request) {
+    try {
+      Long workspaceId = request.getWorkspaceId();
+      List<Long> receiptIds = request.getReceiptIds();
+
+      if (!receiptService.isAdminOfWorkspace(receiptService.getCurrentUserId(), workspaceId)) {
+        return ResponseEntity.status(403).build();
+      }
+
+      if (receiptIds.isEmpty()) {
+        return ResponseEntity.badRequest().build();
+      }
+
+      List<Receipt> receipts =
+          receiptIds.stream()
+              .map(id -> receiptRepository.findByIdAndWorkspaceId(id, workspaceId).orElse(null))
+              .filter(Objects::nonNull)
+              .collect(Collectors.toList());
+
+      byte[] out = excelExportService.generateExcel(receipts, workspaceId);
+
+      auditLogService.record(
+          AuditAction.DOWNLOAD,
+          "MEMBER",
+          String.valueOf(receiptService.getCurrentUserId()),
+          workspaceId,
+          null,
+          Map.of(
+              "type",
+              "excel_export_selected",
+              "workspaceId",
+              String.valueOf(workspaceId),
+              "count",
+              String.valueOf(receipts.size())));
+
+      return ResponseEntity.ok()
+          .header(
+              HttpHeaders.CONTENT_TYPE,
+              "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+          .header(
+              HttpHeaders.CONTENT_DISPOSITION, "attachment; filename*=UTF-8''receipt_selected.xlsx")
+          .body(out);
+    } catch (Exception e) {
+      log.error("선택 엑셀 생성 실패", e);
       return ResponseEntity.internalServerError().build();
     }
   }
