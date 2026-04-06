@@ -117,7 +117,7 @@
             <table>
                 <thead>
                 <tr>
-                    <th class="checkbox-col"><input type="checkbox" id="checkAll" onclick="toggleAllCheckbox(this)"></th>
+                    <th class="checkbox-col"><input type="checkbox" id="checkAll" onclick="toggleAllCheckbox(this)" style="display:none;"></th>
                     <th>게시자</th><th>가맹점</th><th>금액</th><th>상태</th><th>게시일</th>
                 </tr>
                 </thead>
@@ -389,6 +389,20 @@
         } catch (e) {
             alert("다운로드 오류");
         }
+    }
+
+    function initLayout() {
+        el('headerUserName').textContent = userName || '-';
+        if (checkIsAdmin()) {
+            el('adminBtns').style.display = 'flex';
+            el('downloadBtn').style.display = 'inline-block';
+            // 관리자만 전체선택 체크박스 표시
+            el('checkAll').style.display = 'inline-block';
+        } else {
+            // 멤버는 체크박스 헤더 숨김
+            el('checkAll').style.display = 'none';
+        }
+        loadWorkspaces();
     }
 
     el('dropZone').addEventListener('click', () => el('fileInput').click());
