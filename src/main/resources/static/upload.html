@@ -65,6 +65,10 @@
         .modal-btns button { flex:1; padding:12px; border-radius:10px; border:none; cursor:pointer; font-weight:600; font-size:0.95rem; }
         .btn-cancel { background:#f1f5f9; color:#475569; }
         .btn-confirm { background:#1e293b; color:#fff; }
+        .checkbox-col { width:40px; text-align:center; }
+        input[type="checkbox"] { width:16px; height:16px; cursor:pointer; accent-color:var(--primary); }
+        .btn-download-selected { padding:9px 18px; border-radius:10px; border:1px solid #3b82f6; background:#eff6ff; color:#2563eb; cursor:pointer; font-size:0.85rem; font-weight:600; display:none; }
+        .btn-download-selected:hover { background:#dbeafe; }
     </style>
 </head>
 <body>
@@ -99,7 +103,8 @@
             <div class="list-header">
                 <div class="list-title">영수증 목록</div>
                 <div class="list-actions">
-                    <button class="btn-download" id="downloadBtn" style="display:none;" onclick="exportExcel()">엑셀 다운로드</button>
+                    <button class="btn-download-selected" id="selectedDownloadBtn" onclick="exportSelectedExcel()">선택 다운로드</button>
+                    <button class="btn-download" id="downloadBtn" style="display:none;" onclick="exportExcel()">전체 다운로드</button>
                     <button class="btn-upload" onclick="openModal('uploadModal')">업로드</button>
                 </div>
             </div>
@@ -109,7 +114,15 @@
                 <select class="filter-select" id="filterStatus" onchange="filterReceipts()"><option value="">상태 ▾</option><option value="WAITING">대기</option><option value="APPROVED">승인</option><option value="REJECTED">반려</option></select>
                 <select class="filter-select" id="filterSort" onchange="filterReceipts()"><option value="newest">최신순 ▾</option><option value="oldest">오래된순</option></select>
             </div>
-            <table><thead><tr><th>게시자</th><th>가맹점</th><th>금액</th><th>상태</th><th>게시일</th></tr></thead><tbody id="receiptList"></tbody></table>
+            <table>
+                <thead>
+                <tr>
+                    <th class="checkbox-col"><input type="checkbox" id="checkAll" onclick="toggleAllCheckbox(this)"></th>
+                    <th>게시자</th><th>가맹점</th><th>금액</th><th>상태</th><th>게시일</th>
+                </tr>
+                </thead>
+                <tbody id="receiptList"></tbody>
+            </table>
         </div>
     </div>
 </div>
@@ -244,13 +257,18 @@
 
     function renderReceipts() {
         const statusLabel = { WAITING: '대기', ANALYZING: '대기', NEED_MANUAL: '대기', APPROVED: '승인', REJECTED: '반려', FAILED_SYSTEM: '오류' };
-        el('receiptList').innerHTML = receiptData.map(r => `<tr onclick="location.href='/receipt-detail.html?id=${r.id}&workspaceId=${workspaceId}'">
-    <td>${escapeHtml(r.userName || '-')}</td>
-    <td><strong>${escapeHtml(r.storeName || '-')}</strong></td>
-    <td>₩${(r.totalAmount || 0).toLocaleString()}</td>
-    <td><span class="status-badge ${r.status}"><span class="dot"></span>${statusLabel[r.status] || r.status}</span></td>
-    <td style="color:#64748b;">${r.createdAt ? r.createdAt.substring(0, 10) : '-'}</td>
-  </tr>`).join('') || '<tr><td colspan="5" style="text-align:center;padding:40px;color:#94a3b8;">데이터가 없습니다.</td></tr>';
+        const isAdmin = checkIsAdmin();
+        el('receiptList').innerHTML = receiptData.map(r => `
+        <tr>
+            <td class="checkbox-col" onclick="event.stopPropagation()">
+                ${isAdmin ? `<input type="checkbox" class="receipt-checkbox" value="${r.id}" onchange="updateSelectedCount()">` : ''}
+            </td>
+            <td onclick="location.href='/receipt-detail.html?id=${r.id}&workspaceId=${workspaceId}'">${escapeHtml(r.userName || '-')}</td>
+            <td onclick="location.href='/receipt-detail.html?id=${r.id}&workspaceId=${workspaceId}'"><strong>${escapeHtml(r.storeName || '-')}</strong></td>
+            <td onclick="location.href='/receipt-detail.html?id=${r.id}&workspaceId=${workspaceId}'">₩${(r.totalAmount || 0).toLocaleString()}</td>
+            <td onclick="location.href='/receipt-detail.html?id=${r.id}&workspaceId=${workspaceId}'"><span class="status-badge ${r.status}"><span class="dot"></span>${statusLabel[r.status] || r.status}</span></td>
+            <td onclick="location.href='/receipt-detail.html?id=${r.id}&workspaceId=${workspaceId}'" style="color:#64748b;">${r.createdAt ? r.createdAt.substring(0, 10) : '-'}</td>
+        </tr>`).join('') || '<tr><td colspan="6" style="text-align:center;padding:40px;color:#94a3b8;">데이터가 없습니다.</td></tr>';
     }
 
     async function uploadReceipts() {
@@ -315,6 +333,64 @@
             alert("다운로드 오류");
         }
     }
+
+    function toggleAllCheckbox(master) {
+        document.querySelectorAll('.receipt-checkbox').forEach(cb => cb.checked = master.checked);
+        updateSelectedCount();
+    }
+
+    function updateSelectedCount() {
+        const checked = document.querySelectorAll('.receipt-checkbox:checked');
+        const btn = el('selectedDownloadBtn');
+        if (checked.length > 0) {
+            btn.style.display = 'inline-block';
+            btn.textContent = `☑️ 선택 다운로드 (${checked.length}건)`;
+        } else {
+            btn.style.display = 'none';
+        }
+        // 전체선택 체크박스 상태 동기화
+        const all = document.querySelectorAll('.receipt-checkbox');
+        if (el('checkAll')) el('checkAll').checked = all.length > 0 && checked.length === all.length;
+    }
+
+    async function exportSelectedExcel() {
+        const checked = document.querySelectorAll('.receipt-checkbox:checked');
+        if (checked.length === 0) {
+            alert("다운로드할 영수증을 선택해주세요.");
+            return;
+        }
+        const receiptIds = Array.from(checked).map(cb => parseInt(cb.value));
+        try {
+            const res = await fetch(`/api/v1/receipts/export/selected`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ receiptIds, workspaceId: parseInt(workspaceId) })
+            });
+            if (res.status === 403) {
+                alert("관리자만 다운로드할 수 있습니다.");
+                return;
+            }
+            if (!res.ok) {
+                alert("다운로드 실패");
+                return;
+            }
+            const blob = await res.blob();
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `receipt_selected_${receiptIds.length}건.xlsx`;
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+            window.URL.revokeObjectURL(url);
+        } catch (e) {
+            alert("다운로드 오류");
+        }
+    }
+
     el('dropZone').addEventListener('click', () => el('fileInput').click());
     el('fileInput').addEventListener('change', e => {
         el('thumbs').innerHTML = Array.from(e.target.files).map(f => `<img src="${URL.createObjectURL(f)}" class="thumb">`).join('');
