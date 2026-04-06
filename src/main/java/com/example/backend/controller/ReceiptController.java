@@ -4,6 +4,7 @@ import com.example.backend.audit.AuditAction;
 import com.example.backend.audit.AuditLog;
 import com.example.backend.audit.AuditLogService;
 import com.example.backend.domain.receipt.ReceiptStatus;
+import com.example.backend.dto.ExportSelectedRequest;
 import com.example.backend.dto.ReceiptActionResponseDto;
 import com.example.backend.dto.ReceiptDetailDto;
 import com.example.backend.dto.ReceiptSummaryDto;
@@ -139,14 +140,12 @@ public class ReceiptController {
     }
   }
 
-  @SuppressWarnings("unchecked")
-  @Operation(summary = "영수증 선택 다운로드", description = "선택한 영수증만 엑셀 파일로 다운로드합니다.")
+  @Operation(summary = "영수증 선택 다운로드", description = "선택한 영수증만 엑셀 파일로 다운로드합니다. 관리자만 가능합니다.")
   @PostMapping("/export/selected")
-  public ResponseEntity<byte[]> exportSelectedToExcel(@RequestBody Map<String, Object> body) {
+  public ResponseEntity<byte[]> exportSelectedToExcel(@RequestBody ExportSelectedRequest request) {
     try {
-      Long workspaceId = Long.valueOf(body.get("workspaceId").toString());
-      List<Integer> ids = (List<Integer>) body.get("receiptIds");
-      List<Long> receiptIds = ids.stream().map(Long::valueOf).collect(Collectors.toList());
+      Long workspaceId = request.getWorkspaceId();
+      List<Long> receiptIds = request.getReceiptIds();
 
       if (!receiptService.isAdminOfWorkspace(receiptService.getCurrentUserId(), workspaceId)) {
         return ResponseEntity.status(403).build();
