@@ -262,7 +262,7 @@
   function renderReceipt(r) {
     document.getElementById('userName').textContent = r.userName || '-';
 
-    // 상태
+
     const statusLabels = {
       WAITING: '⏳ 대기',
       ANALYZING: '⏳ 대기',
@@ -274,7 +274,7 @@
     document.getElementById('statusArea').innerHTML =
             `<span class="status-badge ${r.status}">${statusLabels[r.status] || r.status}</span>`;
 
-    // AI 분석 결과
+
     const inappropriateReasons = r.inappropriateReasons || [];
     const aiResultEl = document.getElementById('aiResultArea');
     if (inappropriateReasons.length > 0) {
@@ -283,13 +283,13 @@
       aiResultEl.innerHTML = `<span class="ai-badge">AI 분석 결과 적절</span>`;
     }
 
-    // 반려 사유
+
     if (r.status === 'REJECTED' && r.rejectionReason) {
       document.getElementById('rejectionRow').style.display = 'block';
       document.getElementById('rejectionReason').textContent = r.rejectionReason;
     }
 
-    // 이미지
+
     document.getElementById('imageCard').innerHTML = r.filePath
             ? `<img src="/images/${r.filePath}" alt="영수증 이미지">`
             : '<div class="image-placeholder">이미지 없음</div>';
@@ -323,7 +323,7 @@
       }
     }
 
-    // 의심 태그
+
     const tagLabels = {
       NIGHT_PAYMENT: '🌙 심야 결제 의심',
       HOLIDAY_PAYMENT: '📅 공휴일 결제 의심',
@@ -332,21 +332,17 @@
     };
 
     if (inappropriateReasons.length > 0) {
-      const currentUserId = localStorage.getItem('userId');
-      const canSeeTags = checkIsAdmin() || String(r.userId) === String(currentUserId);
-      if (canSeeTags) {
-        document.getElementById('inappropriateRow').style.display = 'block';
-        document.getElementById('inappropriateTags').innerHTML = inappropriateReasons
-                .map(tag => `<span class="tag-chip tag-${tag}">${tagLabels[tag] || tag}</span>`)
-                .join('');
-        if (r.aiReason) {
-          document.getElementById('aiReason').style.display = 'block';
-          document.getElementById('aiReason').textContent = '💬 ' + r.aiReason;
-        }
-      }
+      document.getElementById('inappropriateRow').style.display = 'block';
+      document.getElementById('inappropriateTags').innerHTML = inappropriateReasons
+              .map(tag => `<span class="tag-chip tag-${tag}">${tagLabels[tag] || tag}</span>`)
+              .join('');
+      // if (r.aiReason) {
+      //   document.getElementById('aiReason').style.display = 'block';
+      //   document.getElementById('aiReason').textContent = '💬 ' + r.aiReason;
+      // }
     }
 
-    // 상품 목록 + 총금액/할인/결제금액
+
     if (r.items && r.items.length > 0) {
       document.getElementById('itemsCard').style.display = 'block';
       document.getElementById('itemsList').innerHTML = r.items.map(item =>
