@@ -2,6 +2,7 @@ package com.example.backend.service;
 
 import com.example.backend.entity.Receipt;
 import com.example.backend.repository.ReceiptRepository;
+import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -76,6 +77,13 @@ public class InappropriateReasonService {
 
   private boolean isHolidayPayment(LocalDate date) {
     try {
+
+      DayOfWeek dayOfWeek = date.getDayOfWeek();
+      if (dayOfWeek == DayOfWeek.SATURDAY || dayOfWeek == DayOfWeek.SUNDAY) {
+        log.info("=== 주말 결제 감지: {} ({})", date, dayOfWeek);
+        return true;
+      }
+
       Set<LocalDate> holidays = holidayService.getHolidays(date.getYear(), date.getMonthValue());
       return holidays.contains(date);
     } catch (Exception e) {
