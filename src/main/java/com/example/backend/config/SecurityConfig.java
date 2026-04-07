@@ -50,7 +50,9 @@ public class SecurityConfig {
                         "/workspace-list.html",
                         "/profile.html",
                         "/receipt-detail.html",
-                        "/workspace-manage.html")
+                        "/workspace-manage.html",
+                        "/health",
+                        "/api/v1/health")
                     .permitAll()
                     .requestMatchers("/api/v1/files/**")
                     .permitAll()
@@ -58,7 +60,7 @@ public class SecurityConfig {
                     .permitAll()
                     .requestMatchers("/images/**")
                     .permitAll()
-                    .requestMatchers("/api/auth/**", "/api/v1/auth/**", "/api/v1/health")
+                    .requestMatchers("/api/auth/**", "/api/v1/auth/**")
                     .permitAll()
                     .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html")
                     .permitAll()
