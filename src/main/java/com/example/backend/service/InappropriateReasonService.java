@@ -72,7 +72,7 @@ public class InappropriateReasonService {
 
   private boolean isNightPayment(LocalDateTime tradeAt) {
     int hour = tradeAt.getHour();
-    return hour >= 22 || hour < 6;
+    return hour >= 23 || hour < 6;
   }
 
   private boolean isHolidayPayment(LocalDate date) {
