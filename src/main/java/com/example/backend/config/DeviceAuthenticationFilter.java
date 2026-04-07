@@ -30,7 +30,12 @@ public class DeviceAuthenticationFilter extends OncePerRequestFilter {
   @Override
   protected boolean shouldNotFilter(HttpServletRequest request) throws ServletException {
     String path = request.getRequestURI();
-    return path.startsWith("/api/v1/files/");
+    return path.equals("/")
+            || path.startsWith("/api/v1/files/")
+            || path.startsWith("/api/v1/health")
+            || path.equals("/health")
+            || path.equals("/favicon.ico")
+            || path.startsWith("/static/");
   }
 
   @Override

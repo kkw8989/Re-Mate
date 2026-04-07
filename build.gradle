@@ -75,6 +75,9 @@ dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-cache'
 
     implementation 'org.apache.poi:poi-ooxml:5.2.5'
+
+    runtimeOnly 'org.postgresql:postgresql'
+    runtimeOnly 'com.mysql:mysql-connector-j'
 }
 
 tasks.named('test') {
