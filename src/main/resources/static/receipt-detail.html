@@ -2,105 +2,187 @@
 <html lang="ko">
 <head>
   <meta charset="UTF-8" />
-  <title>영수증 상세</title>
+  <title>Re:Mate | 영수증 상세</title>
   <style>
-    :root { --primary:#3b82f6; --bg:#f8fafc; --card:#ffffff; --text:#1e293b; }
-    body { font-family:'Pretendard',sans-serif; background:var(--bg); margin:0; padding:40px 20px; display:flex; flex-direction:column; align-items:center; color:var(--text); }
-    .back-btn { align-self:flex-start; margin-bottom:24px; background:none; border:none; font-size:1rem; cursor:pointer; color:#64748b; font-weight:600; }
+    :root { --primary:#3b82f6; --bg:#f8fafc; --card:#ffffff; --text:#1e293b; --sidebar:220px; }
+    * { box-sizing: border-box; }
+    body { font-family:'Pretendard',sans-serif; background:var(--bg); margin:0; color:var(--text); display:flex; min-height:100vh; }
+    .sidebar { width:var(--sidebar); background:#fff; border-right:1px solid #e2e8f0; padding:24px 0; display:flex; flex-direction:column; position:fixed; height:100vh; overflow-y:auto; }
+    .sidebar-logo { padding:0 20px 20px; font-weight:800; font-size:1.2rem; color:#1e293b; border-bottom:1px solid #f1f5f9; margin-bottom:12px; cursor:pointer; }
+    .sidebar-section { font-size:0.72rem; color:#94a3b8; font-weight:600; padding:8px 20px; letter-spacing:0.05em; }
+    .workspace-item { padding:10px 20px; cursor:pointer; font-size:0.9rem; font-weight:500; color:#475569; display:flex; align-items:center; gap:8px; transition:.2s; }
+    .workspace-item:hover { background:#f8fafc; color:#1e293b; }
+    .workspace-item.active { background:#eff6ff; color:#2563eb; font-weight:700; }
+    .workspace-dot { width:8px; height:8px; border-radius:50%; background:#94a3b8; flex-shrink:0; }
+    .workspace-item.active .workspace-dot { background:#2563eb; }
+    .main { margin-left:var(--sidebar); flex:1; display:flex; flex-direction:column; }
+    .header { background:#fff; border-bottom:1px solid #e2e8f0; padding:16px 32px; display:flex; justify-content:space-between; align-items:center; position:sticky; top:0; z-index:10; }
+    .header-title { font-size:1.1rem; font-weight:700; display:flex; align-items:center; gap:8px; }
+    .header-right { display:flex; align-items:center; gap:12px; }
+    .header-btn { padding:8px 16px; border-radius:10px; border:1px solid #e2e8f0; background:#fff; cursor:pointer; font-size:0.85rem; font-weight:600; }
+    .header-user { display:flex; align-items:center; gap:8px; font-size:0.9rem; font-weight:600; }
+    .content { padding:32px; }
+    .back-btn { background:none; border:none; font-size:0.95rem; cursor:pointer; color:#64748b; font-weight:600; margin-bottom:24px; display:flex; align-items:center; gap:6px; padding:0; }
     .back-btn:hover { color:var(--text); }
-    .container { display:flex; gap:24px; width:100%; max-width:1000px; }
-    .image-card { background:var(--card); padding:24px; border-radius:24px; box-shadow:0 10px 25px rgba(0,0,0,0.05); flex:1; display:flex; align-items:center; justify-content:center; min-height:400px; }
+    .detail-grid { display:flex; gap:24px; }
+    .image-card { background:#fff; padding:24px; border-radius:20px; box-shadow:0 2px 8px rgba(0,0,0,0.04); flex:1; display:flex; align-items:center; justify-content:center; min-height:400px; }
     .image-card img { max-width:100%; max-height:500px; border-radius:12px; }
     .image-placeholder { color:#94a3b8; font-size:0.9rem; }
-    .info-card { background:var(--card); padding:28px; border-radius:24px; box-shadow:0 10px 25px rgba(0,0,0,0.05); width:320px; }
+    .info-card { background:#fff; padding:28px; border-radius:20px; box-shadow:0 2px 8px rgba(0,0,0,0.04); width:340px; flex-shrink:0; }
+    .info-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:24px; }
+    .info-title { font-size:1rem; font-weight:700; }
+    .download-btn { padding:8px 16px; border-radius:10px; border:1px solid #e2e8f0; background:#fff; cursor:pointer; font-size:0.82rem; font-weight:600; color:#475569; }
+    .download-btn:hover { background:#f8fafc; }
     .info-row { margin-bottom:18px; }
-    .info-label { font-size:0.78rem; color:#64748b; font-weight:600; margin-bottom:4px; }
-    .info-value { font-size:0.98rem; font-weight:500; }
+    .info-label { font-size:0.78rem; color:#64748b; font-weight:600; margin-bottom:6px; }
+    .info-value { font-size:0.95rem; font-weight:500; }
     .status-badge { padding:5px 12px; border-radius:8px; font-weight:700; font-size:.75rem; display:inline-block; }
-    .WAITING, .ANALYZING { background:#fff7ed; color:#c2410c; }
+    .WAITING, .ANALYZING, .NEED_MANUAL { background:#fef9c3; color:#ca8a04; }
     .APPROVED { background:#f0fdf4; color:#15803d; }
     .REJECTED { background:#fef2f2; color:#b91c1c; }
-    .NEED_MANUAL { background:#f1f5f9; color:#475569; }
     .FAILED_SYSTEM { background:#fef2f2; color:#b91c1c; }
-    .action-btns { display:flex; gap:8px; margin-top:8px; }
-    .btn { padding:8px 20px; border-radius:10px; border:none; cursor:pointer; font-weight:600; font-size:0.9rem; }
+    .ai-badge { padding:5px 12px; border-radius:8px; font-weight:700; font-size:.75rem; display:inline-block; background:#f0fdf4; color:#15803d; }
+    .ai-badge.warning { background:#fef2f2; color:#b91c1c; }
+    .action-btns { display:flex; gap:8px; margin-top:20px; }
+    .btn { padding:10px 20px; border-radius:10px; border:none; cursor:pointer; font-weight:600; font-size:0.9rem; flex:1; }
     .btn-approve { background:#16a34a; color:white; }
-    .btn-reject { background:#dc2626; color:white; }
-    .items-card { background:var(--card); padding:24px; border-radius:24px; box-shadow:0 10px 25px rgba(0,0,0,0.05); width:100%; max-width:1000px; margin-top:24px; }
-    .items-card h3 { margin-top:0; font-size:1rem; font-weight:700; }
+    .btn-approve:hover { background:#15803d; }
+    .btn-reject { background:#f1f5f9; color:#dc2626; border:1px solid #fecaca; }
+    .btn-reject:hover { background:#fef2f2; }
+    .btn-save { background:#1e293b; color:white; }
+    .btn-save:hover { background:#0f172a; }
+    .btn-cancel { background:#f1f5f9; color:#475569; }
+    .items-card { background:#fff; padding:24px; border-radius:20px; box-shadow:0 2px 8px rgba(0,0,0,0.04); margin-top:24px; }
+    .items-card h3 { margin:0 0 16px; font-size:1rem; font-weight:700; }
     table { width:100%; border-collapse:collapse; }
-    th { background:#f8fafc; padding:12px 16px; font-weight:600; font-size:.82rem; color:#64748b; border-bottom:2px solid #e2e8f0; text-align:left; }
-    td { padding:12px 16px; border-bottom:1px solid #f1f5f9; font-size:.92rem; }
-    .modal { display:none; position:fixed; z-index:1000; left:0; top:0; width:100%; height:100%; background:rgba(15,23,42,0.4); backdrop-filter:blur(4px); }
-    .modal-content { background:#fff; margin:15% auto; padding:32px; border-radius:24px; width:90%; max-width:400px; box-shadow:0 20px 40px rgba(0,0,0,0.2); text-align:center; }
-    .modal-content h3 { margin-top:0; }
-    .modal-btns { display:flex; gap:12px; margin-top:20px; }
-    .modal-btns button { flex:1; padding:12px; border-radius:10px; border:none; cursor:pointer; font-weight:600; font-size:0.95rem; }
-    .btn-cancel-modal { background:#f1f5f9; color:#475569; }
-    .modal-input { width:100%; padding:10px; border:1px solid #e2e8f0; border-radius:8px; box-sizing:border-box; margin-top:12px; font-size:0.95rem; }
-    .modal-input:focus { outline:none; border-color:var(--primary); }
-    .tag-chip { display:inline-block; padding:3px 10px; border-radius:20px; font-size:0.72rem; font-weight:700; margin:2px; }
+    th { padding:12px 16px; font-size:0.8rem; font-weight:600; color:#94a3b8; border-bottom:1px solid #f1f5f9; text-align:left; }
+    td { padding:12px 16px; font-size:0.88rem; border-bottom:1px solid #f8fafc; }
+    .tag-chip { display:inline-block; padding:4px 10px; border-radius:20px; font-size:0.72rem; font-weight:700; margin:2px; }
     .tag-NIGHT_PAYMENT { background:#fef3c7; color:#b45309; }
     .tag-HOLIDAY_PAYMENT { background:#dbeafe; color:#1d4ed8; }
     .tag-SUSPICIOUS_ENTERTAINMENT { background:#fce7f3; color:#9d174d; }
     .tag-SPLIT_PAYMENT_SUSPICIOUS { background:#fef2f2; color:#b91c1c; }
-    .ai-reason { font-size:0.8rem; color:#64748b; margin-top:6px; padding:8px 12px; background:#f8fafc; border-radius:8px; border-left:3px solid #e2e8f0; }
+    .ai-reason { font-size:0.8rem; color:#64748b; margin-top:8px; padding:10px 12px; background:#f8fafc; border-radius:8px; border-left:3px solid #e2e8f0; }
+    .edit-input { width:100%; padding:8px 12px; border:1px solid #e2e8f0; border-radius:8px; font-size:0.93rem; outline:none; }
+    .edit-input:focus { border-color:var(--primary); }
+    .modal { display:none; position:fixed; z-index:1000; left:0; top:0; width:100%; height:100%; background:rgba(15,23,42,0.4); backdrop-filter:blur(4px); }
+    .modal-content { background:#fff; margin:15% auto; padding:32px; border-radius:24px; width:90%; max-width:400px; box-shadow:0 20px 40px rgba(0,0,0,0.2); text-align:center; }
+    .modal-content h3 { margin-top:0; font-size:1.05rem; font-weight:700; }
+    .modal-btns { display:flex; gap:12px; margin-top:20px; }
+    .modal-btns button { flex:1; padding:12px; border-radius:10px; border:none; cursor:pointer; font-weight:600; font-size:0.95rem; }
+    .btn-cancel-modal { background:#f1f5f9; color:#475569; }
+    .modal-input { width:100%; padding:10px 12px; border:1px solid #e2e8f0; border-radius:8px; box-sizing:border-box; margin-top:12px; font-size:0.95rem; outline:none; }
+    .modal-input:focus { border-color:var(--primary); }
+    .divider { height:1px; background:#f1f5f9; margin:16px 0; }
+    .summary-row { display:flex; justify-content:space-between; padding:6px 0; font-size:0.9rem; }
+    .summary-final { display:flex; justify-content:space-between; padding:8px 0; font-size:1rem; border-top:2px solid #f1f5f9; margin-top:6px; }
   </style>
 </head>
 <body>
 
-<button class="back-btn" onclick="history.back()">← 돌아가기</button>
-
-<div class="container">
-  <div class="image-card" id="imageCard">
-    <div class="image-placeholder">이미지 로딩 중...</div>
-  </div>
-  <div class="info-card" id="infoCard">
-    <div class="info-row">
-      <div class="info-label">게시자</div>
-      <div class="info-value" id="userName">-</div>
-    </div>
-    <div class="info-row">
-      <div class="info-label">결제일</div>
-      <div class="info-value" id="tradeAt">-</div>
-    </div>
-    <div class="info-row">
-      <div class="info-label">가맹점</div>
-      <div class="info-value" id="storeName">-</div>
-    </div>
-    <div class="info-row">
-      <div class="info-label">결제금액</div>
-      <div class="info-value" id="totalAmount">-</div>
-    </div>
-    <div class="info-row">
-      <div class="info-label">상태</div>
-      <div id="statusArea">-</div>
-    </div>
-    <div class="info-row" id="rejectionRow" style="display:none;">
-      <div class="info-label">반려 사유</div>
-      <div class="info-value" id="rejectionReason" style="color:#b91c1c;">-</div>
-    </div>
-    <div class="info-row" id="inappropriateRow" style="display:none;">
-      <div class="info-label">⚠️ 의심 태그</div>
-      <div id="inappropriateTags"></div>
-      <div class="ai-reason" id="aiReason" style="display:none;"></div>
-    </div>
-    <div class="info-row" id="discountRow" style="display:none;">
-      <div class="info-label">할인금액</div>
-      <div class="info-value" id="discountAmount">-</div>
-    </div>
-    <div id="actionArea"></div>
-  </div>
+<div class="sidebar">
+  <div class="sidebar-logo" onclick="location.href='/workspace-list.html'">✅ Re:Mate</div>
+  <div class="sidebar-section">Workspaces</div>
+  <div id="workspaceList"></div>
 </div>
 
-<div class="items-card" id="itemsCard" style="display:none;">
-  <h3>🧾 상품 목록</h3>
-  <table>
-    <thead>
-    <tr><th>상품명</th><th>수량</th><th>금액</th></tr>
-    </thead>
-    <tbody id="itemsList"></tbody>
-  </table>
+<div class="main">
+  <div class="header">
+    <div class="header-title" id="headerTitle">영수증 상세</div>
+    <div class="header-right">
+      <div id="adminBtns" style="display:none; gap:10px;">
+        <button class="header-btn" onclick="location.href='/workspace-manage.html'">⚙️ 관리</button>
+        <button class="header-btn">👥 초대하기</button>
+      </div>
+      <div class="header-user">👤 <span id="headerUserName">-</span></div>
+    </div>
+  </div>
+
+  <div class="content">
+    <button class="back-btn" onclick="history.back()">← 돌아가기</button>
+
+    <div class="detail-grid">
+      <div class="image-card" id="imageCard">
+        <div class="image-placeholder">이미지 로딩 중...</div>
+      </div>
+
+      <div class="info-card">
+        <div class="info-header">
+          <div class="info-title">영수증 상세</div>
+          <button class="download-btn" id="downloadBtn" onclick="downloadReceipt()" style="display:none;">영수증 다운로드</button>
+        </div>
+
+        <div class="info-row">
+          <div class="info-label">게시자</div>
+          <div class="info-value" id="userName">-</div>
+        </div>
+
+        <div class="info-row">
+          <div class="info-label">결제일</div>
+          <div class="info-value" id="tradeAt">-</div>
+        </div>
+
+        <div class="info-row">
+          <div class="info-label">가맹점</div>
+          <div class="info-value" id="storeName">-</div>
+        </div>
+
+        <div class="info-row">
+          <div class="info-label">결제금액</div>
+          <div class="info-value" id="totalAmount">-</div>
+        </div>
+
+        <div class="divider"></div>
+
+        <div class="info-row">
+          <div class="info-label">AI 분석 결과</div>
+          <div id="aiResultArea">-</div>
+        </div>
+
+        <div class="info-row">
+          <div class="info-label">상태</div>
+          <div id="statusArea">-</div>
+        </div>
+
+        <div class="info-row" id="rejectionRow" style="display:none;">
+          <div class="info-label">반려 사유</div>
+          <div class="info-value" id="rejectionReason" style="color:#b91c1c;">-</div>
+        </div>
+
+        <div class="info-row" id="inappropriateRow" style="display:none;">
+          <div class="info-label">⚠️ 의심 태그</div>
+          <div id="inappropriateTags"></div>
+          <div class="ai-reason" id="aiReason" style="display:none;"></div>
+        </div>
+
+        <div id="actionArea"></div>
+      </div>
+    </div>
+
+    <div class="items-card" id="itemsCard" style="display:none;">
+      <h3>🧾 상품 목록</h3>
+      <table>
+        <thead>
+        <tr><th>상품명</th><th>수량</th><th>금액</th></tr>
+        </thead>
+        <tbody id="itemsList"></tbody>
+      </table>
+      <div style="margin-top:16px; border-top:1px solid #f1f5f9; padding-top:16px;">
+        <div class="summary-row">
+          <span style="color:#64748b; font-weight:600;">총 금액</span>
+          <span id="summaryTotal" style="font-weight:600;">-</span>
+        </div>
+        <div class="summary-row" id="summaryDiscountRow" style="display:none;">
+          <span style="color:#64748b; font-weight:600;">할인 금액</span>
+          <span id="summaryDiscount" style="color:#16a34a; font-weight:600;">-</span>
+        </div>
+        <div class="summary-final">
+          <span style="font-weight:700;">결제 금액</span>
+          <span id="summaryFinal" style="font-weight:800; color:#1e293b;">-</span>
+        </div>
+      </div>
+    </div>
+  </div>
 </div>
 
 <div id="approveModal" class="modal">
@@ -108,7 +190,7 @@
     <h3>영수증을 승인하시겠습니까?</h3>
     <div class="modal-btns">
       <button class="btn-cancel-modal" onclick="closeModal('approveModal')">취소</button>
-      <button style="background:#16a34a; color:white;" onclick="doApprove()">승인</button>
+      <button style="background:#16a34a; color:white;" onclick="doApprove()">확인</button>
     </div>
   </div>
 </div>
@@ -129,14 +211,42 @@
   const params = new URLSearchParams(location.search);
   const receiptId = params.get('id');
   const workspaceId = params.get('workspaceId') || localStorage.getItem('currentWorkspaceId');
+  const userName = localStorage.getItem('userName');
   const escapeHtml = s => String(s ?? '').replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
 
-  function checkIsAdmin() {
-    return localStorage.getItem('userRole') === 'ADMIN';
-  }
-
+  function checkIsAdmin() { return localStorage.getItem('userRole') === 'ADMIN'; }
   function closeModal(id) { document.getElementById(id).style.display = 'none'; }
   function openModal(id) { document.getElementById(id).style.display = 'block'; }
+
+  function initLayout() {
+    document.getElementById('headerUserName').textContent = userName || '-';
+    if (checkIsAdmin()) {
+      document.getElementById('adminBtns').style.display = 'flex';
+      document.getElementById('downloadBtn').style.display = 'inline-block';
+    }
+    loadWorkspaces();
+  }
+
+  async function loadWorkspaces() {
+    try {
+      const res = await fetch('/api/v1/workspaces/my', { headers: { 'Authorization': `Bearer ${token}` } });
+      const json = await res.json();
+      const workspaces = json.data || [];
+      document.getElementById('workspaceList').innerHTML = workspaces.map(w =>
+              `<div class="workspace-item ${w.workspaceId == workspaceId ? 'active' : ''}" onclick="switchWorkspace(${w.workspaceId}, '${escapeHtml(w.workspaceName)}', '${w.role}')">
+          <div class="workspace-dot"></div>${escapeHtml(w.workspaceName)}
+        </div>`
+      ).join('');
+      const current = workspaces.find(w => w.workspaceId == workspaceId);
+      if (current) document.getElementById('headerTitle').textContent = current.workspaceName;
+    } catch(e) { console.error(e); }
+  }
+
+  function switchWorkspace(id, name, role) {
+    localStorage.setItem('currentWorkspaceId', id);
+    localStorage.setItem('userRole', role);
+    location.href = '/upload.html';
+  }
 
   async function loadReceipt() {
     if (!token || !workspaceId || !receiptId) return;
@@ -145,24 +255,41 @@
         headers: { 'Authorization': `Bearer ${token}` }
       });
       const json = await res.json();
-      const r = json.data;
-      renderReceipt(r);
-    } catch (e) {
-      console.error('영수증 조회 실패', e);
-    }
+      renderReceipt(json.data);
+    } catch(e) { console.error('영수증 조회 실패', e); }
   }
 
   function renderReceipt(r) {
     document.getElementById('userName').textContent = r.userName || '-';
 
-    const statusArea = document.getElementById('statusArea');
-    statusArea.innerHTML = `<span class="status-badge ${r.status}">${r.status}</span>`;
+    // 상태
+    const statusLabels = {
+      WAITING: '⏳ 대기',
+      ANALYZING: '⏳ 대기',
+      NEED_MANUAL: '⏳ 대기',
+      APPROVED: '✔ 승인',
+      REJECTED: '✘ 반려',
+      FAILED_SYSTEM: '오류'
+    };
+    document.getElementById('statusArea').innerHTML =
+            `<span class="status-badge ${r.status}">${statusLabels[r.status] || r.status}</span>`;
 
+    // AI 분석 결과
+    const inappropriateReasons = r.inappropriateReasons || [];
+    const aiResultEl = document.getElementById('aiResultArea');
+    if (inappropriateReasons.length > 0) {
+      aiResultEl.innerHTML = `<span class="ai-badge warning">${getAiLabel(inappropriateReasons)}</span>`;
+    } else {
+      aiResultEl.innerHTML = `<span class="ai-badge">AI 분석 결과 적절</span>`;
+    }
+
+    // 반려 사유
     if (r.status === 'REJECTED' && r.rejectionReason) {
       document.getElementById('rejectionRow').style.display = 'block';
       document.getElementById('rejectionReason').textContent = r.rejectionReason;
     }
 
+    // 이미지
     document.getElementById('imageCard').innerHTML = r.filePath
             ? `<img src="/images/${r.filePath}" alt="영수증 이미지">`
             : '<div class="image-placeholder">이미지 없음</div>';
@@ -170,28 +297,33 @@
     const isFinal = r.status === 'APPROVED' || r.status === 'REJECTED';
     const isPreview = params.get('preview') === 'true';
 
-    if (isPreview && r.status !== 'APPROVED' && r.status !== 'REJECTED') {
-      document.getElementById('storeName').innerHTML = `<input type="text" id="editStoreName" value="${escapeHtml(r.storeName || '')}" style="width:100%;padding:8px;border:1px solid #e2e8f0;border-radius:8px;font-size:0.95rem;">`;
-      document.getElementById('totalAmount').innerHTML = `<input type="number" id="editAmount" value="${r.totalAmount || 0}" style="width:100%;padding:8px;border:1px solid #e2e8f0;border-radius:8px;font-size:0.95rem;">`;
-      document.getElementById('tradeAt').innerHTML = `<input type="datetime-local" id="editTradeAt" value="${r.tradeAt ? r.tradeAt.substring(0,16) : ''}" style="width:100%;padding:8px;border:1px solid #e2e8f0;border-radius:8px;font-size:0.95rem;">`;
+    if (isPreview && !isFinal) {
+      document.getElementById('storeName').innerHTML =
+              `<input type="text" class="edit-input" id="editStoreName" value="${escapeHtml(r.storeName || '')}">`;
+      document.getElementById('totalAmount').innerHTML =
+              `<input type="number" class="edit-input" id="editAmount" value="${r.totalAmount || 0}">`;
+      document.getElementById('tradeAt').innerHTML =
+              `<input type="datetime-local" class="edit-input" id="editTradeAt" value="${r.tradeAt ? r.tradeAt.substring(0,16) : ''}">`;
       document.getElementById('actionArea').innerHTML = `
-    <div class="action-btns" style="margin-top:16px;">
-      <button class="btn" style="background:#3b82f6;color:white;flex:1;" onclick="doConfirm()">💾 저장</button>
-      <button class="btn" style="background:#f1f5f9;color:#475569;flex:1;" onclick="doDelete()">🗑️ 취소</button>
-    </div>`;
+        <div class="action-btns">
+          <button class="btn btn-cancel" onclick="doDelete()">취소</button>
+          <button class="btn btn-save" onclick="doConfirm()">저장</button>
+        </div>`;
     } else {
       document.getElementById('storeName').textContent = r.storeName || '-';
       document.getElementById('totalAmount').textContent = `₩${(r.totalAmount || 0).toLocaleString()}`;
-      document.getElementById('tradeAt').textContent = r.tradeAt ? r.tradeAt.replace('T', ' ').substring(0, 16) : '-';
+      document.getElementById('tradeAt').textContent =
+              r.tradeAt ? r.tradeAt.replace('T', ' ').substring(0, 16) : '-';
       if (!isFinal && checkIsAdmin()) {
         document.getElementById('actionArea').innerHTML = `
-      <div class="action-btns">
-        <button class="btn btn-approve" onclick="openModal('approveModal')">승인</button>
-        <button class="btn btn-reject" onclick="openModal('rejectModal')">반려</button>
-      </div>`;
+          <div class="action-btns">
+            <button class="btn btn-reject" onclick="openModal('rejectModal')">반려</button>
+            <button class="btn btn-approve" onclick="openModal('approveModal')">승인</button>
+          </div>`;
       }
     }
 
+    // 의심 태그
     const tagLabels = {
       NIGHT_PAYMENT: '🌙 심야 결제 의심',
       HOLIDAY_PAYMENT: '📅 공휴일 결제 의심',
@@ -199,13 +331,12 @@
       SPLIT_PAYMENT_SUSPICIOUS: '✂️ 쪼개기 결제 의심'
     };
 
-    if (r.inappropriateReasons && r.inappropriateReasons.length > 0) {
+    if (inappropriateReasons.length > 0) {
       const currentUserId = localStorage.getItem('userId');
       const canSeeTags = checkIsAdmin() || String(r.userId) === String(currentUserId);
-
       if (canSeeTags) {
         document.getElementById('inappropriateRow').style.display = 'block';
-        document.getElementById('inappropriateTags').innerHTML = r.inappropriateReasons
+        document.getElementById('inappropriateTags').innerHTML = inappropriateReasons
                 .map(tag => `<span class="tag-chip tag-${tag}">${tagLabels[tag] || tag}</span>`)
                 .join('');
         if (r.aiReason) {
@@ -215,32 +346,52 @@
       }
     }
 
-    if (r.discountAmount && r.discountAmount > 0) {
-      document.getElementById('discountRow').style.display = 'block';
-      document.getElementById('discountAmount').textContent = `₩${r.discountAmount.toLocaleString()}`;
-    }
-
+    // 상품 목록 + 총금액/할인/결제금액
     if (r.items && r.items.length > 0) {
       document.getElementById('itemsCard').style.display = 'block';
       document.getElementById('itemsList').innerHTML = r.items.map(item =>
-              `<tr><td>${item.name}</td><td>${item.quantity}</td><td>₩${(item.price || 0).toLocaleString()}</td></tr>`
+              `<tr><td>${escapeHtml(item.name)}</td><td>${item.quantity}</td><td>₩${(item.price || 0).toLocaleString()}</td></tr>`
       ).join('');
+
+      const total = r.totalAmount || 0;
+      const discount = r.discountAmount || 0;
+      const final = total - discount;
+
+      document.getElementById('summaryTotal').textContent = `₩${total.toLocaleString()}`;
+      if (discount > 0) {
+        document.getElementById('summaryDiscountRow').style.display = 'flex';
+        document.getElementById('summaryDiscount').textContent = `-₩${discount.toLocaleString()}`;
+      }
+      document.getElementById('summaryFinal').textContent = `₩${final.toLocaleString()}`;
     }
+  }
+
+  function getAiLabel(reasons) {
+    const labels = [];
+    if (reasons.includes('NIGHT_PAYMENT') || reasons.includes('HOLIDAY_PAYMENT'))
+      labels.push('심야/공휴일 결제');
+    if (reasons.includes('SUSPICIOUS_ENTERTAINMENT'))
+      labels.push('유흥업소 의심');
+    if (reasons.includes('SPLIT_PAYMENT_SUSPICIOUS'))
+      labels.push('분할 결제 의심');
+    return labels.join(' · ') || '의심 거래';
   }
 
   async function doApprove() {
     try {
       const p = new URLSearchParams({ workspaceId, status: 'APPROVED', reason: '관리자 승인' });
       const res = await fetch(`/api/v1/receipts/${receiptId}/status?${p}`, {
-        method: 'PATCH',
-        headers: { 'Authorization': `Bearer ${token}` }
+        method: 'PATCH', headers: { 'Authorization': `Bearer ${token}` }
       });
       if (res.ok) {
         closeModal('approveModal');
         document.getElementById('actionArea').innerHTML = '';
-        document.getElementById('statusArea').innerHTML = `<span class="status-badge APPROVED">APPROVED</span>`;
+        document.getElementById('statusArea').innerHTML =
+                `<span class="status-badge APPROVED">✔ 승인</span>`;
+        document.getElementById('aiResultArea').innerHTML =
+                `<span class="ai-badge">AI 분석 결과 적절</span>`;
       }
-    } catch (e) { alert('승인 실패'); }
+    } catch(e) { alert('승인 실패'); }
   }
 
   async function doReject() {
@@ -249,26 +400,24 @@
     try {
       const p = new URLSearchParams({ workspaceId, status: 'REJECTED', reason });
       const res = await fetch(`/api/v1/receipts/${receiptId}/status?${p}`, {
-        method: 'PATCH',
-        headers: { 'Authorization': `Bearer ${token}` }
+        method: 'PATCH', headers: { 'Authorization': `Bearer ${token}` }
       });
       if (res.ok) {
         closeModal('rejectModal');
         document.getElementById('actionArea').innerHTML = '';
-        document.getElementById('statusArea').innerHTML = `<span class="status-badge REJECTED">REJECTED</span>`;
+        document.getElementById('statusArea').innerHTML =
+                `<span class="status-badge REJECTED">✘ 반려</span>`;
         document.getElementById('rejectionRow').style.display = 'block';
         document.getElementById('rejectionReason').textContent = reason;
       }
-    } catch (e) { alert('반려 실패'); }
+    } catch(e) { alert('반려 실패'); }
   }
 
   async function doConfirm() {
     try {
-      // 수정된 값 먼저 저장
       const storeNameEl = document.getElementById('editStoreName');
       const amountEl = document.getElementById('editAmount');
       const tradeAtEl = document.getElementById('editTradeAt');
-
       if (storeNameEl || amountEl || tradeAtEl) {
         const body = {
           storeName: storeNameEl ? storeNameEl.value : null,
@@ -282,18 +431,15 @@
           body: JSON.stringify(body)
         });
       }
-
-      // WAITING으로 전이
       const p = new URLSearchParams({ workspaceId });
       const res = await fetch(`/api/v1/receipts/${receiptId}/confirm?${p}`, {
-        method: 'PATCH',
-        headers: { 'Authorization': `Bearer ${token}` }
+        method: 'PATCH', headers: { 'Authorization': `Bearer ${token}` }
       });
       if (res.ok) {
         alert("저장 완료! 관리자 감사 대기 상태로 변경되었습니다.");
         location.href = '/upload.html';
       }
-    } catch (e) { alert('저장 실패'); }
+    } catch(e) { alert('저장 실패'); }
   }
 
   async function doDelete() {
@@ -301,17 +447,33 @@
     try {
       const p = new URLSearchParams({ workspaceId });
       const res = await fetch(`/api/v1/receipts/${receiptId}?${p}`, {
-        method: 'DELETE',
-        headers: { 'Authorization': `Bearer ${token}` }
+        method: 'DELETE', headers: { 'Authorization': `Bearer ${token}` }
       });
       if (res.ok) {
         alert("업로드가 취소되었습니다.");
         location.href = '/upload.html';
       }
-    } catch (e) { alert('취소 실패'); }
+    } catch(e) { alert('취소 실패'); }
   }
 
-  window.onload = loadReceipt;
+  async function downloadReceipt() {
+    try {
+      const res = await fetch(`/api/v1/receipts/export/selected`, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ receiptIds: [parseInt(receiptId)], workspaceId: parseInt(workspaceId) })
+      });
+      if (!res.ok) { alert("다운로드 실패"); return; }
+      const blob = await res.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url; a.download = `receipt_${receiptId}.xlsx`;
+      document.body.appendChild(a); a.click(); a.remove();
+      window.URL.revokeObjectURL(url);
+    } catch(e) { alert("다운로드 오류"); }
+  }
+
+  window.onload = () => { initLayout(); loadReceipt(); };
 </script>
 </body>
 </html>
