@@ -6,6 +6,7 @@ import java.util.ArrayList;
 import java.util.Base64;
 import java.util.List;
 import java.util.Map;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.*;
@@ -14,11 +15,13 @@ import org.springframework.web.client.RestTemplate;
 
 @Slf4j
 @Service
+@RequiredArgsConstructor
 public class GeminiService {
 
   @Value("${google.api.key}")
   private String apiKey;
 
+  private final ImagePreprocessor imagePreprocessor;
   private final ObjectMapper objectMapper = new ObjectMapper();
   private final RestTemplate restTemplate = new RestTemplate();
 
@@ -87,36 +90,66 @@ public class GeminiService {
             + "8. aiReason: 이 영수증에 대한 한 줄 분석 의견(한국어).\n"
             + "   - 부적절 의심 요소가 있으면 명시 (예: '주류 판매 업소로 의심됨')\n"
             + "   - 정상이면 '정상 영수증으로 판단됨'\n\n"
-            + "응답 JSON 형식:\n"
-            + "{\n"
-            + "  \"storeName\": \"가맹점명\",\n"
-            + "  \"totalAmount\": 숫자,\n"
-            + "  \"tradeAt\": \"YYYY-MM-DD HH:mm:ss\",\n"
-            + "  \"confidence\": 숫자,\n"
-            + "  \"discountAmount\": 숫자,\n"
-            + "  \"category\": \"업종코드\",\n"
-            + "  \"aiReason\": \"한 줄 분석 의견\",\n"
-            + "  \"items\": [\n"
-            + "    {\"name\": \"상품명\", \"quantity\": 숫자, \"price\": 숫자}\n"
-            + "  ]\n"
-            + "}\n\n"
             + "영수증 OCR 텍스트 (참고용):\n"
             + rawText;
 
     List<Map<String, Object>> parts = new ArrayList<>();
 
     if (imageBytes != null && imageBytes.length > 0) {
-      String base64Image = Base64.getEncoder().encodeToString(imageBytes);
-      parts.add(Map.of("inline_data", Map.of("mime_type", mimeType, "data", base64Image)));
-      log.info("=== 이미지 전송 완료 ({}bytes)", imageBytes.length);
+      byte[] processedBytes = imagePreprocessor.resize(imageBytes);
+      String base64Image = Base64.getEncoder().encodeToString(processedBytes);
+      parts.add(Map.of("inline_data", Map.of("mime_type", "image/jpeg", "data", base64Image)));
+      log.info(
+          "=== 이미지 전송 완료 (원본: {}bytes → 압축: {}bytes)", imageBytes.length, processedBytes.length);
     }
 
     parts.add(Map.of("text", prompt));
 
-    Map<String, Object> body =
+    Map<String, Object> itemSchema =
         Map.of(
-            "contents", List.of(Map.of("parts", parts)),
-            "generationConfig", Map.of("response_mime_type", "application/json"));
+            "type", "OBJECT",
+            "properties",
+                Map.of(
+                    "name", Map.of("type", "STRING"),
+                    "quantity", Map.of("type", "INTEGER"),
+                    "price", Map.of("type", "INTEGER")),
+            "required", List.of("name", "quantity", "price"));
+
+    Map<String, Object> responseSchema =
+        Map.of(
+            "type", "OBJECT",
+            "properties",
+                Map.of(
+                    "storeName", Map.of("type", "STRING"),
+                    "totalAmount", Map.of("type", "INTEGER"),
+                    "tradeAt", Map.of("type", "STRING"),
+                    "confidence", Map.of("type", "NUMBER"),
+                    "discountAmount", Map.of("type", "INTEGER"),
+                    "category", Map.of("type", "STRING"),
+                    "aiReason", Map.of("type", "STRING"),
+                    "items", Map.of("type", "ARRAY", "items", itemSchema)),
+            "required",
+                List.of(
+                    "storeName",
+                    "totalAmount",
+                    "tradeAt",
+                    "confidence",
+                    "discountAmount",
+                    "category",
+                    "aiReason",
+                    "items"));
+
+    Map<String, Object> generationConfig =
+        Map.of(
+            "response_mime_type",
+            "application/json",
+            "temperature",
+            0.0,
+            "response_schema",
+            responseSchema);
+
+    Map<String, Object> body =
+        Map.of("contents", List.of(Map.of("parts", parts)), "generationConfig", generationConfig);
 
     try {
       HttpEntity<Map<String, Object>> entity = new HttpEntity<>(body, headers);
