@@ -22,7 +22,7 @@ public class InappropriateReasonService {
   private final HolidayService holidayService;
 
   private static final List<String> ENTERTAINMENT_STORE_KEYWORDS =
-      List.of("호프", "포차", "주점", "bar", "바", "클럽", "나이트", "룸살롱", "단란주점", "가라오케", "노래방", "펍");
+      List.of("호프", "포차", "주점", "bar", "클럽", "나이트", "룸살롱", "단란주점", "가라오케", "노래방", "펍");
 
   @Transactional
   public List<String> evaluate(Receipt receipt, String category, Long workspaceId) {
@@ -95,7 +95,21 @@ public class InappropriateReasonService {
   private boolean isEntertainment(String storeName, String category) {
     if (category != null) {
       String cat = category.toUpperCase();
-      if (cat.contains("ENTERTAINMENT") || cat.contains("BAR") || cat.contains("ADULT")) {
+
+      if (cat.equals("FOOD")
+          || cat.equals("SHOPPING")
+          || cat.equals("MEDICAL")
+          || cat.equals("TRANSPORT")
+          || cat.equals("ACCOMMODATION")
+          || cat.equals("OFFICE")
+          || cat.equals("EQUIPMENT")
+          || cat.equals("WELFARE")
+          || cat.equals("SERVICE")
+          || cat.equals("ACTIVITY")) {
+        return false;
+      }
+
+      if (cat.equals("ENTERTAINMENT")) {
         return true;
       }
     }
