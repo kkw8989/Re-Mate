@@ -193,9 +193,13 @@ public class ReceiptService {
       LocalDateTime tradeAt;
       try {
         tradeAt =
-            LocalDateTime.parse(tradeAtStr, DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
+            (tradeAtStr != null && !tradeAtStr.isBlank())
+                ? LocalDateTime.parse(
+                    tradeAtStr, DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"))
+                : null;
       } catch (Exception e) {
-        tradeAt = LocalDateTime.now();
+        log.warn("=== tradeAt 파싱 실패, null 처리: {}", tradeAtStr);
+        tradeAt = null;
       }
 
       List<String> derivedTags = tagService.deriveTags(Receipt.builder().tradeAt(tradeAt).build());

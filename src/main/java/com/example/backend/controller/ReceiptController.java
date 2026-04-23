@@ -439,7 +439,7 @@ public class ReceiptController {
                   tradeAtValue, java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"))
               : LocalDateTime.now();
     } catch (Exception e) {
-      tradeAt = LocalDateTime.now();
+      return ResponseEntity.badRequest().build();
     }
 
     return ResponseEntity.ok(

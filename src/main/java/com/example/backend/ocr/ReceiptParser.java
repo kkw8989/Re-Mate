@@ -95,7 +95,7 @@ public class ReceiptParser {
       if (day < 1 || day > 31) day = 1;
       return LocalDateTime.of(year, month, day, hour, minute, second);
     } catch (Exception e) {
-      return LocalDateTime.now();
+      return null;
     }
   }
 
