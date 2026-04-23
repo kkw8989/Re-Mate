@@ -430,6 +430,17 @@ public class ReceiptController {
     String storeName = request.getStoreName();
     Integer totalAmount = request.getTotalAmount();
     String tradeAtValue = request.getTradeAt();
+
+    if (storeName == null || storeName.isBlank()) {
+      return ResponseEntity.badRequest().build();
+    }
+    if (totalAmount == null || totalAmount <= 0) {
+      return ResponseEntity.badRequest().build();
+    }
+    if (tradeAtValue == null || tradeAtValue.isBlank()) {
+      return ResponseEntity.badRequest().build();
+    }
+
     LocalDateTime tradeAt;
 
     try {

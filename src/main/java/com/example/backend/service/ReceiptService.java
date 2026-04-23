@@ -202,6 +202,11 @@ public class ReceiptService {
         tradeAt = null;
       }
 
+      if (tradeAt == null) {
+        log.warn("=== tradeAt null → confidence 하향 → NEED_MANUAL 유도");
+        confidence = Math.min(confidence, 0.4);
+      }
+
       List<String> derivedTags = tagService.deriveTags(Receipt.builder().tradeAt(tradeAt).build());
 
       JsonNode itemsNode = aiResult.path("items");

@@ -279,6 +279,8 @@
     const aiResultEl = document.getElementById('aiResultArea');
     if (inappropriateReasons.length > 0) {
       aiResultEl.innerHTML = `<span class="ai-badge warning">${getAiLabel(inappropriateReasons)}</span>`;
+    } else if (r.status === 'NEED_MANUAL') {
+      aiResultEl.innerHTML = `<span class="ai-badge warning">수동 확인 필요</span>`;
     } else {
       aiResultEl.innerHTML = `<span class="ai-badge">AI 분석 결과 적절</span>`;
     }
@@ -423,6 +425,23 @@
       const storeNameEl = document.getElementById('editStoreName');
       const amountEl = document.getElementById('editAmount');
       const tradeAtEl = document.getElementById('editTradeAt');
+
+      if (storeNameEl && !storeNameEl.value.trim()) {
+        alert("가맹점명을 입력해주세요.");
+        storeNameEl.focus();
+        return;
+      }
+      if (amountEl && (!amountEl.value || Number(amountEl.value) <= 0)) {
+        alert("결제금액을 입력해주세요.");
+        amountEl.focus();
+        return;
+      }
+      if (tradeAtEl && !tradeAtEl.value) {
+        alert("결제일을 입력해주세요.");
+        tradeAtEl.focus();
+        return;
+      }
+
       if (storeNameEl || amountEl || tradeAtEl) {
         const body = {
           storeName: storeNameEl ? storeNameEl.value : null,
