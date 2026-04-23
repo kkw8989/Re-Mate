@@ -368,8 +368,7 @@ public class ReceiptService {
     Long currentUserId = getCurrentUserId();
     Receipt receipt = getReceiptSecurely(id, workspaceId);
 
-    if (receipt.getStatus() == ReceiptStatus.APPROVED
-        || receipt.getStatus() == ReceiptStatus.REJECTED) {
+    if (receipt.getStatus() != ReceiptStatus.WAITING) {
       throw new BusinessException(ErrorCode.AUDIT_ALREADY_DECIDED);
     }
 
