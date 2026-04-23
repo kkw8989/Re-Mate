@@ -430,6 +430,17 @@ public class ReceiptController {
     String storeName = request.getStoreName();
     Integer totalAmount = request.getTotalAmount();
     String tradeAtValue = request.getTradeAt();
+
+    if (storeName == null || storeName.isBlank()) {
+      return ResponseEntity.badRequest().build();
+    }
+    if (totalAmount == null || totalAmount <= 0) {
+      return ResponseEntity.badRequest().build();
+    }
+    if (tradeAtValue == null || tradeAtValue.isBlank()) {
+      return ResponseEntity.badRequest().build();
+    }
+
     LocalDateTime tradeAt;
 
     try {
@@ -439,7 +450,7 @@ public class ReceiptController {
                   tradeAtValue, java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"))
               : LocalDateTime.now();
     } catch (Exception e) {
-      tradeAt = LocalDateTime.now();
+      return ResponseEntity.badRequest().build();
     }
 
     return ResponseEntity.ok(

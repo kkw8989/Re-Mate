@@ -31,18 +31,19 @@ public class InappropriateReasonService {
     List<StringBuilder> aiReasonParts = new ArrayList<>();
 
     LocalDateTime tradeAt = receipt.getTradeAt();
-    if (tradeAt == null) tradeAt = LocalDateTime.now();
 
-    if (isNightPayment(tradeAt)) {
-      reasons.add("NIGHT_PAYMENT");
-      aiReasonParts.add(new StringBuilder("심야시간(" + tradeAt.getHour() + "시) 결제 감지"));
-      log.info("=== 심야결제 감지: {}", tradeAt);
-    }
+    if (tradeAt != null) {
+      if (isNightPayment(tradeAt)) {
+        reasons.add("NIGHT_PAYMENT");
+        aiReasonParts.add(new StringBuilder("심야시간(" + tradeAt.getHour() + "시) 결제 감지"));
+        log.info("=== 심야결제 감지: {}", tradeAt);
+      }
 
-    if (isHolidayPayment(tradeAt.toLocalDate())) {
-      reasons.add("HOLIDAY_PAYMENT");
-      aiReasonParts.add(new StringBuilder("공휴일 결제 감지"));
-      log.info("=== 공휴일 결제 감지: {}", tradeAt.toLocalDate());
+      if (isHolidayPayment(tradeAt.toLocalDate())) {
+        reasons.add("HOLIDAY_PAYMENT");
+        aiReasonParts.add(new StringBuilder("공휴일 결제 감지"));
+        log.info("=== 공휴일 결제 감지: {}", tradeAt.toLocalDate());
+      }
     }
 
     if (isEntertainment(receipt.getStoreName(), category)) {
