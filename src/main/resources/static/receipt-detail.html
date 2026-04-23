@@ -349,16 +349,25 @@
               `<tr><td>${escapeHtml(item.name)}</td><td>${item.quantity}</td><td>₩${(item.price || 0).toLocaleString()}</td></tr>`
       ).join('');
 
+
       const total = r.totalAmount || 0;
       const discount = r.discountAmount || 0;
-      const final = total - discount;
 
-      document.getElementById('summaryTotal').textContent = `₩${total.toLocaleString()}`;
+
+      const itemsTotal = (r.items || []).reduce((sum, item) =>
+              sum + (item.price * item.quantity), 0);
+
+      document.getElementById('summaryTotal').textContent =
+              `₩${(itemsTotal > 0 ? itemsTotal : total).toLocaleString()}`;
+
       if (discount > 0) {
         document.getElementById('summaryDiscountRow').style.display = 'flex';
-        document.getElementById('summaryDiscount').textContent = `-₩${discount.toLocaleString()}`;
+        document.getElementById('summaryDiscount').textContent =
+                `-₩${discount.toLocaleString()}`;
       }
-      document.getElementById('summaryFinal').textContent = `₩${final.toLocaleString()}`;
+
+      document.getElementById('summaryFinal').textContent =
+              `₩${total.toLocaleString()}`;
     }
   }
 
