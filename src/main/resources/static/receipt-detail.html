@@ -316,12 +316,12 @@
       document.getElementById('totalAmount').textContent = `₩${(r.totalAmount || 0).toLocaleString()}`;
       document.getElementById('tradeAt').textContent =
               r.tradeAt ? r.tradeAt.replace('T', ' ').substring(0, 16) : '-';
-      if (!isFinal && checkIsAdmin()) {
+      if (r.status === 'WAITING' && checkIsAdmin()) {
         document.getElementById('actionArea').innerHTML = `
-          <div class="action-btns">
-            <button class="btn btn-reject" onclick="openModal('rejectModal')">반려</button>
-            <button class="btn btn-approve" onclick="openModal('approveModal')">승인</button>
-          </div>`;
+      <div class="action-btns">
+        <button class="btn btn-reject" onclick="openModal('rejectModal')">반려</button>
+        <button class="btn btn-approve" onclick="openModal('approveModal')">승인</button>
+      </div>`;
       }
     }
 

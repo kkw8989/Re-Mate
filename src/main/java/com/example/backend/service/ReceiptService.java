@@ -202,11 +202,6 @@ public class ReceiptService {
         tradeAt = null;
       }
 
-      if (tradeAt == null) {
-        log.warn("=== tradeAt null → confidence 하향 → NEED_MANUAL 유도");
-        confidence = Math.min(confidence, 0.4);
-      }
-
       List<String> derivedTags = tagService.deriveTags(Receipt.builder().tradeAt(tradeAt).build());
 
       JsonNode itemsNode = aiResult.path("items");
@@ -229,22 +224,33 @@ public class ReceiptService {
         }
 
         if (itemsTotal > 0) {
-          int itemsTotalWithTax = itemsTotal + tax;
-          boolean amountMismatch =
-              Math.abs(itemsTotal - totalAmount) > totalAmount * 0.1
-                  && Math.abs(itemsTotalWithTax - totalAmount) > totalAmount * 0.1;
+          boolean hasDiscount = discountAmount > 0;
+          double toleranceRate = hasDiscount ? 0.03 : 0.01;
+          int tolerance = Math.max(1, (int) (totalAmount * toleranceRate));
+
+          int expectedTotal = itemsTotal - discountAmount;
+          boolean amountMismatch = Math.abs(expectedTotal - totalAmount) > tolerance;
 
           if (amountMismatch) {
             log.warn(
-                "=== items 합계({}) + tax({}) = {} / totalAmount({}) 10% 이상 차이 → NEED_MANUAL 유도",
-                itemsTotal, tax, itemsTotalWithTax, totalAmount);
+                "=== [금액검증] items합계({}) - discount({}) = {}"
+                    + " / totalAmount({}) / 허용오차({}, {}%)"
+                    + " → NEED_MANUAL 유도",
+                itemsTotal,
+                discountAmount,
+                expectedTotal,
+                totalAmount,
+                tolerance,
+                hasDiscount ? 3 : 1);
             confidence = Math.min(confidence, 0.4);
           }
         }
       }
 
+      boolean hasCriticalMissing = storeName.isBlank() || totalAmount <= 0 || tradeAt == null;
+
       ReceiptStatus nextStatus =
-          (confidence >= 0.7 && !storeName.isBlank())
+          (!hasCriticalMissing && confidence >= 0.7)
               ? ReceiptStatus.ANALYZING
               : ReceiptStatus.NEED_MANUAL;
 
@@ -362,8 +368,7 @@ public class ReceiptService {
     Long currentUserId = getCurrentUserId();
     Receipt receipt = getReceiptSecurely(id, workspaceId);
 
-    if (receipt.getStatus() == ReceiptStatus.APPROVED
-        || receipt.getStatus() == ReceiptStatus.REJECTED) {
+    if (receipt.getStatus() != ReceiptStatus.WAITING) {
       throw new BusinessException(ErrorCode.AUDIT_ALREADY_DECIDED);
     }
 
