@@ -25,8 +25,8 @@ public class InappropriateReasonService {
   private static final List<String> ENTERTAINMENT_STORE_KEYWORDS =
       List.of(
           "호프", "포차", "주점", "bar", "클럽", "나이트", "룸살롱", "단란주점", "가라오케", "노래방", "노래연습장", "펍", "pub",
-          "라운지", "lounge", "이자카야", "izakaya", "요리주점", "실내포차", "맥주창고", "술집", "유흥", "감성주점", "헌팅포차");
-
+          "라운지", "lounge", "이자카야", "izakaya", "요리주점", "실내포차", "맥주창고", "술집", "유흥", "감성주점", "헌팅포차",
+          "노래빠", "단란", "착석바", "룸바", "텐프로");
   private static final List<String> ALCOHOL_KEYWORDS =
       List.of(
           "소주", "참이슬", "후레쉬", "이슬로", "처음처럼", "새로", "진로", "진로골드", "이즈백", "청하", "산사춘", "매화수", "한라산소주",
@@ -119,8 +119,11 @@ public class InappropriateReasonService {
     if (category != null) {
       String cat = category.toUpperCase();
 
+      if (cat.equals("SHOPPING")) {
+        return false;
+      }
+
       if (cat.equals("FOOD")
-          || cat.equals("SHOPPING")
           || cat.equals("MEDICAL")
           || cat.equals("TRANSPORT")
           || cat.equals("ACCOMMODATION")
