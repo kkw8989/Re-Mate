@@ -571,6 +571,17 @@ public class ReceiptService {
   @Transactional
   public Receipt confirmReceipt(Long id, Long workspaceId) {
     Receipt receipt = getReceiptSecurely(id, workspaceId);
+
+    if (receipt.getStoreName() == null || receipt.getStoreName().isBlank()) {
+      throw ErrorCode.RECEIPT_REQUIRED_FIELD_MISSING.toException("가맹점명을 입력해주세요.");
+    }
+    if (receipt.getTotalAmount() <= 0) {
+      throw ErrorCode.RECEIPT_REQUIRED_FIELD_MISSING.toException("결제금액을 입력해주세요.");
+    }
+    if (receipt.getTradeAt() == null) {
+      throw ErrorCode.RECEIPT_REQUIRED_FIELD_MISSING.toException("결제일시를 입력해주세요.");
+    }
+
     receipt.confirm();
     return receipt;
   }

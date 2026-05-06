@@ -13,6 +13,7 @@ import com.example.backend.dto.UploadReceiptResponse;
 import com.example.backend.entity.Receipt;
 import com.example.backend.global.common.ApiListResponse;
 import com.example.backend.global.common.ApiResponse;
+import com.example.backend.global.error.ErrorCode;
 import com.example.backend.repository.ReceiptRepository;
 import com.example.backend.service.ExcelExportService;
 import com.example.backend.service.ReceiptService;
@@ -183,10 +184,12 @@ public class ReceiptController {
   @GetMapping("/export")
   public ResponseEntity<byte[]> exportToExcel(
       @Parameter(description = "워크스페이스 ID", example = "1") @RequestParam Long workspaceId) {
+
+    if (!receiptService.isAdminOfWorkspace(receiptService.getCurrentUserId(), workspaceId)) {
+      throw ErrorCode.WS_ADMIN_REQUIRED.toException();
+    }
+
     try {
-      if (!receiptService.isAdminOfWorkspace(receiptService.getCurrentUserId(), workspaceId)) {
-        return ResponseEntity.status(403).build();
-      }
       List<Receipt> receipts = receiptRepository.findAllByWorkspaceId(workspaceId);
       byte[] out = excelExportService.generateExcel(receipts, workspaceId);
 
@@ -225,18 +228,19 @@ public class ReceiptController {
   })
   @PostMapping("/export/selected")
   public ResponseEntity<byte[]> exportSelectedToExcel(@RequestBody ExportSelectedRequest request) {
+
+    Long workspaceId = request.getWorkspaceId();
+    List<Long> receiptIds = request.getReceiptIds();
+
+    if (!receiptService.isAdminOfWorkspace(receiptService.getCurrentUserId(), workspaceId)) {
+      throw ErrorCode.WS_ADMIN_REQUIRED.toException();
+    }
+
+    if (receiptIds.isEmpty()) {
+      throw ErrorCode.INVALID_REQUEST.toException("선택된 영수증이 없습니다.");
+    }
+
     try {
-      Long workspaceId = request.getWorkspaceId();
-      List<Long> receiptIds = request.getReceiptIds();
-
-      if (!receiptService.isAdminOfWorkspace(receiptService.getCurrentUserId(), workspaceId)) {
-        return ResponseEntity.status(403).build();
-      }
-
-      if (receiptIds.isEmpty()) {
-        return ResponseEntity.badRequest().build();
-      }
-
       List<Receipt> receipts =
           receiptIds.stream()
               .map(id -> receiptRepository.findByIdAndWorkspaceId(id, workspaceId).orElse(null))
@@ -432,13 +436,13 @@ public class ReceiptController {
     String tradeAtValue = request.getTradeAt();
 
     if (storeName == null || storeName.isBlank()) {
-      return ResponseEntity.badRequest().build();
+      throw ErrorCode.RECEIPT_REQUIRED_FIELD_MISSING.toException("가맹점명을 입력해주세요.");
     }
     if (totalAmount == null || totalAmount <= 0) {
-      return ResponseEntity.badRequest().build();
+      throw ErrorCode.RECEIPT_REQUIRED_FIELD_MISSING.toException("결제금액을 입력해주세요.");
     }
     if (tradeAtValue == null || tradeAtValue.isBlank()) {
-      return ResponseEntity.badRequest().build();
+      throw ErrorCode.RECEIPT_REQUIRED_FIELD_MISSING.toException("결제일시를 입력해주세요.");
     }
 
     LocalDateTime tradeAt;
@@ -450,7 +454,8 @@ public class ReceiptController {
                   tradeAtValue, java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"))
               : LocalDateTime.now();
     } catch (Exception e) {
-      return ResponseEntity.badRequest().build();
+      throw ErrorCode.RECEIPT_REQUIRED_FIELD_MISSING.toException(
+          "결제일시 형식이 올바르지 않습니다. (yyyy-MM-dd HH:mm:ss)");
     }
 
     return ResponseEntity.ok(

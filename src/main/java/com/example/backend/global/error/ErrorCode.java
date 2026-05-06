@@ -20,6 +20,7 @@ public enum ErrorCode {
 
   AUDIT_ALREADY_DECIDED(HttpStatus.BAD_REQUEST, "이미 승인 또는 반려된 영수증은 수정할 수 없습니다."),
   REJECT_REASON_REQUIRED(HttpStatus.BAD_REQUEST, "영수증 반려 시 사유 입력은 필수입니다."),
+  RECEIPT_REQUIRED_FIELD_MISSING(HttpStatus.BAD_REQUEST, "필수 항목(가맹점명, 결제금액, 결제일시)을 입력해주세요."),
   RECEIPT_DUPLICATE(HttpStatus.CONFLICT, "이미 등록된 영수증입니다."),
   AI_PARSING_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "AI 분석 중 오류가 발생했습니다."),
   OCR_CONNECTION_FAILURE(HttpStatus.INTERNAL_SERVER_ERROR, "OCR 서버와의 통신에 실패했습니다."),
