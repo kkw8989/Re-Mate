@@ -1,10 +1,6 @@
 package com.example.backend.controller;
 
-import com.example.backend.dto.CreateWorkspaceRequestDto;
-import com.example.backend.dto.WorkspaceInviteRequestDto;
-import com.example.backend.dto.WorkspaceMemberResponseDto;
-import com.example.backend.dto.WorkspaceResponseDto;
-import com.example.backend.dto.WorkspaceSettingsUpdateDto;
+import com.example.backend.dto.*;
 import com.example.backend.entity.MembershipStatus;
 import com.example.backend.global.common.ApiListResponse;
 import com.example.backend.global.common.ApiResponse;
@@ -15,6 +11,7 @@ import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.ExampleObject;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import java.security.Principal;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
@@ -29,6 +26,38 @@ public class WorkspaceController {
 
   private final WorkspaceService workspaceService;
 
+  @Operation(summary = "워크스페이스 어드민 이름 조회", description = "ID로 해당 워크스페이스 어드민의 이름을 조회합니다.")
+  @ApiResponses({
+    @io.swagger.v3.oas.annotations.responses.ApiResponse(
+        responseCode = "200",
+        description = "조회 성공",
+        content =
+            @Content(
+                mediaType = "application/json",
+                examples =
+                    @ExampleObject(
+                        name = "어드민 이름 조회 성공",
+                        value =
+                            """
+                                {
+                                  "success": true,
+                                  "data": {
+                                    "adminName": "김무경"
+                                  },
+                                  "meta": {
+                                    "timestamp": "2026-05-07T13:45:00.000",
+                                    "traceId": "ws-admin-name-1234"
+                                  }
+                                }
+                                """)))
+  })
+  @GetMapping("/{workspaceId}/admin-name")
+  public ResponseEntity<ApiResponse<WorkspaceAdminNameResponseDto>> getWorkspaceAdminName(
+      @PathVariable Long workspaceId) {
+    String adminName = workspaceService.getWorkspaceAdminName(workspaceId);
+    return ResponseEntity.ok(ApiResponse.ok(new WorkspaceAdminNameResponseDto(adminName)));
+  }
+
   @Operation(summary = "워크스페이스 생성")
   @ApiResponses({
     @io.swagger.v3.oas.annotations.responses.ApiResponse(
@@ -42,19 +71,19 @@ public class WorkspaceController {
                         name = "워크스페이스 생성 성공",
                         value =
                             """
-                {
-                  "success": true,
-                  "data": 1,
-                  "meta": {
-                    "timestamp": "2026-03-24T19:36:08.117",
-                    "traceId": "ws-create-1234"
-                  }
-                }
-                """)))
+                                {
+                                  "success": true,
+                                  "data": 1,
+                                  "meta": {
+                                    "timestamp": "2026-03-24T19:36:08.117",
+                                    "traceId": "ws-create-1234"
+                                  }
+                                }
+                                """)))
   })
   @PostMapping
   public ResponseEntity<ApiResponse<Long>> createWorkspace(
-      @RequestBody CreateWorkspaceRequestDto requestDto,
+      @Valid @RequestBody CreateWorkspaceRequestDto requestDto,
       @Parameter(hidden = true) Principal principal) {
     return ResponseEntity.ok(
         ApiResponse.ok(
@@ -75,21 +104,21 @@ public class WorkspaceController {
                         name = "워크스페이스 상세 조회",
                         value =
                             """
-                {
-                  "success": true,
-                  "data": {
-                    "workspaceId": 1,
-                    "workspaceName": "Re:Mate Team",
-                    "color": "GREEN",
-                    "role": "ADMIN",
-                    "membershipId": 13
-                  },
-                  "meta": {
-                    "timestamp": "2026-03-31T17:30:00.000",
-                    "traceId": "ws-detail-1234"
-                  }
-                }
-                """)))
+                                {
+                                  "success": true,
+                                  "data": {
+                                    "workspaceId": 1,
+                                    "workspaceName": "Re:Mate Team",
+                                    "color": "GREEN",
+                                    "role": "ADMIN",
+                                    "membershipId": 13
+                                  },
+                                  "meta": {
+                                    "timestamp": "2026-03-31T17:30:00.000",
+                                    "traceId": "ws-detail-1234"
+                                  }
+                                }
+                                """)))
   })
   @GetMapping("/{workspaceId}")
   public ResponseEntity<ApiResponse<WorkspaceResponseDto>> getWorkspaceDetail(
@@ -111,36 +140,37 @@ public class WorkspaceController {
                         name = "목록 조회 성공",
                         value =
                             """
-                {
-                  "success": true,
-                  "totalCount": 1,
-                  "nextCursor": 0,
-                  "data": [
-                    {
-                      "membershipId": 1,
-                      "userId": 2,
-                      "name": "둘리",
-                      "email": "user@example.com",
-                      "role": "ADMIN",
-                      "status": "ACCEPTED",
-                      "picture": "/api/v1/files/12"
-                    }
-                  ],
-                  "meta": {
-                    "timestamp": "2026-03-24T19:36:08.117",
-                    "traceId": "ws-members-1234"
-                  }
-                }
-                """)))
+                                {
+                                  "success": true,
+                                  "totalCount": 1,
+                                  "nextCursor": 0,
+                                  "data": [
+                                    {
+                                      "membershipId": 1,
+                                      "userId": 2,
+                                      "name": "둘리",
+                                      "email": "user@example.com",
+                                      "role": "ADMIN",
+                                      "status": "ACCEPTED",
+                                      "picture": "/api/v1/files/12"
+                                    }
+                                  ],
+                                  "meta": {
+                                    "timestamp": "2026-03-24T19:36:08.117",
+                                    "traceId": "ws-members-1234"
+                                  }
+                                }
+                                """)))
   })
   @GetMapping("/{workspaceId}/members")
   public ResponseEntity<ApiListResponse<WorkspaceMemberResponseDto>> getMembers(
       @PathVariable Long workspaceId,
       @Parameter(description = "상태 (ACCEPTED: 현재 멤버, PENDING: 초대 내역)")
           @RequestParam(defaultValue = "ACCEPTED")
-          MembershipStatus status) {
+          MembershipStatus status,
+      @Parameter(hidden = true) Principal principal) {
     List<WorkspaceMemberResponseDto> list =
-        workspaceService.getWorkspaceMembers(workspaceId, status);
+        workspaceService.getWorkspaceMembers(workspaceId, status, principal.getName());
     return ResponseEntity.ok(ApiListResponse.ok(list, list.size(), 0));
   }
 
@@ -157,20 +187,20 @@ public class WorkspaceController {
                         name = "워크스페이스 설정 수정 성공",
                         value =
                             """
-                {
-                  "success": true,
-                  "data": null,
-                  "meta": {
-                    "timestamp": "2026-03-25T08:05:43.018",
-                    "traceId": "ws-settings-1234"
-                  }
-                }
-                """)))
+                                {
+                                  "success": true,
+                                  "data": null,
+                                  "meta": {
+                                    "timestamp": "2026-03-25T08:05:43.018",
+                                    "traceId": "ws-settings-1234"
+                                  }
+                                }
+                                """)))
   })
   @PatchMapping("/{workspaceId}/settings")
   public ResponseEntity<ApiResponse<Void>> updateSettings(
       @PathVariable Long workspaceId,
-      @RequestBody WorkspaceSettingsUpdateDto requestDto,
+      @Valid @RequestBody WorkspaceSettingsUpdateDto requestDto,
       @Parameter(hidden = true) Principal principal) {
     workspaceService.updateWorkspaceSettings(
         workspaceId, requestDto.getName(), requestDto.getColor(), principal.getName());
@@ -190,15 +220,15 @@ public class WorkspaceController {
                         name = "멤버 강퇴 및 초대 취소 성공",
                         value =
                             """
-                {
-                  "success": true,
-                  "data": null,
-                  "meta": {
-                    "timestamp": "2026-03-25T08:05:43.018",
-                    "traceId": "ws-remove-1234"
-                  }
-                }
-                """)))
+                                {
+                                  "success": true,
+                                  "data": null,
+                                  "meta": {
+                                    "timestamp": "2026-03-25T08:05:43.018",
+                                    "traceId": "ws-remove-1234"
+                                  }
+                                }
+                                """)))
   })
   @DeleteMapping("/{workspaceId}/members/{userId}")
   public ResponseEntity<ApiResponse<Void>> removeMember(
@@ -222,15 +252,15 @@ public class WorkspaceController {
                         name = "워크스페이스 삭제 성공",
                         value =
                             """
-                {
-                  "success": true,
-                  "data": null,
-                  "meta": {
-                    "timestamp": "2026-03-25T08:05:43.018",
-                    "traceId": "ws-delete-1234"
-                  }
-                }
-                """)))
+                                {
+                                  "success": true,
+                                  "data": null,
+                                  "meta": {
+                                    "timestamp": "2026-03-25T08:05:43.018",
+                                    "traceId": "ws-delete-1234"
+                                  }
+                                }
+                                """)))
   })
   @DeleteMapping("/{workspaceId}")
   public ResponseEntity<ApiResponse<Void>> deleteWorkspace(
@@ -252,15 +282,15 @@ public class WorkspaceController {
                         name = "워크스페이스 이메일 초대 성공",
                         value =
                             """
-                {
-                  "success": true,
-                  "data": null,
-                  "meta": {
-                    "timestamp": "2026-03-25T08:05:43.018",
-                    "traceId": "ws-invite-1234"
-                  }
-                }
-                """)))
+                                {
+                                  "success": true,
+                                  "data": null,
+                                  "meta": {
+                                    "timestamp": "2026-03-25T08:05:43.018",
+                                    "traceId": "ws-invite-1234"
+                                  }
+                                }
+                                """)))
   })
   @PostMapping("/{workspaceId}/invite")
   public ResponseEntity<ApiResponse<Void>> invite(
@@ -284,25 +314,25 @@ public class WorkspaceController {
                         name = "초대 목록 조회 성공",
                         value =
                             """
-                {
-                  "success": true,
-                  "totalCount": 1,
-                  "nextCursor": 0,
-                  "data": [
-                    {
-                      "workspaceId": 3,
-                      "workspaceName": "캡스톤팀",
-                      "color": "BLUE",
-                      "role": "MEMBER",
-                      "membershipId": 9
-                    }
-                  ],
-                  "meta": {
-                    "timestamp": "2026-03-24T19:36:08.117",
-                    "traceId": "ws-invitations-1234"
-                  }
-                }
-                """)))
+                                {
+                                  "success": true,
+                                  "totalCount": 1,
+                                  "nextCursor": 0,
+                                  "data": [
+                                    {
+                                      "workspaceId": 3,
+                                      "workspaceName": "캡스톤팀",
+                                      "color": "BLUE",
+                                      "role": "MEMBER",
+                                      "membershipId": 9
+                                    }
+                                  ],
+                                  "meta": {
+                                    "timestamp": "2026-03-24T19:36:08.117",
+                                    "traceId": "ws-invitations-1234"
+                                  }
+                                }
+                                """)))
   })
   @GetMapping("/invitations")
   public ResponseEntity<ApiListResponse<WorkspaceResponseDto>> getInvitations(
@@ -324,15 +354,15 @@ public class WorkspaceController {
                         name = "초대 수락 성공",
                         value =
                             """
-                {
-                  "success": true,
-                  "data": null,
-                  "meta": {
-                    "timestamp": "2026-03-25T08:05:43.018",
-                    "traceId": "ws-accept-1234"
-                  }
-                }
-                """)))
+                                {
+                                  "success": true,
+                                  "data": null,
+                                  "meta": {
+                                    "timestamp": "2026-03-25T08:05:43.018",
+                                    "traceId": "ws-accept-1234"
+                                  }
+                                }
+                                """)))
   })
   @PostMapping("/invitations/{membershipId}/accept")
   public ResponseEntity<ApiResponse<Void>> accept(
@@ -354,15 +384,15 @@ public class WorkspaceController {
                         name = "초대 거절 성공",
                         value =
                             """
-                {
-                  "success": true,
-                  "data": null,
-                  "meta": {
-                    "timestamp": "2026-03-25T08:05:43.018",
-                    "traceId": "ws-reject-1234"
-                  }
-                }
-                """)))
+                                {
+                                  "success": true,
+                                  "data": null,
+                                  "meta": {
+                                    "timestamp": "2026-03-25T08:05:43.018",
+                                    "traceId": "ws-reject-1234"
+                                  }
+                                }
+                                """)))
   })
   @PostMapping("/invitations/{membershipId}/reject")
   public ResponseEntity<ApiResponse<Void>> reject(
@@ -384,32 +414,32 @@ public class WorkspaceController {
                         name = "내 워크스페이스 목록 조회 성공",
                         value =
                             """
-                {
-                  "success": true,
-                  "totalCount": 2,
-                  "nextCursor": 0,
-                  "data": [
-                    {
-                      "workspaceId": 1,
-                      "workspaceName": "이름",
-                      "color": null,
-                      "role": "ADMIN",
-                      "membershipId": 1
-                    },
-                    {
-                      "workspaceId": 2,
-                      "workspaceName": "연습",
-                      "color": null,
-                      "role": "MEMBER",
-                      "membershipId": 3
-                    }
-                  ],
-                  "meta": {
-                    "timestamp": "2026-03-24T19:36:08.117",
-                    "traceId": "ws-my-1234"
-                  }
-                }
-                """)))
+                                {
+                                  "success": true,
+                                  "totalCount": 2,
+                                  "nextCursor": 0,
+                                  "data": [
+                                    {
+                                      "workspaceId": 1,
+                                      "workspaceName": "이름",
+                                      "color": null,
+                                      "role": "ADMIN",
+                                      "membershipId": 1
+                                    },
+                                    {
+                                      "workspaceId": 2,
+                                      "workspaceName": "연습",
+                                      "color": null,
+                                      "role": "MEMBER",
+                                      "membershipId": 3
+                                    }
+                                  ],
+                                  "meta": {
+                                    "timestamp": "2026-03-24T19:36:08.117",
+                                    "traceId": "ws-my-1234"
+                                  }
+                                }
+                                """)))
   })
   @GetMapping("/my")
   public ResponseEntity<ApiListResponse<WorkspaceResponseDto>> getMyWorkspaces(
