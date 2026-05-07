@@ -30,6 +30,23 @@ public class WorkspaceService {
   private final UserRepository userRepository;
   private final AuditLogService auditLogService;
 
+  @Transactional(readOnly = true)
+  public String getWorkspaceAdminName(Long workspaceId) {
+    workspaceRepository.findById(workspaceId).orElseThrow(ErrorCode.WS_NOT_FOUND::toException);
+
+    WorkspaceMember adminMember =
+        workspaceMemberRepository
+            .findByWorkspaceIdAndRole(workspaceId, WorkspaceRole.ADMIN)
+            .orElseThrow(ErrorCode.USER_NOT_FOUND::toException);
+
+    User user =
+        userRepository
+            .findById(adminMember.getUserId())
+            .orElseThrow(ErrorCode.USER_NOT_FOUND::toException);
+
+    return user.getName();
+  }
+
   @Transactional
   public Long createWorkspace(String name, WorkspaceColor color, String principal) {
     User user = findUserByPrincipal(principal);
@@ -78,7 +95,15 @@ public class WorkspaceService {
 
   @Transactional(readOnly = true)
   public List<WorkspaceMemberResponseDto> getWorkspaceMembers(
-      Long workspaceId, MembershipStatus status) {
+      Long workspaceId, MembershipStatus status, String principal) {
+    User requester = findUserByPrincipal(principal);
+
+    workspaceRepository.findById(workspaceId).orElseThrow(ErrorCode.WS_NOT_FOUND::toException);
+
+    workspaceMemberRepository
+        .findByWorkspaceIdAndUserId(workspaceId, requester.getId())
+        .orElseThrow(ErrorCode.WS_MEMBER_NOT_FOUND::toException);
+
     List<WorkspaceMember> members =
         workspaceMemberRepository.findAllByWorkspaceIdAndStatus(workspaceId, status);
 
@@ -168,6 +193,9 @@ public class WorkspaceService {
             member -> {
               if (member.getStatus() == MembershipStatus.ACCEPTED) {
                 throw ErrorCode.WS_ALREADY_JOINED.toException();
+              }
+              if (member.getStatus() == MembershipStatus.PENDING) {
+                throw ErrorCode.WS_ALREADY_INVITED.toException();
               }
               member.updateStatus(MembershipStatus.PENDING);
             },
