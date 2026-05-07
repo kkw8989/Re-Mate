@@ -34,6 +34,7 @@ public enum ErrorCode {
   WS_NOT_FOUND(HttpStatus.NOT_FOUND, "워크스페이스를 찾을 수 없습니다."),
   WS_MEMBER_NOT_FOUND(HttpStatus.NOT_FOUND, "해당 워크스페이스의 멤버가 아닙니다."),
   WS_ALREADY_JOINED(HttpStatus.CONFLICT, "이미 참여 중인 워크스페이스입니다."),
+  WS_ALREADY_INVITED(HttpStatus.CONFLICT, "이미 초대를 보낸 사용자입니다."),
   WS_INVITE_EMAIL_INVALID(HttpStatus.BAD_REQUEST, "유효하지 않은 초대 대상 이메일입니다."),
   WS_INVITATION_NOT_FOUND(HttpStatus.NOT_FOUND, "초대 내역을 찾을 수 없습니다."),
   WS_ADMIN_REQUIRED(HttpStatus.FORBIDDEN, "워크스페이스 관리자 권한이 필요합니다."),
