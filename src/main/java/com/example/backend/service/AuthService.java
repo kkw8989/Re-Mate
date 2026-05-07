@@ -64,6 +64,10 @@ public class AuthService {
 
   @Transactional(readOnly = true)
   public AuthStatusResponse getAuthStatusByPrincipal(String principal) {
+    if (principal == null || principal.isBlank()) {
+      throw ErrorCode.UNAUTHORIZED.toException();
+    }
+
     User user =
         userRepository
             .findByEmail(principal)
@@ -72,11 +76,7 @@ public class AuthService {
                     userRepository.findAll().stream()
                         .filter(u -> principal.equals(u.getProviderId()))
                         .findFirst()
-                        .orElse(null));
-
-    if (user == null) {
-      return new AuthStatusResponse(false, null, "유저를 찾을 수 없습니다.", null, null, null, null);
-    }
+                        .orElseThrow(ErrorCode.UNAUTHORIZED::toException));
 
     WorkspaceMember membership =
         workspaceMemberRepository.findAll().stream()

@@ -6,6 +6,7 @@ import com.example.backend.dto.LoginResponse;
 import com.example.backend.dto.MyInfoDto;
 import com.example.backend.dto.UserRegisterRequestDto;
 import com.example.backend.global.common.ApiResponse;
+import com.example.backend.global.error.ErrorCode;
 import com.example.backend.service.AuthService;
 import com.example.backend.service.UserService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -29,7 +30,7 @@ public class AuthController {
   private final AuthService authService;
   private final UserService userService;
 
-  @Operation(summary = "회원가입", description = "이메일, 비밀번호, 이름으로 회원가입합니다.")
+  @Operation(summary = "회원가입")
   @ApiResponses({
     @io.swagger.v3.oas.annotations.responses.ApiResponse(
         responseCode = "200",
@@ -42,19 +43,19 @@ public class AuthController {
                         name = "회원가입 성공",
                         value =
                             """
-                                          {
-                                            "success": true,
-                                            "data": {
-                                              "accessToken": "eyJhbGciOiJIUzI1NiJ9.signup.example",
-                                              "email": "user@example.com",
-                                              "name": "둘리"
-                                            },
-                                            "meta": {
-                                              "timestamp": "2026-03-24T19:36:08.117",
-                                              "traceId": "auth-signup-1234"
-                                            }
-                                          }
-                                          """))),
+                                              {
+                                                "success": true,
+                                                "data": {
+                                                  "accessToken": "eyJhbGciOiJIUzI1NiJ9.signup.example",
+                                                  "email": "user@example.com",
+                                                  "name": "둘리"
+                                                },
+                                                "meta": {
+                                                  "timestamp": "2026-03-24T19:36:08.117",
+                                                  "traceId": "auth-signup-1234"
+                                                }
+                                              }
+                                              """))),
   })
   @PostMapping("/signup")
   public ApiResponse<LoginResponse> signup(@Valid @RequestBody UserRegisterRequestDto dto) {
@@ -62,7 +63,7 @@ public class AuthController {
     return ApiResponse.ok(response);
   }
 
-  @Operation(summary = "일반 로그인", description = "이메일과 비밀번호로 로그인합니다.")
+  @Operation(summary = "일반 로그인")
   @ApiResponses({
     @io.swagger.v3.oas.annotations.responses.ApiResponse(
         responseCode = "200",
@@ -75,19 +76,19 @@ public class AuthController {
                         name = "로그인 성공",
                         value =
                             """
-                                          {
-                                            "success": true,
-                                            "data": {
-                                              "accessToken": "eyJhbGciOiJIUzI1NiJ9.login.example",
-                                              "email": "user@example.com",
-                                              "name": "둘리"
-                                            },
-                                            "meta": {
-                                              "timestamp": "2026-03-24T19:36:08.117",
-                                              "traceId": "auth-signin-1234"
-                                            }
-                                          }
-                                          """))),
+                                              {
+                                                "success": true,
+                                                "data": {
+                                                  "accessToken": "eyJhbGciOiJIUzI1NiJ9.login.example",
+                                                  "email": "user@example.com",
+                                                  "name": "둘리"
+                                                },
+                                                "meta": {
+                                                  "timestamp": "2026-03-24T19:36:08.117",
+                                                  "traceId": "auth-signin-1234"
+                                                }
+                                              }
+                                              """))),
   })
   @PostMapping("/signin")
   public ApiResponse<LoginResponse> signin(@Valid @RequestBody LoginRequest dto) {
@@ -95,7 +96,7 @@ public class AuthController {
     return ApiResponse.ok(response);
   }
 
-  @Operation(summary = "인증 상태 확인", description = "현재 로그인/인증 상태를 확인합니다.")
+  @Operation(summary = "인증 상태 확인")
   @ApiResponses({
     @io.swagger.v3.oas.annotations.responses.ApiResponse(
         responseCode = "200",
@@ -108,16 +109,16 @@ public class AuthController {
                         name = "인증 상태 확인",
                         value =
                             """
-                                          {
-                                            "authenticated": true,
-                                            "email": "user@example.com",
-                                            "message": "인증된 사용자입니다.",
-                                            "name": "둘리",
-                                            "picture": "/api/v1/files/12",
-                                            "role": "MEMBER",
-                                            "provider": "LOCAL"
-                                          }
-                                          """))),
+                                              {
+                                                "authenticated": true,
+                                                "email": "user@example.com",
+                                                "message": "인증된 사용자입니다.",
+                                                "name": "둘리",
+                                                "picture": "/api/v1/files/12",
+                                                "role": "MEMBER",
+                                                "provider": "LOCAL"
+                                              }
+                                              """))),
   })
   @GetMapping("/status")
   public ResponseEntity<AuthStatusResponse> getStatus() {
@@ -126,14 +127,13 @@ public class AuthController {
     if (authentication == null
         || !authentication.isAuthenticated()
         || "anonymousUser".equals(authentication.getName())) {
-      return ResponseEntity.ok(
-          new AuthStatusResponse(false, null, "미인증 상태", null, null, null, null));
+      throw ErrorCode.UNAUTHORIZED.toException();
     }
 
     return ResponseEntity.ok(authService.getAuthStatusByPrincipal(authentication.getName()));
   }
 
-  @Operation(summary = "내 정보 조회", description = "현재 로그인한 사용자의 이메일, 이름, 프로필 이미지를 조회합니다.")
+  @Operation(summary = "내 정보 조회")
   @ApiResponses({
     @io.swagger.v3.oas.annotations.responses.ApiResponse(
         responseCode = "200",
@@ -146,22 +146,27 @@ public class AuthController {
                         name = "내 정보 조회 성공",
                         value =
                             """
-                                          {
-                                            "success": true,
-                                            "data": {
-                                              "email": "user@example.com",
-                                              "name": "둘리",
-                                              "picture": "/api/v1/files/12"
-                                            },
-                                            "meta": {
-                                              "timestamp": "2026-03-24T19:36:08.117",
-                                              "traceId": "auth-me-1234"
-                                            }
-                                          }
-                                          """))),
+                                              {
+                                                "success": true,
+                                                "data": {
+                                                  "email": "user@example.com",
+                                                  "name": "둘리",
+                                                  "picture": "/api/v1/files/12"
+                                                },
+                                                "meta": {
+                                                  "timestamp": "2026-03-24T19:36:08.117",
+                                                  "traceId": "auth-me-1234"
+                                                }
+                                              }
+                                              """))),
   })
   @GetMapping("/me")
   public ApiResponse<MyInfoDto> getMyInfo(Authentication authentication) {
+    if (authentication == null
+        || !authentication.isAuthenticated()
+        || "anonymousUser".equals(authentication.getName())) {
+      throw ErrorCode.UNAUTHORIZED.toException();
+    }
     return ApiResponse.ok(userService.getMyInfo(authentication.getName()));
   }
 }
