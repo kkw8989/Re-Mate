@@ -1,9 +1,12 @@
 package com.example.backend.repository;
 
+import com.example.backend.domain.receipt.ReceiptStatus;
 import com.example.backend.entity.Receipt;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -23,6 +26,19 @@ public interface ReceiptRepository extends JpaRepository<Receipt, Long> {
   Optional<Receipt> findByIdAndUserId(Long id, Long userId);
 
   List<Receipt> findAllByWorkspaceId(Long workspaceId);
+
+  @Query(
+      "SELECT r FROM Receipt r "
+          + "WHERE r.workspaceId = :workspaceId "
+          + "AND (:storeName IS NULL OR LOWER(r.storeName) LIKE LOWER(CONCAT('%', :storeName, '%'))) "
+          + "AND (:userId IS NULL OR r.userId = :userId) "
+          + "AND (:status IS NULL OR r.status = :status)")
+  Page<Receipt> findByWorkspaceIdWithFilters(
+      @Param("workspaceId") Long workspaceId,
+      @Param("storeName") String storeName,
+      @Param("userId") Long userId,
+      @Param("status") ReceiptStatus status,
+      Pageable pageable);
 
   Optional<Receipt> findByIdAndWorkspaceId(Long id, Long workspaceId);
 
