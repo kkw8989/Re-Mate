@@ -150,7 +150,9 @@
 
 <script>
     let receiptData = [];
-    let allReceipts = [];
+    let currentPage = 0;
+    let totalPages = 0;
+    const PAGE_SIZE = 10;
     const el = id => document.getElementById(id);
     const escapeHtml = s => String(s ?? '').replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
     const token = localStorage.getItem('accessToken');
@@ -231,31 +233,40 @@
         } catch (e) { console.error(e); }
     }
 
-    async function fetchReceipts() {
+    async function fetchReceipts(page = 0) {
         try {
-            const res = await fetch(`/api/v1/receipts?workspaceId=${workspaceId}`, { headers: { 'Authorization': `Bearer ${token}` } });
+            const storeName = el('searchInput').value.trim();
+            const userFilter = el('filterUser').value;
+            const statusFilter = el('filterStatus').value;
+            const sort = el('filterSort').value === 'oldest' ? 'OLDEST' : 'LATEST';
+
+            const params = new URLSearchParams({
+                workspaceId,
+                page,
+                size: PAGE_SIZE,
+                sort
+            });
+            if (storeName) params.append('storeName', storeName);
+            if (userFilter) params.append('userId', userFilter);
+            if (statusFilter) params.append('status', statusFilter);
+
+            const res = await fetch(`/api/v1/receipts?${params}`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
             const json = await res.json();
-            allReceipts = json.data || [];
-            const users = [...new Set(allReceipts.map(r => r.userName).filter(Boolean))];
-            el('filterUser').innerHTML = `<option value="">게시자 ▾</option>` + users.map(u => `<option value="${escapeHtml(u)}">${escapeHtml(u)}</option>`).join('');
-            filterReceipts();
+
+            receiptData = json.data || [];
+            currentPage = json.currentPage ?? 0;
+            totalPages = json.totalPages ?? 1;
+
+            renderReceipts();
+            renderPagination();
         } catch (e) { console.error(e); }
     }
 
     function filterReceipts() {
-        const search = el('searchInput').value.toLowerCase();
-        const userFilter = el('filterUser').value;
-        const statusFilter = el('filterStatus').value;
-        const sort = el('filterSort').value;
-        let filtered = allReceipts.filter(r => {
-            const matchSearch = !search || (r.storeName || '').toLowerCase().includes(search);
-            const matchUser = !userFilter || r.userName === userFilter;
-            const matchStatus = !statusFilter || r.status === statusFilter;
-            return matchSearch && matchUser && matchStatus;
-        });
-        filtered.sort((a, b) => sort === 'oldest' ? new Date(a.createdAt) - new Date(b.createdAt) : new Date(b.createdAt) - new Date(a.createdAt));
-        receiptData = filtered;
-        renderReceipts();
+        currentPage = 0;
+        fetchReceipts(0);
     }
 
     function renderReceipts() {
@@ -377,6 +388,64 @@
             window.URL.revokeObjectURL(url);
         } catch (e) { alert("다운로드 오류"); }
     }
+    async function loadMembers() {
+        try {
+            const res = await fetch(`/api/v1/workspaces/${workspaceId}/members`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            const json = await res.json();
+            const members = json.data || [];
+            el('filterUser').innerHTML =
+                `<option value="">게시자 ▾</option>` +
+                members.map(m =>
+                    `<option value="${m.userId}">${escapeHtml(m.name)}</option>`
+                ).join('');
+        } catch (e) { console.error(e); }
+    }
+    function renderPagination() {
+        let paginationEl = el('pagination');
+        if (!paginationEl) {
+            paginationEl = document.createElement('div');
+            paginationEl.id = 'pagination';
+            paginationEl.style.cssText =
+                'display:flex; justify-content:center; align-items:center; gap:8px; margin-top:20px;';
+            el('receiptList').closest('table').after(paginationEl);
+        }
+
+        if (totalPages <= 1) {
+            paginationEl.innerHTML = '';
+            return;
+        }
+
+        let html = '';
+        html += `<button onclick="fetchReceipts(${currentPage - 1})"
+        ${currentPage === 0 ? 'disabled' : ''}
+        style="padding:6px 12px; border-radius:8px; border:1px solid #e2e8f0;
+               background:#fff; cursor:pointer; font-weight:600;
+               ${currentPage === 0 ? 'opacity:0.4;cursor:not-allowed;' : ''}">
+        ← 이전
+    </button>`;
+
+        for (let i = 0; i < totalPages; i++) {
+            html += `<button onclick="fetchReceipts(${i})"
+            style="padding:6px 12px; border-radius:8px; border:1px solid #e2e8f0;
+                   background:${i === currentPage ? '#1e293b' : '#fff'};
+                   color:${i === currentPage ? '#fff' : '#475569'};
+                   cursor:pointer; font-weight:600;">
+            ${i + 1}
+        </button>`;
+        }
+
+        html += `<button onclick="fetchReceipts(${currentPage + 1})"
+        ${currentPage === totalPages - 1 ? 'disabled' : ''}
+        style="padding:6px 12px; border-radius:8px; border:1px solid #e2e8f0;
+               background:#fff; cursor:pointer; font-weight:600;
+               ${currentPage === totalPages - 1 ? 'opacity:0.4;cursor:not-allowed;' : ''}">
+        다음 →
+    </button>`;
+
+        paginationEl.innerHTML = html;
+    }
 
     el('dropZone').addEventListener('click', () => el('fileInput').click());
     el('fileInput').addEventListener('change', e => {
@@ -384,7 +453,7 @@
         el('thumbs').style.display = 'grid';
     });
     el('uploadBtn').onclick = uploadReceipts;
-    window.onload = () => { initLayout(); fetchStats(); fetchReceipts(); };
+    window.onload = () => { initLayout(); fetchStats(); loadMembers(); fetchReceipts(0); };
 </script>
 </body>
 </html>
