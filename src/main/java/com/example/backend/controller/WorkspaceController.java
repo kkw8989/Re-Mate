@@ -171,7 +171,7 @@ public class WorkspaceController {
       @Parameter(hidden = true) Principal principal) {
     List<WorkspaceMemberResponseDto> list =
         workspaceService.getWorkspaceMembers(workspaceId, status, principal.getName());
-    return ResponseEntity.ok(ApiListResponse.ok(list, list.size(), 0));
+    return ResponseEntity.ok(ApiListResponse.ok(list, list.size(), 1, 0));
   }
 
   @Operation(summary = "워크스페이스 설정 수정")
@@ -338,7 +338,7 @@ public class WorkspaceController {
   public ResponseEntity<ApiListResponse<WorkspaceResponseDto>> getInvitations(
       @Parameter(hidden = true) Principal principal) {
     List<WorkspaceResponseDto> list = workspaceService.getPendingInvitations(principal.getName());
-    return ResponseEntity.ok(ApiListResponse.ok(list, list.size(), 0));
+    return ResponseEntity.ok(ApiListResponse.ok(list, list.size(), 1, 0));
   }
 
   @Operation(summary = "초대 수락")
@@ -445,6 +445,6 @@ public class WorkspaceController {
   public ResponseEntity<ApiListResponse<WorkspaceResponseDto>> getMyWorkspaces(
       @Parameter(hidden = true) Principal principal) {
     List<WorkspaceResponseDto> list = workspaceService.getMyWorkspaces(principal.getName());
-    return ResponseEntity.ok(ApiListResponse.ok(list, list.size(), 0));
+    return ResponseEntity.ok(ApiListResponse.ok(list, list.size(), 1, 0));
   }
 }

@@ -120,7 +120,7 @@ public class ReceiptController {
   public ResponseEntity<ApiListResponse<ReceiptSummaryDto>> getAllReceipts(
       @Parameter(description = "워크스페이스 ID", example = "1") @RequestParam Long workspaceId) {
     List<ReceiptSummaryDto> list = receiptService.getWorkspaceReceipts(workspaceId);
-    return ResponseEntity.ok(ApiListResponse.ok(list, list.size(), 0));
+    return ResponseEntity.ok(ApiListResponse.ok(list, list.size(), 1, 0));
   }
 
   @Operation(summary = "영수증 단건 조회", description = "영수증 ID로 단건 상세 조회합니다.")
@@ -521,7 +521,7 @@ public class ReceiptController {
   @GetMapping("/{id}/history")
   public ResponseEntity<ApiListResponse<AuditLog>> getHistory(@PathVariable Long id) {
     List<AuditLog> logs = auditLogService.findAllByReceiptId(id);
-    return ResponseEntity.ok(ApiListResponse.ok(logs, logs.size(), 0));
+    return ResponseEntity.ok(ApiListResponse.ok(logs, logs.size(), 1, 0));
   }
 
   @Operation(summary = "워크스페이스 통계 조회", description = "워크스페이스의 영수증 통계를 조회합니다.")

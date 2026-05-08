@@ -10,15 +10,17 @@ import org.slf4j.MDC;
 public record ApiListResponse<T>(
     @Schema(description = "성공 여부", example = "true") boolean success,
     @Schema(description = "전체 개수", example = "5") long totalCount,
-    @Schema(description = "다음 페이지 커서 (없으면 0)", example = "0") int nextCursor,
+    @Schema(description = "전체 페이지 수", example = "5") int totalPages,
+    @Schema(description = "현재 페이지 번호", example = "0") int currentPage,
     @Schema(description = "데이터 목록") List<T> data,
     @Schema(description = "메타 정보") Meta meta) {
 
-  public static <T> ApiListResponse<T> ok(List<T> data, long totalCount, int nextCursor) {
+  public static <T> ApiListResponse<T> ok(
+      List<T> data, long totalCount, int totalPages, int currentPage) {
     String traceId = MDC.get(TraceIdFilter.MDC_KEY);
     if (traceId == null || traceId.isBlank()) {
       traceId = "no-trace-" + OffsetDateTime.now().toEpochSecond();
     }
-    return new ApiListResponse<>(true, totalCount, nextCursor, data, Meta.of(traceId));
+    return new ApiListResponse<>(true, totalCount, totalPages, currentPage, data, Meta.of(traceId));
   }
 }
