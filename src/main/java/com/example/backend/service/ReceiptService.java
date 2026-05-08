@@ -38,6 +38,10 @@ import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
@@ -447,35 +451,53 @@ public class ReceiptService {
   }
 
   @Transactional(readOnly = true)
-  public List<ReceiptSummaryDto> getWorkspaceReceipts(Long workspaceId) {
+  public Page<ReceiptSummaryDto> getWorkspaceReceipts(
+      Long workspaceId,
+      String storeName,
+      Long userId,
+      ReceiptStatus status,
+      String sort,
+      int page,
+      int size) {
 
-    List<Receipt> receipts = receiptRepository.findAllByWorkspaceId(workspaceId);
+    Sort sortOrder =
+        "OLDEST".equalsIgnoreCase(sort)
+            ? Sort.by(Sort.Direction.ASC, "createdAt")
+            : Sort.by(Sort.Direction.DESC, "createdAt");
 
-    return receipts.stream()
-        .map(
-            r -> {
-              String ownerName =
-                  userRepository.findById(r.getUserId()).map(u -> u.getName()).orElse("알 수 없음");
+    Pageable pageable = PageRequest.of(page, size, sortOrder);
 
-              return new ReceiptSummaryDto(
-                  r.getId(),
-                  r.getStoreName(),
-                  r.getTotalAmount(),
-                  r.getTradeAt(),
-                  r.getStatus(),
-                  ownerName,
-                  r.getTags(),
-                  r.getRejectionReason(),
-                  r.getUserId(),
-                  r.getTax(),
-                  r.getConfidence(),
-                  r.getCreatedAt(),
-                  r.getInappropriateReasons(),
-                  r.getDiscountAmount(),
-                  r.getAiReason(),
-                  r.getCategory());
-            })
-        .collect(Collectors.toList());
+    Page<Receipt> receipts =
+        receiptRepository.findByWorkspaceIdWithFilters(
+            workspaceId,
+            (storeName == null || storeName.isBlank()) ? null : storeName,
+            userId,
+            status,
+            pageable);
+
+    return receipts.map(
+        r -> {
+          String ownerName =
+              userRepository.findById(r.getUserId()).map(u -> u.getName()).orElse("알 수 없음");
+
+          return new ReceiptSummaryDto(
+              r.getId(),
+              r.getStoreName(),
+              r.getTotalAmount(),
+              r.getTradeAt(),
+              r.getStatus(),
+              ownerName,
+              r.getTags(),
+              r.getRejectionReason(),
+              r.getUserId(),
+              r.getTax(),
+              r.getConfidence(),
+              r.getCreatedAt(),
+              r.getInappropriateReasons(),
+              r.getDiscountAmount(),
+              r.getAiReason(),
+              r.getCategory());
+        });
   }
 
   private SavedReceiptFile saveReceiptFile(MultipartFile file, Long userId, Long workspaceId) {

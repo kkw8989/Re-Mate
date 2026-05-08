@@ -31,6 +31,7 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -118,9 +119,32 @@ public class ReceiptController {
   })
   @GetMapping
   public ResponseEntity<ApiListResponse<ReceiptSummaryDto>> getAllReceipts(
-      @Parameter(description = "워크스페이스 ID", example = "1") @RequestParam Long workspaceId) {
-    List<ReceiptSummaryDto> list = receiptService.getWorkspaceReceipts(workspaceId);
-    return ResponseEntity.ok(ApiListResponse.ok(list, list.size(), 1, 0));
+      @Parameter(description = "워크스페이스 ID", example = "1") @RequestParam Long workspaceId,
+      @Parameter(description = "가맹점명 검색", example = "스타벅스") @RequestParam(required = false)
+          String storeName,
+      @Parameter(description = "게시자 ID", example = "1") @RequestParam(required = false) Long userId,
+      @Parameter(description = "상태 필터", example = "WAITING") @RequestParam(required = false)
+          ReceiptStatus status,
+      @Parameter(description = "정렬 (LATEST/OLDEST)", example = "LATEST")
+          @RequestParam(required = false, defaultValue = "LATEST")
+          String sort,
+      @Parameter(description = "페이지 번호", example = "0")
+          @RequestParam(required = false, defaultValue = "0")
+          int page,
+      @Parameter(description = "페이지 크기", example = "10")
+          @RequestParam(required = false, defaultValue = "10")
+          int size) {
+
+    Page<ReceiptSummaryDto> result =
+        receiptService.getWorkspaceReceipts(
+            workspaceId, storeName, userId, status, sort, page, size);
+
+    return ResponseEntity.ok(
+        ApiListResponse.ok(
+            result.getContent(),
+            result.getTotalElements(),
+            result.getTotalPages(),
+            result.getNumber()));
   }
 
   @Operation(summary = "영수증 단건 조회", description = "영수증 ID로 단건 상세 조회합니다.")
