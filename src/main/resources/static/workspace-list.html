@@ -119,7 +119,7 @@
                     </div>
                     <div style="font-size:0.85rem; color:#94a3b8; margin-top:12px;">클릭하여 입장</div>
                 `;
-                grid.insertBefore(card, grid.firstChild);
+                grid.appendChild(card);
             });
         } catch (e) { console.error(e); }
     }
