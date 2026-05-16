@@ -188,7 +188,8 @@ public class ReceiptController {
                                               "inappropriateReasons": [],
                                               "discountAmount": 0,
                                               "aiReason": "정상 영수증으로 판단됨",
-                                              "category": "FOOD"
+                                              "category": "FOOD",
+                                              "userPicture": "/api/v1/files/178"
                                             },
                                             "meta": {
                                               "timestamp": "2026-03-24T19:36:08.117",
