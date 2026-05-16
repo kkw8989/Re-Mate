@@ -17,6 +17,7 @@ public enum ErrorCode {
   PASSWORD_NOT_MATCH(HttpStatus.BAD_REQUEST, "새 비밀번호가 일치하지 않습니다."),
   DEVICE_UNAUTHORIZED(HttpStatus.UNAUTHORIZED, "디바이스 인증이 필요합니다."),
   USER_NOT_FOUND(HttpStatus.NOT_FOUND, "해당 유저를 찾을 수 없습니다."),
+  AUTH_INVALID_PROVIDER(HttpStatus.BAD_REQUEST, "지원하지 않는 소셜 로그인 provider입니다."),
 
   AUDIT_ALREADY_DECIDED(HttpStatus.BAD_REQUEST, "이미 승인 또는 반려된 영수증은 수정할 수 없습니다."),
   REJECT_REASON_REQUIRED(HttpStatus.BAD_REQUEST, "영수증 반려 시 사유 입력은 필수입니다."),
