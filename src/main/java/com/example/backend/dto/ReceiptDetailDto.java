@@ -66,4 +66,7 @@ public class ReceiptDetailDto {
 
   @Schema(description = "업종 분류", example = "FOOD")
   private String category;
+
+  @Schema(description = "게시자 프로필 사진", nullable = true)
+  private String userPicture;
 }

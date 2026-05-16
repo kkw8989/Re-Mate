@@ -613,6 +613,8 @@ public class ReceiptService {
     Receipt receipt = getReceiptSecurely(id, workspaceId);
     String ownerName =
         userRepository.findById(receipt.getUserId()).map(u -> u.getName()).orElse("알 수 없음");
+    String ownerPicture =
+        userRepository.findById(receipt.getUserId()).map(u -> u.getPicture()).orElse(null);
     List<ReceiptItem> items = receiptItemRepository.findAllByReceiptId(id);
 
     return new ReceiptDetailDto(
@@ -633,7 +635,8 @@ public class ReceiptService {
         receipt.getInappropriateReasons(),
         receipt.getDiscountAmount(),
         receipt.getAiReason(),
-        receipt.getCategory());
+        receipt.getCategory(),
+        ownerPicture);
   }
 
   public ReceiptActionResponseDto toReceiptActionResponse(Receipt receipt) {
