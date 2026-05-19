@@ -130,8 +130,14 @@ public class AuthService {
       Map<String, Object> userInfo = getKakaoUserInfo(kakaoAccessToken);
       Map<String, Object> kakaoAccount = (Map<String, Object>) userInfo.get("kakao_account");
       Map<String, Object> properties = (Map<String, Object>) userInfo.get("properties");
+      Map<String, Object> profile =
+          kakaoAccount != null ? (Map<String, Object>) kakaoAccount.get("profile") : null;
       email = kakaoAccount != null ? (String) kakaoAccount.get("email") : null;
       name = properties != null ? (String) properties.get("nickname") : "카카오유저";
+      image = profile != null ? (String) profile.get("profile_image_url") : null;
+      if (image == null && properties != null) {
+        image = (String) properties.get("profile_image");
+      }
       if (email == null) email = "kakao_" + userInfo.get("id") + "@noemail.com";
 
     } else {
@@ -145,6 +151,11 @@ public class AuthService {
     User user =
         userRepository
             .findByEmail(finalEmail)
+            .map(
+                existing -> {
+                  existing.update(finalName, finalImage);
+                  return userRepository.save(existing);
+                })
             .orElseGet(
                 () ->
                     userRepository.save(

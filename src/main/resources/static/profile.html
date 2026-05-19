@@ -100,10 +100,18 @@
 
                 let pictureData = result.data.picture;
                 if (pictureData) {
-                    const fileId = String(pictureData).includes('/')
-                        ? pictureData.split('/').pop()
-                        : pictureData;
-                    updateAvatarView(fileId);
+                    if (pictureData.startsWith('http')) {
+
+                        const img = document.getElementById('avatarImg');
+                        const plus = document.getElementById('avatarPlus');
+                        img.src = pictureData;
+                        img.style.display = 'block';
+                        plus.style.display = 'none';
+                    } else {
+
+                        const fileId = pictureData.split('/').pop();
+                        updateAvatarView(fileId);
+                    }
                 }
             }
         } catch (e) {
