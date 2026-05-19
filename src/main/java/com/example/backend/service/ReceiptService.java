@@ -616,6 +616,11 @@ public class ReceiptService {
     String ownerPicture =
         userRepository.findById(receipt.getUserId()).map(u -> u.getPicture()).orElse(null);
     List<ReceiptItem> items = receiptItemRepository.findAllByReceiptId(id);
+    boolean amountMismatch =
+        calculateAmountMismatch(
+            items,
+            receipt.getTotalAmount(),
+            receipt.getDiscountAmount() != null ? receipt.getDiscountAmount() : 0);
 
     return new ReceiptDetailDto(
         receipt.getId(),
@@ -636,7 +641,8 @@ public class ReceiptService {
         receipt.getDiscountAmount(),
         receipt.getAiReason(),
         receipt.getCategory(),
-        ownerPicture);
+        ownerPicture,
+        amountMismatch);
   }
 
   public ReceiptActionResponseDto toReceiptActionResponse(Receipt receipt) {
@@ -657,6 +663,22 @@ public class ReceiptService {
         .tags(receipt.getTags())
         .createdAt(receipt.getCreatedAt())
         .build();
+  }
+
+  private boolean calculateAmountMismatch(
+      List<ReceiptItem> items, int totalAmount, int discountAmount) {
+    if (items == null || items.isEmpty() || totalAmount <= 0) return false;
+
+    int itemsTotal = items.stream().mapToInt(item -> item.getQuantity() * item.getPrice()).sum();
+
+    if (itemsTotal <= 0) return false;
+
+    boolean hasDiscount = discountAmount > 0;
+    double toleranceRate = hasDiscount ? 0.03 : 0.01;
+    int tolerance = Math.max(1, (int) (totalAmount * toleranceRate));
+    int expectedTotal = itemsTotal - discountAmount;
+
+    return Math.abs(expectedTotal - totalAmount) > tolerance;
   }
 
   private UploadReceiptResponse toUploadReceiptResponse(Receipt receipt, boolean isDuplicate) {
@@ -680,6 +702,11 @@ public class ReceiptService {
         .inappropriateReasons(receipt.getInappropriateReasons())
         .discountAmount(receipt.getDiscountAmount())
         .aiReason(receipt.getAiReason())
+        .amountMismatch(
+            calculateAmountMismatch(
+                receiptItemRepository.findAllByReceiptId(receipt.getId()),
+                receipt.getTotalAmount(),
+                receipt.getDiscountAmount() != null ? receipt.getDiscountAmount() : 0))
         .build();
   }
 

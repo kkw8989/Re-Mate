@@ -69,4 +69,7 @@ public class ReceiptDetailDto {
 
   @Schema(description = "게시자 프로필 사진", nullable = true)
   private String userPicture;
+
+  @Schema(description = "금액 불일치 여부", example = "false")
+  private boolean amountMismatch;
 }

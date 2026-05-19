@@ -66,4 +66,7 @@ public class UploadReceiptResponse {
 
   @Schema(description = "AI 추천 반려 사유", nullable = true)
   private String aiReason;
+
+  @Schema(description = "금액 불일치 여부", example = "false")
+  private boolean amountMismatch;
 }
