@@ -1,5 +1,6 @@
 package com.example.backend.dto;
 
+import com.example.backend.entity.ReceiptItem;
 import io.swagger.v3.oas.annotations.media.Schema;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -54,4 +55,10 @@ public class ReceiptActionResponseDto {
 
   @Schema(description = "생성 시각", example = "2026-03-23T13:44:34", nullable = true)
   private LocalDateTime createdAt;
+
+  @Schema(description = "상품 목록", nullable = true)
+  private List<ReceiptItem> items;
+
+  @Schema(description = "게시자 프로필 사진", nullable = true)
+  private String userPicture;
 }

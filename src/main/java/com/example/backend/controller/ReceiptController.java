@@ -311,34 +311,41 @@ public class ReceiptController {
                         name = "업로드 성공",
                         value =
                             """
-                                          {
-                                            "success": true,
-                                            "data": {
-                                              "id": 1,
-                                              "status": "ANALYZING",
-                                              "systemErrorCode": null,
-                                              "storeName": "스타벅스 상명대점",
-                                              "tradeAt": "2026-03-24T10:36:08",
-                                              "totalAmount": 5500,
-                                              "nightTime": false,
-                                              "rejectionReason": null,
-                                              "approvedAt": null,
-                                              "tax": 500,
-                                              "confidence": 0.91,
-                                              "fileAssetId": 1,
-                                              "tags": [],
-                                              "createdAt": "2026-03-24T10:36:08",
-                                              "duplicate": false,
-                                              "inappropriateReasons": [],
-                                              "discountAmount": 0,
-                                              "aiReason": "정상 영수증으로 판단됨"
-                                            },
-                                            "meta": {
-                                              "timestamp": "2026-03-24T19:36:08.117",
-                                              "traceId": "receipt-upload-1234"
-                                            }
-                                          }
-                                          """)))
+    {
+      "success": true,
+      "data": {
+        "id": 1,
+        "status": "ANALYZING",
+        "systemErrorCode": null,
+        "storeName": "스타벅스 상명대점",
+        "tradeAt": "2026-03-24T10:36:08",
+        "totalAmount": 5500,
+        "nightTime": false,
+        "rejectionReason": null,
+        "approvedAt": null,
+        "tax": 500,
+        "confidence": 0.91,
+        "fileAssetId": 1,
+        "tags": [],
+        "createdAt": "2026-03-24T10:36:08",
+        "duplicate": false,
+        "inappropriateReasons": [],
+        "discountAmount": 0,
+        "aiReason": "정상 영수증으로 판단됨",
+        "amountMismatch": false,
+        "items": [
+          {
+            "id": 1,
+            "receiptId": 1,
+            "name": "아메리카노",
+            "quantity": 1,
+            "price": 5500
+          }
+        ],
+        "userPicture": null
+      }
+    }
+    """)))
   })
   @PostMapping(value = "/upload", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
   public ResponseEntity<ApiResponse<UploadReceiptResponse>> upload(
@@ -628,30 +635,36 @@ public class ReceiptController {
                         name = "저장 확정 성공",
                         value =
                             """
-                                          {
-                                            "success": true,
-                                            "data": {
-                                              "id": 1,
-                                              "status": "WAITING",
-                                              "systemErrorCode": null,
-                                              "storeName": "스타벅스 상명대점",
-                                              "tradeAt": "2026-03-24T10:36:08",
-                                              "totalAmount": 5500,
-                                              "nightTime": false,
-                                              "rejectionReason": null,
-                                              "approvedAt": null,
-                                              "tax": 500,
-                                              "confidence": 0.91,
-                                              "fileAssetId": 1,
-                                              "tags": [],
-                                              "createdAt": "2026-03-24T10:36:08"
-                                            },
-                                            "meta": {
-                                              "timestamp": "2026-03-24T19:36:08.117",
-                                              "traceId": "receipt-confirm-1234"
-                                            }
-                                          }
-                                          """)))
+    {
+      "success": true,
+      "data": {
+        "id": 1,
+        "status": "WAITING",
+        "systemErrorCode": null,
+        "storeName": "스타벅스 상명대점",
+        "tradeAt": "2026-03-24T10:36:08",
+        "totalAmount": 5500,
+        "nightTime": false,
+        "rejectionReason": null,
+        "approvedAt": null,
+        "tax": 500,
+        "confidence": 0.91,
+        "fileAssetId": 1,
+        "tags": [],
+        "createdAt": "2026-03-24T10:36:08",
+        "items": [
+          {
+            "id": 1,
+            "receiptId": 1,
+            "name": "아메리카노",
+            "quantity": 1,
+            "price": 5500
+          }
+        ],
+        "userPicture": null
+      }
+    }
+    """)))
   })
   @PatchMapping("/{id}/confirm")
   public ResponseEntity<ApiResponse<ReceiptActionResponseDto>> confirmReceipt(

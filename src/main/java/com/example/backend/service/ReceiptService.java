@@ -646,6 +646,10 @@ public class ReceiptService {
   }
 
   public ReceiptActionResponseDto toReceiptActionResponse(Receipt receipt) {
+    List<ReceiptItem> items = receiptItemRepository.findAllByReceiptId(receipt.getId());
+    String userPicture =
+        userRepository.findById(receipt.getUserId()).map(u -> u.getPicture()).orElse(null);
+
     return ReceiptActionResponseDto.builder()
         .id(receipt.getId())
         .status(receipt.getStatus() != null ? receipt.getStatus().name() : null)
@@ -662,6 +666,8 @@ public class ReceiptService {
         .fileAssetId(receipt.getFileAssetId())
         .tags(receipt.getTags())
         .createdAt(receipt.getCreatedAt())
+        .items(items)
+        .userPicture(userPicture)
         .build();
   }
 
@@ -682,6 +688,10 @@ public class ReceiptService {
   }
 
   private UploadReceiptResponse toUploadReceiptResponse(Receipt receipt, boolean isDuplicate) {
+    List<ReceiptItem> items = receiptItemRepository.findAllByReceiptId(receipt.getId());
+    String userPicture =
+        userRepository.findById(receipt.getUserId()).map(u -> u.getPicture()).orElse(null);
+
     return UploadReceiptResponse.builder()
         .id(receipt.getId())
         .status(receipt.getStatus() != null ? receipt.getStatus().name() : null)
@@ -704,9 +714,11 @@ public class ReceiptService {
         .aiReason(receipt.getAiReason())
         .amountMismatch(
             calculateAmountMismatch(
-                receiptItemRepository.findAllByReceiptId(receipt.getId()),
+                items,
                 receipt.getTotalAmount(),
                 receipt.getDiscountAmount() != null ? receipt.getDiscountAmount() : 0))
+        .items(items)
+        .userPicture(userPicture)
         .build();
   }
 

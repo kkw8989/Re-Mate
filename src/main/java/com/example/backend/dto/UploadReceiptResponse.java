@@ -1,5 +1,6 @@
 package com.example.backend.dto;
 
+import com.example.backend.entity.ReceiptItem;
 import io.swagger.v3.oas.annotations.media.Schema;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -69,4 +70,10 @@ public class UploadReceiptResponse {
 
   @Schema(description = "금액 불일치 여부", example = "false")
   private boolean amountMismatch;
+
+  @Schema(description = "상품 목록", nullable = true)
+  private List<ReceiptItem> items;
+
+  @Schema(description = "게시자 프로필 사진", nullable = true)
+  private String userPicture;
 }
