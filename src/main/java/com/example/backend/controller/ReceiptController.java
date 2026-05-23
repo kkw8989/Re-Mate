@@ -215,7 +215,7 @@ public class ReceiptController {
     }
 
     try {
-      List<Receipt> receipts = receiptRepository.findAllByWorkspaceId(workspaceId);
+      List<Receipt> receipts = receiptRepository.findConfirmedByWorkspaceId(workspaceId);
       byte[] out = excelExportService.generateExcel(receipts, workspaceId);
 
       auditLogService.record(
@@ -569,21 +569,21 @@ public class ReceiptController {
                         name = "통계 조회 성공",
                         value =
                             """
-                                          {
-                                            "success": true,
-                                            "data": {
-                                              "totalCount": 10,
-                                              "approvedCount": 2,
-                                              "rejectedCount": 1,
-                                              "pendingCount": 7,
-                                              "totalAmount": 551160
-                                            },
-                                            "meta": {
-                                              "timestamp": "2026-03-24T19:36:08.117",
-                                              "traceId": "receipt-stats-1234"
-                                            }
-                                          }
-                                          """)))
+                                {
+                                  "success": true,
+                                  "data": {
+                                    "totalCount": 3,
+                                    "approvedCount": 1,
+                                    "rejectedCount": 1,
+                                    "pendingCount": 1,
+                                    "totalAmount": 219000
+                                  },
+                                  "meta": {
+                                    "timestamp": "2026-03-24T19:36:08.117",
+                                    "traceId": "receipt-stats-1234"
+                                  }
+                                }
+                                """)))
   })
   @GetMapping("/stats")
   public ResponseEntity<ApiResponse<Map<String, Object>>> getStats(@RequestParam Long workspaceId) {
