@@ -30,6 +30,7 @@ public interface ReceiptRepository extends JpaRepository<Receipt, Long> {
   @Query(
       "SELECT r FROM Receipt r "
           + "WHERE r.workspaceId = :workspaceId "
+          + "AND r.status NOT IN ('ANALYZING', 'NEED_MANUAL') "
           + "AND (:storeName IS NULL OR LOWER(r.storeName) LIKE LOWER(CONCAT('%', :storeName, '%'))) "
           + "AND (:userId IS NULL OR r.userId = :userId) "
           + "AND (:status IS NULL OR r.status = :status)")
@@ -46,11 +47,11 @@ public interface ReceiptRepository extends JpaRepository<Receipt, Long> {
 
   @Query(
       "SELECT "
-          + "count(r) as totalCount, "
-          + "sum(case when r.status = 'WAITING' or r.status = 'NEED_MANUAL' then 1 else 0 end) as pendingCount, "
+          + "sum(case when r.status = 'WAITING' or r.status = 'APPROVED' or r.status = 'REJECTED' then 1 else 0 end) as totalCount, "
+          + "sum(case when r.status = 'WAITING' then 1 else 0 end) as pendingCount, "
           + "sum(case when r.status = 'APPROVED' then 1 else 0 end) as approvedCount, "
           + "sum(case when r.status = 'REJECTED' then 1 else 0 end) as rejectedCount, "
-          + "sum(r.totalAmount) as totalAmount "
+          + "sum(case when r.status = 'WAITING' or r.status = 'APPROVED' or r.status = 'REJECTED' then r.totalAmount else 0 end) as totalAmount "
           + "FROM Receipt r WHERE r.workspaceId = :workspaceId")
   java.util.Map<String, Object> getWorkspaceStats(@Param("workspaceId") Long workspaceId);
 
@@ -66,4 +67,16 @@ public interface ReceiptRepository extends JpaRepository<Receipt, Long> {
       @Param("from") LocalDateTime from,
       @Param("to") LocalDateTime to,
       @Param("excludeId") Long excludeId);
+
+  @Query(
+      "SELECT r FROM Receipt r "
+          + "WHERE (r.status = 'ANALYZING' OR r.status = 'NEED_MANUAL') "
+          + "AND r.createdAt < :threshold")
+  List<Receipt> findAbandonedReceipts(@Param("threshold") LocalDateTime threshold);
+
+  @Query(
+      "SELECT r FROM Receipt r "
+          + "WHERE r.workspaceId = :workspaceId "
+          + "AND r.status NOT IN ('ANALYZING', 'NEED_MANUAL')")
+  List<Receipt> findConfirmedByWorkspaceId(@Param("workspaceId") Long workspaceId);
 }
