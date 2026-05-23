@@ -106,12 +106,28 @@ public class ReceiptService {
       Optional<Receipt> existingByHash =
           receiptRepository.findByFileHashAndWorkspaceId(fileHash, workspaceId);
       if (existingByHash.isPresent()) {
-        return toUploadReceiptResponse(existingByHash.get(), true);
+        Receipt existing = existingByHash.get();
+        if (existing.getStatus() == ReceiptStatus.ANALYZING
+            || existing.getStatus() == ReceiptStatus.NEED_MANUAL) {
+          receiptItemRepository.deleteAll(
+              receiptItemRepository.findAllByReceiptId(existing.getId()));
+          receiptRepository.delete(existing);
+        } else {
+          return toUploadReceiptResponse(existing, true);
+        }
       }
 
       Optional<Receipt> existingByKey = receiptRepository.findByIdempotencyKey(idempotencyKey);
       if (existingByKey.isPresent()) {
-        return toUploadReceiptResponse(existingByKey.get(), true);
+        Receipt existing = existingByKey.get();
+        if (existing.getStatus() == ReceiptStatus.ANALYZING
+            || existing.getStatus() == ReceiptStatus.NEED_MANUAL) {
+          receiptItemRepository.deleteAll(
+              receiptItemRepository.findAllByReceiptId(existing.getId()));
+          receiptRepository.delete(existing);
+        } else {
+          return toUploadReceiptResponse(existing, true);
+        }
       }
 
       AnalyzedReceipt analyzedReceipt = analyzeReceipt(fileBytes, file.getContentType());
