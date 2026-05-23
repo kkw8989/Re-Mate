@@ -20,9 +20,9 @@ public class ReceiptCleanupScheduler {
   private final ReceiptItemRepository receiptItemRepository;
 
   @Transactional
-  @Scheduled(fixedDelay = 10000)
+  @Scheduled(fixedDelay = 300000)
   public void deleteAbandonedReceipts() {
-    LocalDateTime threshold = LocalDateTime.now();
+    LocalDateTime threshold = LocalDateTime.now().minusMinutes(10);
 
     List<Receipt> abandoned = receiptRepository.findAbandonedReceipts(threshold);
 
