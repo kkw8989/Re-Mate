@@ -63,12 +63,13 @@ public class FileController {
   })
   @GetMapping("/{fileId}")
   public ResponseEntity<?> download(
-      @Parameter(description = "파일 ID", example = "1") @PathVariable Long fileId)
+      @Parameter(description = "파일 ID", example = "1") @PathVariable Long fileId,
+      @Parameter(hidden = true) Authentication authentication)
       throws IOException {
 
     boolean isAdmin = false;
     boolean isDevice = false;
-    String authName = null;
+    String authName = (authentication != null) ? authentication.getName() : null;
 
     FileAssetService.LoadedFile loaded =
         service.loadForDownload(fileId, authName, isAdmin, isDevice);
