@@ -153,6 +153,7 @@ public class AuthController {
                                             {
                                               "success": true,
                                               "data": {
+                                                "id": 1,
                                                 "email": "user@example.com",
                                                 "name": "둘리",
                                                 "picture": "/api/v1/files/12"
