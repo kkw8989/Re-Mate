@@ -658,7 +658,8 @@ public class ReceiptService {
         receipt.getAiReason(),
         receipt.getCategory(),
         ownerPicture,
-        amountMismatch);
+        amountMismatch,
+        receipt.getFileAssetId());
   }
 
   public ReceiptActionResponseDto toReceiptActionResponse(Receipt receipt) {
