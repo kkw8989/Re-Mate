@@ -25,7 +25,7 @@ public class UserService {
         userRepository
             .findByEmail(email)
             .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
-    return new MyInfoDto(user.getEmail(), user.getName(), user.getPicture());
+    return new MyInfoDto(user.getId(), user.getEmail(), user.getName(), user.getPicture());
   }
 
   @Transactional
@@ -37,7 +37,7 @@ public class UserService {
 
     user.update(request.name(), user.getPicture());
 
-    return new MyInfoDto(user.getEmail(), user.getName(), user.getPicture());
+    return new MyInfoDto(user.getId(), user.getEmail(), user.getName(), user.getPicture());
   }
 
   @Transactional
@@ -72,6 +72,6 @@ public class UserService {
     String imageUrl = "/api/v1/files/" + request.fileId();
     user.updatePicture(imageUrl);
 
-    return new MyInfoDto(user.getEmail(), user.getName(), user.getPicture());
+    return new MyInfoDto(user.getId(), user.getEmail(), user.getName(), user.getPicture());
   }
 }
