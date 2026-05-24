@@ -160,43 +160,52 @@ public class ReceiptController {
                         name = "영수증 단건 조회 성공",
                         value =
                             """
-                                          {
-                                            "success": true,
-                                            "data": {
-                                              "id": 1,
-                                              "storeName": "스타벅스 상명대점",
-                                              "totalAmount": 5500,
-                                              "tax": 500,
-                                              "tradeAt": "2026-03-24T10:36:08",
-                                              "approvedAt": null,
-                                              "status": "WAITING",
-                                              "rejectionReason": null,
-                                              "userName": "둘리",
-                                              "userId": 2,
-                                              "filePath": "abc123.jpg",
-                                              "tags": [],
-                                              "items": [
-                                                {
-                                                  "id": 1,
-                                                  "receiptId": 1,
-                                                  "name": "아메리카노",
-                                                  "quantity": 1,
-                                                  "price": 5500
-                                                }
-                                              ],
-                                              "nightTime": false,
-                                              "inappropriateReasons": [],
-                                              "discountAmount": 0,
-                                              "aiReason": "정상 영수증으로 판단됨",
-                                              "category": "FOOD",
-                                              "userPicture": "/api/v1/files/178"
-                                            },
-                                            "meta": {
-                                              "timestamp": "2026-03-24T19:36:08.117",
-                                              "traceId": "receipt-detail-1234"
-                                            }
-                                          }
-                                          """)))
+                                    {
+                                       "success": true,
+                                       "data": {
+                                         "id": 189,
+                                         "storeName": "미담한상",
+                                         "totalAmount": 76000,
+                                         "tax": 0,
+                                         "tradeAt": "2026-05-22T13:03:20",
+                                         "approvedAt": null,
+                                         "status": "WAITING",
+                                         "rejectionReason": null,
+                                         "userName": "김기원",
+                                         "userId": 1,
+                                         "filePath": "a764cb49fc114cd285df504aa58ab6e6.jpg",
+                                         "tags": [],
+                                         "items": [
+                                           {
+                                             "id": 514,
+                                             "receiptId": 189,
+                                             "name": "제육/더덕 한상",
+                                             "quantity": 3,
+                                             "price": 19000
+                                           },
+                                           {
+                                             "id": 515,
+                                             "receiptId": 189,
+                                             "name": "고등어구이 한상",
+                                             "quantity": 1,
+                                             "price": 19000
+                                           }
+                                         ],
+                                         "nightTime": false,
+                                         "inappropriateReasons": [],
+                                         "discountAmount": 0,
+                                         "aiReason": "정상 영수증으로 판단됨",
+                                         "category": "FOOD",
+                                         "userPicture": null,
+                                         "amountMismatch": false,
+                                         "fileAssetId": 189
+                                       },
+                                       "meta": {
+                                         "timestamp": "2026-05-24T16:09:58.1546215+09:00",
+                                         "traceId": "303a913e-a204-45f2-85ff-f79304d2c006"
+                                       }
+                                     }
+                                    """)))
   })
   @GetMapping("/{id}")
   public ResponseEntity<ApiResponse<ReceiptDetailDto>> getReceipt(
