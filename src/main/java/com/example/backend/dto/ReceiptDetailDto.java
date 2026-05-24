@@ -72,4 +72,7 @@ public class ReceiptDetailDto {
 
   @Schema(description = "금액 불일치 여부", example = "false")
   private boolean amountMismatch;
+
+  @Schema(description = "파일 자산 ID", example = "146", nullable = true)
+  private Long fileAssetId;
 }
