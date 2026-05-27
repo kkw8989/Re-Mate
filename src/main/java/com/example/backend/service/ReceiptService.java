@@ -445,14 +445,55 @@ public class ReceiptService {
       Long id, Long workspaceId, Integer totalAmount, String storeName, LocalDateTime tradeAt) {
 
     Long currentUserId = getCurrentUserId();
-
     Receipt receipt = getReceiptSecurely(id, workspaceId);
+
+    if (receipt.getStatus() == ReceiptStatus.APPROVED
+        || receipt.getStatus() == ReceiptStatus.REJECTED) {
+      throw new BusinessException(ErrorCode.AUDIT_ALREADY_DECIDED);
+    }
+
+    String oldNormalizedStore =
+        receipt.getStoreName() != null
+            ? receipt.getStoreName().replaceAll("\\s+", "").toLowerCase()
+            : "";
+    LocalDateTime oldTradeAt = receipt.getTradeAt();
+
+    List<Receipt> oldRelated = new ArrayList<>();
+    if (oldTradeAt != null && !oldNormalizedStore.isBlank()) {
+      oldRelated =
+          receiptRepository.findSplitPaymentCandidates(
+              workspaceId,
+              oldNormalizedStore,
+              oldTradeAt.minusMinutes(30),
+              oldTradeAt.plusMinutes(30),
+              receipt.getId());
+    }
 
     ReceiptStatus oldStatus = receipt.getStatus();
 
     receipt.updateInfo(totalAmount, storeName, tradeAt);
     List<String> updatedTags = tagService.deriveTags(receipt);
     receipt.updateTags(updatedTags);
+
+    receipt.updateInappropriateReasons(new ArrayList<>());
+    List<ReceiptItem> items = receiptItemRepository.findAllByReceiptId(id);
+    List<String> newReasons =
+        inappropriateReasonService.evaluate(receipt, receipt.getCategory(), workspaceId, items);
+    if (!newReasons.isEmpty()) {
+      receipt.updateInappropriateReasons(newReasons);
+    }
+
+    for (Receipt related : oldRelated) {
+      related.updateInappropriateReasons(new ArrayList<>());
+      List<ReceiptItem> relatedItems = receiptItemRepository.findAllByReceiptId(related.getId());
+      List<String> relatedReasons =
+          inappropriateReasonService.evaluate(
+              related, related.getCategory(), workspaceId, relatedItems);
+      if (!relatedReasons.isEmpty()) {
+        related.updateInappropriateReasons(relatedReasons);
+      }
+      receiptRepository.save(related);
+    }
 
     if (oldStatus != receipt.getStatus()) {
       auditLogService.record(
@@ -463,6 +504,7 @@ public class ReceiptService {
           id,
           Map.of("oldStatus", oldStatus.name(), "newStatus", receipt.getStatus().name()));
     }
+
     return receipt;
   }
 
@@ -602,8 +644,39 @@ public class ReceiptService {
   @Transactional
   public void deleteReceipt(Long id, Long workspaceId) {
     Receipt receipt = getReceiptSecurely(id, workspaceId);
+
+    String normalizedStore =
+        receipt.getStoreName() != null
+            ? receipt.getStoreName().replaceAll("\\s+", "").toLowerCase()
+            : "";
+    LocalDateTime tradeAt = receipt.getTradeAt();
+
+    List<Receipt> related = new ArrayList<>();
+    if (tradeAt != null && !normalizedStore.isBlank()) {
+      related =
+          receiptRepository.findSplitPaymentCandidates(
+              workspaceId,
+              normalizedStore,
+              tradeAt.minusMinutes(30),
+              tradeAt.plusMinutes(30),
+              receipt.getId());
+    }
+
     receiptItemRepository.deleteAll(receiptItemRepository.findAllByReceiptId(id));
     receiptRepository.delete(receipt);
+
+    for (Receipt rel : related) {
+      if (rel.getStatus() == ReceiptStatus.WAITING) {
+        rel.updateInappropriateReasons(new ArrayList<>());
+        List<ReceiptItem> relItems = receiptItemRepository.findAllByReceiptId(rel.getId());
+        List<String> relReasons =
+            inappropriateReasonService.evaluate(rel, rel.getCategory(), workspaceId, relItems);
+        if (!relReasons.isEmpty()) {
+          rel.updateInappropriateReasons(relReasons);
+        }
+        receiptRepository.save(rel);
+      }
+    }
   }
 
   @Transactional
@@ -685,6 +758,7 @@ public class ReceiptService {
         .createdAt(receipt.getCreatedAt())
         .items(items)
         .userPicture(userPicture)
+        .inappropriateReasons(receipt.getInappropriateReasons())
         .build();
   }
 
