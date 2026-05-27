@@ -61,4 +61,7 @@ public class ReceiptActionResponseDto {
 
   @Schema(description = "게시자 프로필 사진", nullable = true)
   private String userPicture;
+
+  @Schema(description = "부적절 판정 사유 목록", nullable = true)
+  private List<String> inappropriateReasons;
 }
