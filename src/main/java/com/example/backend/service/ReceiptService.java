@@ -132,6 +132,23 @@ public class ReceiptService {
 
       AnalyzedReceipt analyzedReceipt = analyzeReceipt(fileBytes, file.getContentType());
       validateAnalyzedReceipt(analyzedReceipt);
+
+      if (analyzedReceipt.storeName() != null
+          && !analyzedReceipt.storeName().isBlank()
+          && analyzedReceipt.tradeAt() != null) {
+        String normalizedStore = analyzedReceipt.storeName().replaceAll("\\s+", "").toLowerCase();
+        List<Receipt> contentDuplicates =
+            receiptRepository.findByContentDuplicate(
+                workspaceId,
+                normalizedStore,
+                analyzedReceipt.totalAmount(),
+                analyzedReceipt.tradeAt());
+        if (!contentDuplicates.isEmpty()) {
+          log.info("=== OCR 기반 중복 영수증 감지: {}", analyzedReceipt.storeName());
+          return toUploadReceiptResponse(contentDuplicates.get(0), true);
+        }
+      }
+
       SavedReceiptFile savedReceiptFile = saveReceiptFile(file, userId, workspaceId);
 
       Receipt receipt;
