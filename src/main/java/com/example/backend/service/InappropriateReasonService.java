@@ -9,6 +9,7 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -129,7 +130,7 @@ public class InappropriateReasonService {
   private boolean isSplitPayment(Receipt receipt, Long workspaceId) {
     if (receipt.getStoreName() == null || receipt.getTradeAt() == null) return false;
 
-    String normalizedStore = receipt.getStoreName().replaceAll("\\s+", "").toLowerCase();
+    String normalizedStore = normalize(receipt.getStoreName());
     LocalDateTime from = receipt.getTradeAt().minusMinutes(30);
     LocalDateTime to = receipt.getTradeAt().plusMinutes(30);
 
@@ -137,19 +138,22 @@ public class InappropriateReasonService {
         receiptRepository.findSplitPaymentCandidates(
             workspaceId, normalizedStore, from, to, receipt.getId());
 
-    return !nearby.isEmpty();
+    return nearby.stream().anyMatch(r -> normalize(r.getStoreName()).equals(normalizedStore));
   }
 
   private void applySplitPaymentTagToOthers(Receipt receipt, Long workspaceId) {
     if (receipt.getStoreName() == null || receipt.getTradeAt() == null) return;
 
-    String normalizedStore = receipt.getStoreName().replaceAll("\\s+", "").toLowerCase();
+    String normalizedStore = normalize(receipt.getStoreName());
     LocalDateTime from = receipt.getTradeAt().minusMinutes(30);
     LocalDateTime to = receipt.getTradeAt().plusMinutes(30);
 
     List<Receipt> others =
-        receiptRepository.findSplitPaymentCandidates(
-            workspaceId, normalizedStore, from, to, receipt.getId());
+        receiptRepository
+            .findSplitPaymentCandidates(workspaceId, normalizedStore, from, to, receipt.getId())
+            .stream()
+            .filter(r -> normalize(r.getStoreName()).equals(normalizedStore))
+            .collect(Collectors.toList());
 
     for (Receipt other : others) {
       List<String> otherReasons = new ArrayList<>(other.getInappropriateReasons());
