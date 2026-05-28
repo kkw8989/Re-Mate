@@ -116,32 +116,14 @@ public class InappropriateReasonService {
   }
 
   private boolean isEntertainment(String storeName, String category, List<ReceiptItem> items) {
+    if (hasEntertainmentKeyword(storeName)) return true;
+
     if (category != null) {
       String cat = category.toUpperCase();
-
-      if (cat.equals("SHOPPING")) {
-        return false;
-      }
-
-      if (cat.equals("FOOD")
-          || cat.equals("MEDICAL")
-          || cat.equals("TRANSPORT")
-          || cat.equals("ACCOMMODATION")
-          || cat.equals("OFFICE")
-          || cat.equals("EQUIPMENT")
-          || cat.equals("WELFARE")
-          || cat.equals("SERVICE")
-          || cat.equals("ACTIVITY")) {
-        return hasAlcoholOrTobacco(items);
-      }
-
-      if (cat.equals("ENTERTAINMENT")) {
-        return hasEntertainmentKeyword(storeName) || hasAlcoholOrTobacco(items);
-      }
+      if (cat.equals("SHOPPING")) return false;
     }
 
-    if (storeName == null || storeName.isBlank()) return false;
-    return hasEntertainmentKeyword(storeName) || hasAlcoholOrTobacco(items);
+    return hasAlcoholOrTobacco(items);
   }
 
   private boolean isSplitPayment(Receipt receipt, Long workspaceId) {
