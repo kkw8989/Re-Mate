@@ -79,4 +79,17 @@ public interface ReceiptRepository extends JpaRepository<Receipt, Long> {
           + "WHERE r.workspaceId = :workspaceId "
           + "AND r.status NOT IN ('ANALYZING', 'NEED_MANUAL')")
   List<Receipt> findConfirmedByWorkspaceId(@Param("workspaceId") Long workspaceId);
+
+  @Query(
+      "SELECT r FROM Receipt r "
+          + "WHERE r.workspaceId = :workspaceId "
+          + "AND LOWER(REPLACE(r.storeName, ' ', '')) = :normalizedStore "
+          + "AND r.totalAmount = :totalAmount "
+          + "AND r.tradeAt = :tradeAt "
+          + "AND r.status NOT IN ('ANALYZING', 'NEED_MANUAL')")
+  List<Receipt> findByContentDuplicate(
+      @Param("workspaceId") Long workspaceId,
+      @Param("normalizedStore") String normalizedStore,
+      @Param("totalAmount") int totalAmount,
+      @Param("tradeAt") LocalDateTime tradeAt);
 }
