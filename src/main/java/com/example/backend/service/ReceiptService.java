@@ -222,6 +222,15 @@ public class ReceiptService {
         tradeAt = null;
       }
 
+      if (tradeAt != null) {
+        int year = tradeAt.getYear();
+        int currentYear = LocalDateTime.now().getYear();
+        if (Math.abs(year - currentYear) > 5) {
+          log.warn("=== tradeAt 연도 이상 감지: {} → null 처리", tradeAt);
+          tradeAt = null;
+        }
+      }
+
       List<String> derivedTags = tagService.deriveTags(Receipt.builder().tradeAt(tradeAt).build());
 
       JsonNode itemsNode = aiResult.path("items");
