@@ -58,7 +58,6 @@ public interface ReceiptRepository extends JpaRepository<Receipt, Long> {
   @Query(
       "SELECT r FROM Receipt r "
           + "WHERE r.workspaceId = :workspaceId "
-          + "AND LOWER(REPLACE(r.storeName, ' ', '')) = :normalizedStore "
           + "AND r.tradeAt BETWEEN :from AND :to "
           + "AND r.id != :excludeId")
   List<Receipt> findSplitPaymentCandidates(
