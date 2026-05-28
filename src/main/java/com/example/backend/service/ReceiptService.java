@@ -261,6 +261,19 @@ public class ReceiptService {
                   .price(item.path("price").asInt(0))
                   .build());
         }
+        items =
+            items.stream()
+                .filter(
+                    item -> {
+                      String name = item.getName();
+                      if (name == null || name.isBlank()) return false;
+                      String trimmed = name.stripLeading();
+                      if (trimmed.startsWith("+(선택)")) return false;
+                      if (trimmed.startsWith(">>")) return false;
+                      if (trimmed.startsWith(">-")) return false;
+                      return true;
+                    })
+                .collect(Collectors.toList());
       }
 
       if (itemsNode.isArray() && totalAmount > 0) {
@@ -717,6 +730,14 @@ public class ReceiptService {
     }
     if (receipt.getTradeAt() == null) {
       throw ErrorCode.RECEIPT_REQUIRED_FIELD_MISSING.toException("결제일시를 입력해주세요.");
+    }
+
+    receipt.updateInappropriateReasons(new ArrayList<>());
+    List<ReceiptItem> items = receiptItemRepository.findAllByReceiptId(id);
+    List<String> reasons =
+        inappropriateReasonService.evaluate(receipt, receipt.getCategory(), workspaceId, items);
+    if (!reasons.isEmpty()) {
+      receipt.updateInappropriateReasons(reasons);
     }
 
     receipt.confirm();
