@@ -40,6 +40,9 @@ public class InappropriateReasonService {
           "모스카토", "샹그리아", "포트와인", "막걸리", "동동주", "탁주", "전통주", "사케", "백세주", "복분자주", "이강주", "문배주",
           "안동소주", "호로요이", "순하리", "이슬톡톡", "과일소주", "청포도에이슬", "자몽에이슬", "선양오크");
 
+  private static final List<String> ENTERTAINMENT_WHITELIST =
+      List.of("홀세일", "wholesale", "골프클럽", "헬스클럽", "스포츠클럽", "피트니스클럽");
+
   private static final List<String> TOBACCO_KEYWORDS =
       List.of(
           "담배", "전자담배", "궐련", "에쎄", "레종", "보헴", "더원담배", "말보로", "던힐", "메비우스", "마일드세븐", "팔리아멘트",
@@ -117,6 +120,13 @@ public class InappropriateReasonService {
   }
 
   private boolean isEntertainment(String storeName, String category, List<ReceiptItem> items) {
+    if (storeName != null) {
+      String normalized = normalize(storeName);
+      if (ENTERTAINMENT_WHITELIST.stream().anyMatch(w -> normalized.contains(normalize(w)))) {
+        return hasAlcoholOrTobacco(items);
+      }
+    }
+
     if (hasEntertainmentKeyword(storeName)) return true;
 
     if (category != null) {
@@ -138,7 +148,8 @@ public class InappropriateReasonService {
         receiptRepository.findSplitPaymentCandidates(
             workspaceId, normalizedStore, from, to, receipt.getId());
 
-    return nearby.stream().anyMatch(r -> normalize(r.getStoreName()).equals(normalizedStore));
+    return nearby.stream()
+        .anyMatch(r -> isSimilarStore(normalize(r.getStoreName()), normalizedStore));
   }
 
   private void applySplitPaymentTagToOthers(Receipt receipt, Long workspaceId) {
@@ -152,7 +163,7 @@ public class InappropriateReasonService {
         receiptRepository
             .findSplitPaymentCandidates(workspaceId, normalizedStore, from, to, receipt.getId())
             .stream()
-            .filter(r -> normalize(r.getStoreName()).equals(normalizedStore))
+            .filter(r -> isSimilarStore(normalize(r.getStoreName()), normalizedStore))
             .collect(Collectors.toList());
 
     for (Receipt other : others) {
@@ -174,6 +185,29 @@ public class InappropriateReasonService {
   private String normalize(String text) {
     if (text == null) return "";
     return text.replaceAll("[^ㄱ-ㅎㅏ-ㅣ가-힣a-zA-Z0-9]", "").toLowerCase();
+  }
+
+  private int levenshtein(String a, String b) {
+    int[][] dp = new int[a.length() + 1][b.length() + 1];
+    for (int i = 0; i <= a.length(); i++) dp[i][0] = i;
+    for (int j = 0; j <= b.length(); j++) dp[0][j] = j;
+    for (int i = 1; i <= a.length(); i++) {
+      for (int j = 1; j <= b.length(); j++) {
+        dp[i][j] =
+            a.charAt(i - 1) == b.charAt(j - 1)
+                ? dp[i - 1][j - 1]
+                : 1 + Math.min(dp[i - 1][j - 1], Math.min(dp[i - 1][j], dp[i][j - 1]));
+      }
+    }
+    return dp[a.length()][b.length()];
+  }
+
+  private boolean isSimilarStore(String a, String b) {
+    if (a.equals(b)) return true;
+    int maxLen = Math.max(a.length(), b.length());
+    if (maxLen == 0) return true;
+    double similarity = 1.0 - (double) levenshtein(a, b) / maxLen;
+    return similarity >= 0.75;
   }
 
   private boolean hasEntertainmentKeyword(String storeName) {
