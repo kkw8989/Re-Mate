@@ -67,11 +67,9 @@ public class ReceiptService {
 
   public Long getCurrentUserId() {
     Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-
     if (auth == null || auth.getName() == null) {
       throw new BusinessException(ErrorCode.UNAUTHORIZED);
     }
-
     return userRepository
         .findByEmail(auth.getName())
         .orElseThrow(() -> new BusinessException(ErrorCode.UNAUTHORIZED))
@@ -81,7 +79,6 @@ public class ReceiptService {
   private boolean isAdmin() {
     Authentication auth = SecurityContextHolder.getContext().getAuthentication();
     if (auth == null) return false;
-
     return auth.getAuthorities().stream().anyMatch(a -> "ROLE_ADMIN".equals(a.getAuthority()));
   }
 
@@ -166,18 +163,15 @@ public class ReceiptService {
                     .build());
       } catch (DataIntegrityViolationException e) {
         log.warn("영수증 중복 저장 충돌 발생. 기존 데이터 반환", e);
-
         Optional<Receipt> duplicateByHash =
             receiptRepository.findByFileHashAndWorkspaceId(fileHash, workspaceId);
         if (duplicateByHash.isPresent()) {
           return toUploadReceiptResponse(duplicateByHash.get(), true);
         }
-
         Optional<Receipt> duplicateByKey = receiptRepository.findByIdempotencyKey(idempotencyKey);
         if (duplicateByKey.isPresent()) {
           return toUploadReceiptResponse(duplicateByKey.get(), true);
         }
-
         throw e;
       }
 
@@ -286,15 +280,12 @@ public class ReceiptService {
           boolean hasDiscount = discountAmount > 0;
           double toleranceRate = hasDiscount ? 0.03 : 0.01;
           int tolerance = Math.max(1, (int) (totalAmount * toleranceRate));
-
           int expectedTotal = itemsTotal - discountAmount;
           boolean amountMismatch = Math.abs(expectedTotal - totalAmount) > tolerance;
 
           if (amountMismatch) {
             log.warn(
-                "=== [금액검증] items합계({}) - discount({}) = {}"
-                    + " / totalAmount({}) / 허용오차({}, {}%)"
-                    + " → NEED_MANUAL 유도",
+                "=== [금액검증] items합계({}) - discount({}) = {} / totalAmount({}) / 허용오차({}, {}%) → NEED_MANUAL 유도",
                 itemsTotal,
                 discountAmount,
                 expectedTotal,
@@ -306,7 +297,7 @@ public class ReceiptService {
         }
       }
 
-      boolean hasCriticalMissing = storeName.isBlank() || totalAmount <= 0 || tradeAt == null;
+      boolean hasCriticalMissing = storeName.isBlank() || totalAmount < 0 || tradeAt == null;
 
       ReceiptStatus nextStatus =
           (!hasCriticalMissing && confidence >= 0.7)
@@ -341,19 +332,16 @@ public class ReceiptService {
         analyzedReceipt.storeName() != null
             && !analyzedReceipt.storeName().isBlank()
             && !"알 수 없는 상호".equals(analyzedReceipt.storeName());
-    boolean hasPositiveAmount = analyzedReceipt.totalAmount() > 0;
+    boolean hasAmount = analyzedReceipt.totalAmount() >= 0;
     boolean hasReceiptKeyword = containsReceiptKeyword(analyzedReceipt.fullText());
 
-    if (!hasRawText || (!hasStoreName && !hasPositiveAmount) || !hasReceiptKeyword) {
+    if (!hasRawText || !hasReceiptKeyword || (!hasStoreName && !hasAmount)) {
       throw ErrorCode.VALIDATION_FAILED.toException("영수증으로 인식되지 않은 이미지입니다.");
     }
   }
 
   private boolean containsReceiptKeyword(String fullText) {
-    if (fullText == null || fullText.isBlank()) {
-      return false;
-    }
-
+    if (fullText == null || fullText.isBlank()) return false;
     String normalized = fullText.replaceAll("\\s+", "").toLowerCase();
     return normalized.contains("합계")
         || normalized.contains("총액")
@@ -364,7 +352,18 @@ public class ReceiptService {
         || normalized.contains("부가세")
         || normalized.contains("현금영수증")
         || normalized.contains("receipt")
-        || normalized.contains("total");
+        || normalized.contains("total")
+        || normalized.contains("주문금액")
+        || normalized.contains("결제금액")
+        || normalized.contains("결제일")
+        || normalized.contains("배달팁")
+        || normalized.contains("주문서")
+        || normalized.contains("주차")
+        || normalized.contains("입차")
+        || normalized.contains("출차")
+        || normalized.contains("영수증")
+        || normalized.contains("청구")
+        || normalized.contains("사업자");
   }
 
   private Receipt applyAnalyzedReceipt(Receipt receipt, AnalyzedReceipt analyzedReceipt) {
@@ -576,7 +575,6 @@ public class ReceiptService {
         r -> {
           String ownerName =
               userRepository.findById(r.getUserId()).map(u -> u.getName()).orElse("알 수 없음");
-
           return new ReceiptSummaryDto(
               r.getId(),
               r.getStoreName(),
@@ -668,7 +666,11 @@ public class ReceiptService {
             file -> {
               try {
                 return uploadAndProcess("multi-" + UUID.randomUUID(), file, workspaceId);
+              } catch (BusinessException e) {
+                log.warn("=== 영수증 처리 실패 [{}]: {}", file.getOriginalFilename(), e.getMessage());
+                return null;
               } catch (Exception e) {
+                log.error("=== 영수증 처리 중 예외 [{}]", file.getOriginalFilename(), e);
                 return null;
               }
             })
@@ -812,16 +814,12 @@ public class ReceiptService {
   private boolean calculateAmountMismatch(
       List<ReceiptItem> items, int totalAmount, int discountAmount) {
     if (items == null || items.isEmpty() || totalAmount <= 0) return false;
-
     int itemsTotal = items.stream().mapToInt(item -> item.getQuantity() * item.getPrice()).sum();
-
     if (itemsTotal <= 0) return false;
-
     boolean hasDiscount = discountAmount > 0;
     double toleranceRate = hasDiscount ? 0.03 : 0.01;
     int tolerance = Math.max(1, (int) (totalAmount * toleranceRate));
     int expectedTotal = itemsTotal - discountAmount;
-
     return Math.abs(expectedTotal - totalAmount) > tolerance;
   }
 
