@@ -6,7 +6,8 @@ AI 영수증 자동 감사 및 팀 비용 관리 웹 서비스
 
 배포 주소: https://re-mate.vercel.app
 
-<img src="docs/images/01-landing.png" alt="Re:Mate 메인" width="100%">
+<img src="![Uploading image.png…]()
+" alt="Re:Mate 메인" width="100%">
 
 <br>
 
