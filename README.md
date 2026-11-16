@@ -118,9 +118,6 @@ Re:Mate는 이 문제를 세 가지로 풀었습니다.
 
 [![Re:Mate 시연 영상](https://img.youtube.com/vi/uorKYPM_mSo/hqdefault.jpg)](https://youtu.be/uorKYPM_mSo)
 
-
-<br>
-
 ## 주요 기능
 
 ### 워크스페이스
