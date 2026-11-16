@@ -118,7 +118,7 @@ Re:Mate는 이 문제를 세 가지로 풀었습니다.
 
 ## 시연 영상
 
-[![Re:Mate 시연 영상](https://img.youtube.com/vi/VIDEO_ID/maxresdefault.jpg)](https://youtu.be/VIDEO_ID)
+[![Re:Mate 시연 영상]([https://img.youtube.com/vi/VIDEO_ID/maxresdefault.jpg)](https://youtu.be/VIDEO_ID](https://youtu.be/uorKYPM_mSo))
 
 <br>
 
