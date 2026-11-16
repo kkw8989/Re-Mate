@@ -30,6 +30,7 @@ Re:Mate는 이 문제를 세 가지로 풀었습니다.
 | 기간 | 2026.01.15 ~ 2026.06.03 |
 | 팀명 | Sortify (5인) |
 | 형태 | 반응형 웹 서비스 (Frontend / Backend 분리) |
+| 수상 | 2026학년도 1학기 캡스톤디자인 경진대회 입선 (상명대학교 WIDEEP교육혁신원 주최) |
 
 <br>
 
@@ -158,15 +159,47 @@ Re:Mate는 이 문제를 세 가지로 풀었습니다.
 
 <br>
 
+## 프론트엔드 구성
+
+- 라우트를 `(before-login)`(랜딩, 서비스 소개, 로그인, 회원가입)과 `(after-login)`(워크스페이스 목록·상세, 영수증 업로드·상세, 워크스페이스 설정, 마이페이지) 그룹으로 나눔
+- NextAuth v4 기반 JWT 세션, 이메일 로그인과 Google·Kakao 소셜 로그인(`/oauth/google`, `/oauth/kakao` 콜백 페이지)
+- 미들웨어에서 접근 제어: 비로그인 사용자는 `/login`으로, 로그인한 사용자가 로그인·회원가입에 들어오면 `/workspace`로 보내고, 워크스페이스 설정 페이지는 역할을 조회해 `MEMBER`면 상세 페이지로 돌려보냄
+- 서버 상태는 TanStack Query, 모달 같은 전역 UI 상태는 Zustand로 관리
+- Header, Sidebar, Modal, StatusChip, StatCard 등 공통 컴포넌트를 만들어 페이지 전반에서 재사용
+
+<br>
+
+## API 설계
+
+모든 응답은 같은 형식으로 내려가고, `traceId`로 서버 로그를 추적할 수 있습니다.
+
+```json
+{ "success": true,  "data": {}, "meta": { "timestamp": "...", "traceId": "..." } }
+{ "success": false, "error": { "code": "...", "message": "..." }, "meta": { "timestamp": "...", "traceId": "..." } }
+```
+
+| 구분 | 엔드포인트 |
+| --- | --- |
+| Auth | `POST /api/v1/auth/signup`, `POST /api/v1/auth/signin`, `GET /api/v1/auth/status`, `GET /api/v1/auth/me` |
+| Workspace | `POST /api/v1/workspaces`, `GET /api/v1/workspaces/my`, `GET·DELETE /api/v1/workspaces/{id}`, `PATCH /{id}/settings`, `POST /{id}/invite`, `GET /{id}/members`, `DELETE /{id}/members/{userId}`, `GET /invitations`, `POST /invitations/{membershipId}/accept·reject` |
+| User | `PATCH /api/v1/users/me`, `PATCH /api/v1/users/me/password`, `PATCH /api/v1/me/profile-image` |
+| Receipt | `POST /api/v1/receipts/upload`, `GET /api/v1/receipts`, `GET·PUT·DELETE /api/v1/receipts/{id}`, `PATCH /{id}/confirm`, `PATCH /{id}/status`, `GET /{id}/history`, `GET /stats`, `GET /export`, `POST /export/selected` |
+
+실패 응답은 `VALIDATION_FAILED`, `WS_ADMIN_REQUIRED`, `INVALID_STATE_TRANSITION`, `FILE_TOO_LARGE`처럼 상황별 ErrorCode로 정리했고, 엔드포인트마다 어떤 코드가 내려가는지 문서화했습니다.
+
+<br>
+
 ## 기술 스택
 
 | 구분 | 기술 |
 | --- | --- |
-| Frontend | Next.js 16 (App Router), React 19, TypeScript, Tailwind CSS v4, TanStack Query v5, NextAuth v4, Zustand, Framer Motion |
-| Backend | Spring Boot 4 (Java 21), Spring Security, JWT, OAuth2 (Google / Kakao), JPA, MySQL, Gradle |
+| Frontend | Next.js 16 (App Router), React 19 (React Compiler), TypeScript, Tailwind CSS v4, TanStack Query v5, NextAuth v4, Zustand, Framer Motion |
+| Backend | Spring Boot 4 (Java 21), Spring Security, Spring Data JPA, JWT, OAuth2 (Google / Kakao), WebClient, Swagger (springdoc), Gradle |
+| Database | MariaDB |
 | AI | Google Cloud Vision OCR, Gemini 3.5 Flash |
 | Infra | Vercel (Frontend), Railway (Backend), Docker |
-| 협업 | GitHub, Notion, Figma, Swagger, Discord |
+| 협업 | GitHub (Actions CI), Notion, Figma, Swagger, Discord |
+| 코드 품질 | ESLint, Prettier, Husky, lint-staged, commitlint (Frontend) / Spotless (Backend) |
 
 <br>
 
@@ -177,13 +210,13 @@ flowchart LR
     user["사용자<br/>Browser"] --> fe["Next.js 16<br/>Vercel"]
     fe -->|"REST API / JWT"| be["Spring Boot 4<br/>Railway"]
     fe -.-> oauth["Google / Kakao<br/>OAuth2"]
-    be --> db[("MySQL")]
+    be --> db[("MariaDB")]
     be --> vision["Google Cloud<br/>Vision OCR"]
     be --> gemini["Gemini<br/>3.5 Flash"]
     be --> holiday["공공데이터포털<br/>특일 API"]
 ```
 
-프론트엔드는 Vercel, 백엔드는 Railway에 배포했습니다.
+프론트엔드는 Vercel, 백엔드는 Railway에 배포했습니다. API 명세는 [Swagger UI](https://rematedeploy-production.up.railway.app/swagger-ui/index.html)에서 확인할 수 있습니다.
 
 <br>
 
@@ -200,25 +233,32 @@ flowchart TD
     E --> F["검증<br/>품목 합계 vs 결제 총액 · 내용 중복"]
     F --> G["부적절 영수증 4종 탐지"]
     G --> H{"신뢰도 0.7 이상<br/>핵심 필드 존재?"}
-    H -->|"예"| I["WAITING"]
-    H -->|"아니오"| J["NEED_MANUAL"]
+    H -->|"예"| I["ANALYZING<br/>사용자 확인 대기"]
+    H -->|"아니오"| J["NEED_MANUAL<br/>수동 입력 필요"]
 ```
 
 - 추출 필드: 가맹점명, 총액, 결제일시, 품목(이름·수량·단가), 할인액, 카테고리, 신뢰도, AI 판단 근거
 - 카테고리 12종: 식비, 교통, 회식/유흥, 사무용품, 숙박, 쇼핑, 행사/교육, 장비, 외주/용역, 선물/경조사, 의료, 기타
 - 품목 합계와 결제 총액이 허용 오차(1~3%)를 넘게 어긋나면 신뢰도를 강제로 낮춰 수동 확인으로 보냅니다.
 - 중복 제출은 파일 해시(MD5)와 OCR 내용(가맹점 + 금액 + 일시) 두 단계로 막고, `X-IDEMPOTENCY-KEY` 헤더로 중복 요청도 방지합니다.
+- 분석이 끝난 영수증은 사용자가 내용을 수정하고 저장 확정해야 `WAITING`(승인 대기)으로 넘어갑니다. 10분 넘게 확정하지 않은 영수증은 스케줄러가 5분 주기로 삭제합니다.
+- 업로드, 분석, 승인, 반려, 다운로드, 자기 결재 등 주요 이력은 감사 로그(`audit_logs`)에 자동 기록됩니다.
 
 ### 영수증 상태 전이
 
 ```mermaid
 stateDiagram-v2
-    [*] --> ANALYZING
-    ANALYZING --> WAITING: 분석 성공
+    [*] --> ANALYZING: 업로드
+    ANALYZING --> WAITING: 저장 확정
     ANALYZING --> NEED_MANUAL: 신뢰도 낮음 / 필드 누락
-    NEED_MANUAL --> WAITING: 수동 입력 후 저장
+    ANALYZING --> FAILED_SYSTEM: 시스템 오류
+    NEED_MANUAL --> WAITING: 수정 후 저장 확정
+    NEED_MANUAL --> APPROVED: 관리자 승인
+    NEED_MANUAL --> REJECTED: 관리자 반려
+    FAILED_SYSTEM --> ANALYZING: 재분석
     WAITING --> APPROVED: 관리자 승인
     WAITING --> REJECTED: 관리자 반려
+    WAITING --> EXPIRED: 기간 만료
     APPROVED --> [*]
     REJECTED --> [*]
 ```
@@ -242,70 +282,104 @@ AI는 의심 태그와 판단 근거만 제시하고, 최종 결정은 항상 �
 
 ```mermaid
 erDiagram
-    users ||--o{ workspace_members : "소속"
-    workspaces ||--o{ workspace_members : "구성"
-    workspaces ||--o{ receipts : "보관"
-    users ||--o{ receipts : "업로드"
-    receipts ||--o{ receipt_items : "품목"
-    file_assets ||--o| receipts : "원본 이미지"
-    file_assets |o--o| users : "프로필 이미지"
-    receipts ||--o{ audit_logs : "이력"
-    users ||--o{ audit_logs : "수행"
+    users ||--o{ workspace_member : "소속"
+    workspace ||--o{ workspace_member : "구성"
+    workspace ||--o{ receipt : "보관"
+    users ||--o{ receipt : "업로드"
+    receipt ||--o{ receipt_item : "품목"
+    receipt ||--o{ receipt_tags : "태그"
+    receipt ||--o{ receipt_inappropriate_reasons : "부적절 사유"
+    file_asset ||--o| receipt : "원본 이미지"
+    users ||--o{ file_asset : "업로드"
+    receipt ||--o{ audit_logs : "이력"
+    workspace ||--o{ audit_logs : "이력"
 
     users {
         bigint id PK
-        varchar email UK
-        varchar password
         varchar name
-        bigint profile_image_id FK
+        varchar email UK
+        varchar picture
+        varchar password
+        varchar provider
+        varchar provider_id
     }
-    workspaces {
+    workspace {
         bigint id PK
         varchar name
-        varchar color
+        varchar color "GREEN / PURPLE / ORANGE / BLUE / PINK"
     }
-    workspace_members {
+    workspace_member {
         bigint id PK
         bigint workspace_id FK
         bigint user_id FK
         varchar role "ADMIN / MEMBER"
-        varchar status "초대 대기 / 수락"
+        varchar status "PENDING / ACCEPTED / REJECTED"
+        datetime created_at
+        datetime updated_at
     }
-    receipts {
+    receipt {
         bigint id PK
         bigint workspace_id FK
-        bigint uploader_id FK
+        bigint user_id FK
         bigint file_asset_id FK
+        varchar status
+        varchar system_error_code
         varchar store_name
+        datetime trade_at
         int total_amount
         int discount_amount
-        datetime trade_at
+        int tax
+        boolean night_time
         varchar category
-        varchar status
         double confidence
-        text ai_reason
+        varchar ai_reason
+        varchar rejection_reason
+        datetime approved_at
+        varchar idempotency_key UK
         varchar file_hash
+        varchar file_path
+        longtext raw_text
+        datetime created_at
     }
-    receipt_items {
+    receipt_item {
         bigint id PK
         bigint receipt_id FK
         varchar name
         int quantity
-        int unit_price
+        int price
+    }
+    receipt_tags {
+        bigint receipt_id FK
+        varchar tag_name
+    }
+    receipt_inappropriate_reasons {
+        bigint receipt_id FK
+        varchar reason
     }
     audit_logs {
         bigint id PK
-        bigint receipt_id FK
-        bigint user_id FK
         varchar action
+        varchar actor_type
+        varchar actor_id
+        bigint workspace_id
+        bigint receipt_id
+        text meta_json
         datetime created_at
     }
-    file_assets {
+    file_asset {
         bigint id PK
-        varchar file_path
+        varchar type "PROFILE / RECEIPT"
+        varchar original_name
         varchar content_type
+        bigint size
+        varchar storage_key
+        bigint uploader_id
+        bigint workspace_id
+        datetime created_at
     }
 ```
+
+테이블 간 관계는 JPA 연관관계 매핑 없이 ID 컬럼으로 참조하는 논리적 관계입니다.
 
 <br>
 
@@ -374,6 +448,7 @@ flowchart LR
 - Notion에 페이지·컴포넌트 단위로 요구사항 명세서를 작성하고, 프론트엔드/백엔드별 R&R과 일정을 관리
 - 코드 스타일, 네이밍, 커밋 메시지 형식을 담은 프로젝트 컨벤션 문서 공유
 - main 브랜치 직접 커밋 차단, `feat` / `fix` / `refactor` 기능 단위 브랜치에서 작업하고 PR 승인 후 Squash Merge
+- 프론트엔드는 commitlint(Conventional Commits)와 Husky + lint-staged(ESLint, Prettier)로 커밋 시점에 검사하고, 백엔드는 Spotless(google-java-format)로 코드 스타일을 통일
 - GitHub Issue와 Project로 작업 현황 관리, Figma로 유저플로우·와이어프레임·디자인 토큰 관리, Swagger로 API 명세 공유
 - 상태값, 에러코드, 카테고리 코드(12종), 부적절 사유 코드를 팀 공통 규칙으로 먼저 합의
 
@@ -381,22 +456,47 @@ flowchart LR
 
 ## 실행 방법
 
+이 저장소는 백엔드입니다.
+
 ### 사전 준비
 
-- Java 21, Node.js, MySQL
-- 환경 변수: DB 접속 정보, JWT 시크릿, Google Cloud Vision 인증 정보, Gemini API 키, Google·Kakao OAuth 클라이언트 정보, 공공데이터포털 API 키
+- Java 21
+- MariaDB (기본 접속 `localhost:3306`, DB명 `receipt`, 없으면 자동 생성)
+- `src/main/resources/application-secret.properties`에 Google Cloud Vision API 키(`google.vision.api-key`)와 Gemini API 키(`google.api.key`) 작성
 
-### Backend
+### 환경 변수
+
+| 이름 | 설명 |
+| --- | --- |
+| `SPRING_DATASOURCE_URL` / `USERNAME` / `PASSWORD` | DB 접속 정보 |
+| `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` | Google OAuth2 |
+| `KAKAO_CLIENT_ID` / `KAKAO_CLIENT_SECRET` | Kakao OAuth2 |
+| `APP_JWT_SECRET` | JWT 서명 키 |
+| `PUBLIC_DATA_API_KEY` | 공공데이터포털 특일 API 키 |
+| `FRONTEND_BASE_URL` | 프론트엔드 주소 (기본 `http://localhost:3000`) |
+| `BACKEND_BASE_URL` | 백엔드 주소 (엑셀 내 영수증 이미지 링크에 사용) |
+| `CORS_ALLOWED_ORIGIN_PATTERNS` | 허용할 프론트엔드 Origin |
+
+### 실행
 
 ```bash
-cd backend
 ./gradlew bootRun
 ```
 
-### Frontend
+서버가 뜨면 Swagger UI(`/swagger-ui/index.html`)에서 API 명세를 확인할 수 있습니다.
+
+### Frontend (별도 저장소)
+
+Node.js 22.14.0 (`.nvmrc`) 기준이며, `.env.local`에 아래 값을 설정합니다.
+
+| 이름 | 설명 |
+| --- | --- |
+| `NEXT_PUBLIC_API_URL` | 백엔드 주소 |
+| `NEXTAUTH_SECRET` | NextAuth 세션 암호화 키 |
+| `NEXT_PUBLIC_GOOGLE_CLIENT_ID` / `NEXT_PUBLIC_GOOGLE_REDIRECT_URI` | Google 로그인 |
+| `NEXT_PUBLIC_KAKAO_REST_API_KEY` / `NEXT_PUBLIC_KAKAO_REDIRECT_URI` | Kakao 로그인 |
 
 ```bash
-cd frontend
 npm install
 npm run dev
 ```
@@ -426,3 +526,4 @@ npm run dev
 ## 문서
 
 - [최종 발표 자료](docs/ReMate_최종발표.pdf)
+- [API 문서 (Swagger UI)](https://rematedeploy-production.up.railway.app/swagger-ui/index.html)
