@@ -116,7 +116,7 @@ Re:Mate는 이 문제를 세 가지로 풀었습니다.
 
 ## 시연 영상
 
-[![Re:Mate 시연 영상]([https://img.youtube.com/vi/VIDEO_ID/maxresdefault.jpg)](https://youtu.be/VIDEO_ID](https://youtu.be/uorKYPM_mSo))
+[![Re:Mate 시연 영상](https://youtu.be/uorKYPM_mSo))
 
 <br>
 
@@ -128,7 +128,8 @@ Re:Mate는 이 문제를 세 가지로 풀었습니다.
 - 워크스페이스 생성, 이메일 초대, 초대 수락/거절, 멤버 강제 탈퇴, 이름·색상 변경
 - ADMIN / MEMBER 역할에 따라 라우트와 API 접근 권한 분리
 
-<img src="docs/images/02-workspace.png" alt="워크스페이스 목록" width="100%">
+<img src="https://github.com/user-attachments/assets/a494cf38-3148-4d29-8a36-4a21aa0b3e46" alt="워크스페이스 목록" width="100%"/>
+
 
 ### 영수증 업로드 및 AI 분석
 
@@ -136,24 +137,16 @@ Re:Mate는 이 문제를 세 가지로 풀었습니다.
 - 업로드 즉시 AI 분석 결과(가맹점, 금액, 결제일시, 품목, 카테고리)를 보여주고, 수정 후 저장 확정
 - 신뢰도가 낮거나 핵심 필드가 비어 있으면 수동 입력 상태로 전환
 
-<img src="docs/images/03-upload.png" alt="영수증 업로드" width="100%">
+<img src="https://github.com/user-attachments/assets/fa804d15-910d-4d1a-abf3-27eb18aa1468" alt="영수증 업로드" width="100%" />
 
-### 영수증 상세 및 승인/반려
-
-- 원본 영수증 이미지와 추출 데이터를 좌우로 나란히 배치해 바로 대조 가능
-- AI 분석 태그와 판단 근거를 함께 표시
-- 관리자는 승인/반려 처리, 모든 처리 이력은 감사 로그로 자동 기록
-
-<img src="docs/images/04-detail-admin.png" alt="영수증 상세 (관리자)" width="100%">
 
 ### 영수증 목록 및 엑셀 내보내기
 
 - 가맹점명 검색, 상태·게시자 필터, 정렬, 페이지네이션
 - 관리자는 전체 또는 선택한 영수증을 정산용 XLSX로 다운로드 (인원별·카테고리별 지출 요약, 의심 영수증 목록 포함)
 
-<img src="docs/images/05-list.png" alt="영수증 목록" width="100%">
+<img src="https://github.com/user-attachments/assets/f47fd2f1-5625-466d-a2a5-8944611549b5" alt="영수증 목록 및 액셀 내보내기 결과" width="100%"/>
 
-<img src="docs/images/06-excel.png" alt="엑셀 내보내기 결과" width="100%">
 
 <br>
 
